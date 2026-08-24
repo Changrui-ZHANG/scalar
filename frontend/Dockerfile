@@ -2,11 +2,10 @@ FROM node:24-alpine
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-COPY frontend/package.json ./frontend/
-RUN npm ci --workspace frontend --include-workspace-root
-
-COPY frontend ./frontend
+# Le monorepo est copie en entier : le postinstall de Nuxt (nuxt prepare)
+# a besoin de nuxt.config.ts, donc l'installation vient apres la copie.
+COPY . .
+RUN npm ci
 
 EXPOSE 3000
 ENV HOST=0.0.0.0

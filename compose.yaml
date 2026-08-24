@@ -1,0 +1,102 @@
+# Environnement de developpement. Origine unique derriere Traefik :
+# tout passe par http://localhost:8080, /api/v1 est un chemin, pas un hote.
+# Les labels sont ceux que lira le Traefik de Coolify en production.
+
+services:
+  traefik:
+    image: traefik:v3.7.11
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedByDefault=false
+      - --entryPoints.web.address=:80
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --log.level=INFO
+      # Le flux d'evenements ne doit etre ni tamponne ni coupe avant la fin
+      # d'une execution sandbox.
+      - --entryPoints.web.transport.respondingTimeouts.readTimeout=0
+      - --entryPoints.web.transport.respondingTimeouts.writeTimeout=0
+      - --entryPoints.web.transport.respondingTimeouts.idleTimeout=0
+    ports:
+      - '8080:80'
+      - '8081:8080'
+    volumes:
+      # Lecture seule : Traefik decouvre les services, il n'ecrit rien.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_started
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    command: npm run dev --workspace frontend
+    environment:
+      HOST: 0.0.0.0
+      NUXT_PUBLIC_API_BASE: /api/v1
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+      - /app/node_modules
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=PathPrefix(`/`)
+      - traefik.http.routers.frontend.entryPoints=web
+      - traefik.http.routers.frontend.priority=1
+      - traefik.http.services.frontend.loadbalancer.server.port=3000
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: npm run dev --workspace backend
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/scalar?replicaSet=rs0
+    volumes:
+      - ./backend:/app/backend
+      - /app/backend/node_modules
+      - /app/node_modules
+    depends_on:
+      mongo:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.backend.rule=PathPrefix(`/api/v1`)
+      - traefik.http.routers.backend.entryPoints=web
+      - traefik.http.routers.backend.priority=10
+      - traefik.http.services.backend.loadbalancer.server.port=3001
+
+  mongo:
+    image: mongo:8.0.29
+    command: ['--replSet', 'rs0', '--bind_ip_all']
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      # Sain seulement une fois le replica set reellement initialise.
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'rs.status().ok']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  mongo-init:
+    image: mongo:8.0.29
+    restart: 'no'
+    depends_on:
+      mongo:
+        condition: service_started
+    volumes:
+      - ./docker/mongo-init.js:/init.js:ro
+    entrypoint:
+      - bash
+      - -c
+      - >
+        until mongosh --host mongo --quiet --eval 'db.adminCommand("ping")' > /dev/null 2>&1;
+        do sleep 1; done;
+        mongosh --host mongo --quiet /init.js
+
+volumes:
+  mongo-data:
