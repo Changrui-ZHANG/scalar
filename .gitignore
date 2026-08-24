@@ -1,0 +1,24 @@
+# Sorties de build et caches
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# Dependances
+node_modules
+
+# Journaux
+logs
+*.log
+
+# Divers
+.DS_Store
+.fleet
+.idea
+
+# Variables d'environnement locales
+.env
+.env.*
+!.env.example
