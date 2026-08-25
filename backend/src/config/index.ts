@@ -11,7 +11,14 @@ const schema = v.object({
     v.minValue(1),
     v.maxValue(65535),
   ),
-  MONGODB_URI: v.optional(v.string()),
+  // Requise, non vide, et d'un schema reconnu : sans le controle de schema,
+  // une faute de frappe (`mongo://`) passe la validation et ressort dix
+  // secondes plus tard en message opaque du pilote.
+  MONGODB_URI: v.pipe(
+    v.string(),
+    v.nonEmpty(),
+    v.regex(/^mongodb(\+srv)?:\/\//, 'doit commencer par mongodb:// ou mongodb+srv://'),
+  ),
 })
 
 export type Config = v.InferOutput<typeof schema>

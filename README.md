@@ -22,4 +22,34 @@ servis sous une origine unique derriere un reverse proxy.
 
 ## Demarrage
 
-Rien a lancer pour l'instant.
+```bash
+docker compose up -d mongo mongo-init      # MongoDB en replica set a un noeud
+npm run db:index --workspace backend       # cree les index requis (rejouable)
+docker compose up -d                       # tout le produit sur http://localhost:8080
+```
+
+L'ordre compte. Les index ne sont **jamais** crees implicitement : le backend
+verifie au demarrage que les index declares existent et refuse de servir sinon,
+en sortant en code non nul et en nommant l'index manquant. Sur un volume neuf,
+sauter `db:index` donne donc un backend qui redemarre en boucle.
+
+`MONGODB_URI` est requise et doit commencer par `mongodb://` ou `mongodb+srv://` ;
+le compose la fournit au service `backend`. Aucune valeur par defaut.
+
+## Tests
+
+```bash
+npm run test --workspace backend       # sans base : les cas qui en exigent une sont sautes
+npm run typecheck --workspace backend  # types, plus chargement du graphe d'imports par Node
+```
+
+Les cas qui exigent une base reelle ne s'executent que si `MONGODB_URI_TEST` est
+definie. Le replica set annonce l'hote `mongo:27017`, donc ils doivent tourner
+dans le reseau du compose :
+
+```bash
+docker compose run --rm -e MONGODB_URI_TEST='mongodb://mongo:27017/scalar_test?replicaSet=rs0'   backend npm run test --workspace backend
+```
+
+La base visee doit porter `test` dans son nom : la suite la supprime en fin de
+parcours et refuse de le faire autrement.
