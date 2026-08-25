@@ -1,12 +1,9 @@
-import express from 'express'
+import { construireApp } from './app.ts'
+import { chargerConfig } from './config/index.ts'
 
-const app = express()
+const config = chargerConfig()
+const app = construireApp()
 
-app.get('/api/v1/health', (_req, res) => {
-  res.json({ status: 'ok' })
-})
-
-const port = 3001
-app.listen(port, () => {
-  console.log(JSON.stringify({ level: 'info', message: 'api listening', port }))
+app.listen(config.PORT, () => {
+  console.log(JSON.stringify({ niveau: 'info', message: 'api demarree', port: config.PORT }))
 })
