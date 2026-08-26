@@ -4,17 +4,18 @@
   "description": "API Scalar",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "node --watch --env-file-if-exists=.env src/index.ts",
-    "start": "node --env-file-if-exists=.env src/index.ts",
+    "dev": "node --watch src/index.ts",
+    "start": "node src/index.ts",
     "typecheck": "tsc --noEmit && npm run verify:runtime",
     "test": "vitest run",
-    "verify:runtime": "node --input-type=module -e \"await import('./src/app.ts'); await import('./src/models/index.ts'); await import('./src/contracts/index-requis.ts'); await import('./src/services/base-donnees.service.ts'); await import('./src/commands/creer-index.ts')\"",
-    "db:index": "node --env-file-if-exists=.env src/commands/creer-index.ts"
+    "verify:runtime": "node --input-type=module -e \"await import('./src/app.ts'); await import('./src/contracts/proxy.ts'); await import('./src/middlewares/identite-client.middleware.ts'); await import('./src/middlewares/cache.middleware.ts'); await import('./src/models/index.ts'); await import('./src/contracts/index-requis.ts'); await import('./src/services/base-donnees.service.ts'); await import('./src/commands/creer-index.ts')\"",
+    "db:index": "node src/commands/creer-index.ts"
   },
   "license": "UNLICENSED",
   "type": "module",
   "private": true,
   "dependencies": {
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "mongoose": "^9.9.3",
     "valibot": "^1.4.2"

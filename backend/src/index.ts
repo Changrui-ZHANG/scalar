@@ -63,7 +63,7 @@ if (ecarts.length > 0) {
 
 journaliser('info', 'base connectee, index requis verifies')
 
-const serveur = construireApp().listen(config.PORT, () => {
+const serveur = construireApp(config).listen(config.PORT, () => {
   journaliser('info', 'api demarree', { port: config.PORT })
 })
 

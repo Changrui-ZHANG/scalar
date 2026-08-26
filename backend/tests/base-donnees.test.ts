@@ -4,6 +4,7 @@ import { once } from 'node:events'
 import { createServer } from 'node:net'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import mongoose from 'mongoose'
+import { SECRET_DE_TEST } from './aide-config.ts'
 import { chargerConfig } from '../src/config/index.ts'
 import { INDEX_REQUIS } from '../src/contracts/index-requis.ts'
 import { BaseDonneesService, masquerUri } from '../src/services/base-donnees.service.ts'
@@ -12,6 +13,9 @@ import { normaliserAdresse } from '../src/models/utilisateur.model.ts'
 
 const URI_TEST = process.env.MONGODB_URI_TEST
 const RACINE = fileURLToPath(new URL('..', import.meta.url))
+
+// Chemin qui n'existe pas : dotenv ne trouve rien et ne peuple rien.
+const SANS_FICHIER_ENV = '.env.absent-volontairement'
 
 // Le chargement du graphe d'imports coute plusieurs secondes a froid : tout
 // test qui lance le vrai point d'entree doit porter son propre delai, sinon
@@ -45,7 +49,10 @@ function environnementPropre(supplement: Record<string, string>): Record<string,
   const base: Record<string, string> = {}
 
   for (const [cle, valeur] of Object.entries(process.env)) {
-    if (cle !== 'MONGODB_URI' && cle !== 'MONGODB_URI_TEST' && valeur !== undefined) {
+    const ecarte =
+      cle === 'MONGODB_URI' || cle === 'MONGODB_URI_TEST' || cle === 'SECRET_PSEUDONYMISATION'
+
+    if (!ecarte && valeur !== undefined) {
       base[cle] = valeur
     }
   }
@@ -56,7 +63,15 @@ function environnementPropre(supplement: Record<string, string>): Record<string,
 function lancer(supplement: Record<string, string>): ChildProcessWithoutNullStreams {
   return spawn(process.execPath, ['src/index.ts'], {
     cwd: RACINE,
-    env: environnementPropre(supplement),
+    // Le secret est fourni par defaut : ces tests portent sur la base et les
+    // index, pas sur lui, et le laisser absent les ferait echouer ailleurs.
+    // Le chemin de fichier pointe volontairement dans le vide : un `.env`
+    // present chez l'executant repeuplerait les variables retirees expres.
+    env: environnementPropre({
+      CHEMIN_FICHIER_ENV: SANS_FICHIER_ENV,
+      SECRET_PSEUDONYMISATION: SECRET_DE_TEST,
+      ...supplement,
+    }),
     stdio: ['ignore', 'pipe', 'pipe'],
   })
 }
@@ -148,8 +163,34 @@ describe('configuration', () => {
 
   it('accepte les deux schemas valides', () => {
     for (const uri of ['mongodb://hote:27017/base', 'mongodb+srv://hote/base']) {
-      expect(chargerConfig({ MONGODB_URI: uri } as NodeJS.ProcessEnv).MONGODB_URI).toBe(uri)
+      const env = { MONGODB_URI: uri, SECRET_PSEUDONYMISATION: SECRET_DE_TEST }
+
+      expect(chargerConfig(env as NodeJS.ProcessEnv).MONGODB_URI).toBe(uri)
     }
+  })
+
+  it('refuse de demarrer sans secret de pseudonymisation, en le nommant', () => {
+    const env = { MONGODB_URI: 'mongodb://hote:27017/base' }
+
+    expect(() => chargerConfig(env as NodeJS.ProcessEnv)).toThrow('exit:1')
+    expect(erreurs.join(' ')).toContain('SECRET_PSEUDONYMISATION')
+  })
+
+  it('refuse un secret de pseudonymisation reste a sa valeur de remplissage', () => {
+    const env = {
+      MONGODB_URI: 'mongodb://hote:27017/base',
+      SECRET_PSEUDONYMISATION: 'remplacez-moi-par-une-valeur-aleatoire-de-32-caracteres-minimum',
+    }
+
+    expect(() => chargerConfig(env as NodeJS.ProcessEnv)).toThrow('exit:1')
+    expect(erreurs.join(' ')).toContain('SECRET_PSEUDONYMISATION')
+  })
+
+  it('refuse un secret de pseudonymisation trop court pour resister a une recherche', () => {
+    const env = { MONGODB_URI: 'mongodb://hote:27017/base', SECRET_PSEUDONYMISATION: 'court' }
+
+    expect(() => chargerConfig(env as NodeJS.ProcessEnv)).toThrow('exit:1')
+    expect(erreurs.join(' ')).toContain('SECRET_PSEUDONYMISATION')
   })
 })
 

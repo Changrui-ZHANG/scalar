@@ -36,6 +36,19 @@ sauter `db:index` donne donc un backend qui redemarre en boucle.
 `MONGODB_URI` est requise et doit commencer par `mongodb://` ou `mongodb+srv://` ;
 le compose la fournit au service `backend`. Aucune valeur par defaut.
 
+Les variables sont chargees par dotenv depuis `backend/.env`, dans
+`config/index.ts` — seul lecteur de l'environnement. Un fichier absent n'est pas
+une erreur, et une variable deja presente dans l'environnement prime toujours
+sur le fichier : sous `docker compose`, ce sont les valeurs du compose qui
+gagnent. Copier `backend/.env.example` pour demarrer.
+
+`SECRET_PSEUDONYMISATION` est requise elle aussi, d'au moins 32 caracteres :
+c'est la cle HMAC qui pseudonymise l'identite d'un client anonyme avant toute
+ecriture — journal, compteur de debit, entree d'audit. Le compose en fournit une
+valeur de developpement ; en production elle vient du gestionnaire de secrets,
+et deux deploiements qui la partageraient rendraient leurs pseudonymes
+comparables. `backend/.env.example` documente les deux.
+
 ## Tests
 
 ```bash

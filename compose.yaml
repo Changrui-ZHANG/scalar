@@ -9,20 +9,36 @@ services:
       - --providers.docker=true
       - --providers.docker.exposedByDefault=false
       - --entryPoints.web.address=:80
+      # Tableau de bord sans authentification : developpement seulement, et le
+      # port n'est publie que sur la boucle locale (voir `ports`). Il n'a rien
+      # a faire dans le compose de production, qui reste a ecrire.
       - --api.dashboard=true
       - --api.insecure=true
       - --log.level=INFO
-      # Le flux d'evenements ne doit etre ni tamponne ni coupe avant la fin
-      # d'une execution sandbox.
-      - --entryPoints.web.transport.respondingTimeouts.readTimeout=0
-      - --entryPoints.web.transport.respondingTimeouts.writeTimeout=0
-      - --entryPoints.web.transport.respondingTimeouts.idleTimeout=0
+      # Explicite plutot qu'implicite : c'est cette ligne qui fait que Traefik
+      # ecrase le `X-Forwarded-For` fourni par un client non de confiance. Sans
+      # elle l'invariant AD-33 tiendrait sur un defaut de version, et le
+      # nombre de sauts declare dans `backend/src/contracts/proxy.ts` cesserait
+      # de decrire la realite sans qu'aucun test ne le voie.
+      - --entryPoints.web.forwardedHeaders.insecure=false
+      # Genereux, jamais infini : le flux d'evenements d'une execution sandbox
+      # ne doit pas etre coupe avant sa fin, mais desactiver les delais sur
+      # tout l'entrypoint retirerait aussi la protection contre les connexions
+      # tenues ouvertes sans rien envoyer. A reconcilier avec la duree maximale
+      # d'execution le jour ou l'epic 2 la declare.
+      - --entryPoints.web.transport.respondingTimeouts.readTimeout=600s
+      - --entryPoints.web.transport.respondingTimeouts.writeTimeout=600s
+      - --entryPoints.web.transport.respondingTimeouts.idleTimeout=600s
+    # Boucle locale seulement : ni le produit ni le tableau de bord n'ont a
+    # etre joignables depuis le reseau local pendant le developpement.
     ports:
-      - '8080:80'
-      - '8081:8080'
+      - '127.0.0.1:8080:80'
+      - '127.0.0.1:8081:8080'
     volumes:
       # Lecture seule : Traefik decouvre les services, il n'ecrit rien.
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - bordure
     depends_on:
       frontend:
         condition: service_started
@@ -37,6 +53,10 @@ services:
     environment:
       HOST: 0.0.0.0
       NUXT_PUBLIC_API_BASE: /api/v1
+      # Le rendu serveur n'emprunte pas le proxy : il lui faut une base absolue
+      # sur le reseau interne, et il propage lui-meme la session et l'identite
+      # de client que Traefik aurait portees.
+      NUXT_API_INTERNE: http://backend:3001/api/v1
     volumes:
       - ./frontend:/app/frontend
       - /app/frontend/node_modules
@@ -47,6 +67,8 @@ services:
       - traefik.http.routers.frontend.entryPoints=web
       - traefik.http.routers.frontend.priority=1
       - traefik.http.services.frontend.loadbalancer.server.port=3000
+    networks:
+      - bordure
 
   backend:
     build:
@@ -55,6 +77,10 @@ services:
     command: npm run dev --workspace backend
     environment:
       MONGODB_URI: mongodb://mongo:27017/scalar?replicaSet=rs0
+      # Developpement uniquement. En production la valeur vient du gestionnaire
+      # de secrets : deux deploiements qui la partageraient rendraient leurs
+      # pseudonymes comparables.
+      SECRET_PSEUDONYMISATION: developpement-pseudonymisation-local
     volumes:
       - ./backend:/app/backend
       - /app/backend/node_modules
@@ -68,6 +94,11 @@ services:
       - traefik.http.routers.backend.entryPoints=web
       - traefik.http.routers.backend.priority=10
       - traefik.http.services.backend.loadbalancer.server.port=3001
+    # Seul service des deux reseaux : joignable par le proxy et par le rendu
+    # serveur, et seul a atteindre la base.
+    networks:
+      - bordure
+      - donnees
 
   mongo:
     image: mongo:8.0.29
@@ -81,6 +112,8 @@ services:
       timeout: 5s
       retries: 30
       start_period: 10s
+    networks:
+      - donnees
 
   mongo-init:
     image: mongo:8.0.29
@@ -97,6 +130,18 @@ services:
         until mongosh --host mongo --quiet --eval 'db.adminCommand("ping")' > /dev/null 2>&1;
         do sleep 1; done;
         mongosh --host mongo --quiet /init.js
+    networks:
+      - donnees
+
+# Deux reseaux plutot qu'un. L'identite de client d'AD-33 se resout par
+# position dans la chaine de transfert : elle suppose que rien d'autre que le
+# proxy et le rendu serveur ne parle au backend. Le reseau par defaut unique
+# faisait de cette supposition une convention ; ces deux reseaux en font une
+# frontiere. A tenir quand le workspace `runner/`, qui executera du code non
+# fiable, rejoindra le compose : il n'a rien a faire sur `bordure`.
+networks:
+  bordure:
+  donnees:
 
 volumes:
   mongo-data:
