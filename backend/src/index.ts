@@ -19,6 +19,14 @@ function detailDe(erreur: unknown): string {
   return erreur instanceof Error ? masquerUri(erreur.message) : 'cause inconnue'
 }
 
+// Node termine deja en code non nul sur un rejet non capture, mais en
+// imprimant une trace brute et non masquee. Ce gestionnaire garantit un
+// journal structure et masque avant la sortie (AD-16).
+process.on('unhandledRejection', (raison: unknown) => {
+  journaliser('error', 'rejet de promesse non capture', { detail: detailDe(raison) })
+  process.exit(1)
+})
+
 const config = chargerConfig()
 const baseDonnees = new BaseDonneesService()
 
