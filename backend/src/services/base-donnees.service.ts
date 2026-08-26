@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import { INDEX_REQUIS, type IndexRequis } from '../config/index-requis.ts'
+import { INDEX_REQUIS, type IndexRequis } from '../contracts/index-requis.ts'
 import { enregistrerModeles } from '../models/index.ts'
 
 // Codes MongoDB traites explicitement.

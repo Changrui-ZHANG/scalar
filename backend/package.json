@@ -8,7 +8,7 @@
     "start": "node --env-file-if-exists=.env src/index.ts",
     "typecheck": "tsc --noEmit && npm run verify:runtime",
     "test": "vitest run",
-    "verify:runtime": "node --input-type=module -e \"await import('./src/app.ts'); await import('./src/models/index.ts'); await import('./src/config/index-requis.ts'); await import('./src/services/base-donnees.service.ts'); await import('./src/commands/creer-index.ts')\"",
+    "verify:runtime": "node --input-type=module -e \"await import('./src/app.ts'); await import('./src/models/index.ts'); await import('./src/contracts/index-requis.ts'); await import('./src/services/base-donnees.service.ts'); await import('./src/commands/creer-index.ts')\"",
     "db:index": "node --env-file-if-exists=.env src/commands/creer-index.ts"
   },
   "license": "UNLICENSED",
