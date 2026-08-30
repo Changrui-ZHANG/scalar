@@ -1,10 +1,11 @@
 import { createHmac } from 'node:crypto'
 import type { NextFunction, Request, RequestHandler, Response } from 'express'
 import {
+  EN_TETE_TRANSFERT,
   LONGUEUR_PSEUDONYME,
   SAUTS_PROXY_DE_CONFIANCE,
   type IdentiteClient,
-} from '../contracts/proxy.ts'
+} from '@scalar/shared/proxy.ts'
 
 // Hors de la requete : rien de ce qui est attache ici ne doit pouvoir partir
 // dans une serialisation de reponse par inadvertance, et l'identite reste
@@ -49,8 +50,10 @@ export function resoudreIdentiteClient(
 export function construireIdentiteClient(secret: string): RequestHandler {
   return (requete: Request, _reponse: Response, suivant: NextFunction): void => {
     // `requete.ips` depend de `trust proxy` et rendrait la borne implicite ;
-    // l'en-tete brut garde la decision dans la fonction qui la declare.
-    identites.set(requete, resoudreIdentiteClient(requete.headers['x-forwarded-for'], secret))
+    // l'en-tete brut garde la decision dans la fonction qui la declare. Son
+    // nom vient du contrat : le rendu serveur propage la meme constante, et
+    // deux orthographes divergentes feraient retomber tout appel en `interne`.
+    identites.set(requete, resoudreIdentiteClient(requete.headers[EN_TETE_TRANSFERT], secret))
     suivant()
   }
 }

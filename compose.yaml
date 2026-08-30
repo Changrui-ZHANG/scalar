@@ -18,8 +18,8 @@ services:
       # Explicite plutot qu'implicite : c'est cette ligne qui fait que Traefik
       # ecrase le `X-Forwarded-For` fourni par un client non de confiance. Sans
       # elle, la borne tiendrait sur un defaut de version, et le nombre de sauts
-      # declare dans `backend/src/contracts/proxy.ts` cesserait de decrire la
-      # realite sans qu'aucun test ne le voie.
+      # declare dans `@scalar/shared/proxy.ts` cesserait de decrire la realite sans
+      # qu'aucun test ne le voie.
       - --entryPoints.web.forwardedHeaders.insecure=false
       # Genereux, jamais infini : le flux d'evenements d'une execution sandbox
       # ne doit pas etre coupe avant sa fin, mais desactiver les delais sur
@@ -59,7 +59,15 @@ services:
       NUXT_API_INTERNE: http://backend:3001/api/v1
     volumes:
       - ./frontend:/app/frontend
+      # Les contrats sont montes comme l'espace qui les consomme : sans cette
+      # ligne, le conteneur servirait la copie figee dans l'image et une
+      # edition sur l'hote resterait invisible.
+      - ./shared:/app/shared
+      # Volumes anonymes : le montage de l'hote recouvrirait sinon les
+      # `node_modules` installes dans l'image, que l'hote n'a pas au meme
+      # endroit. Un par espace monte, `shared` compris.
       - /app/frontend/node_modules
+      - /app/shared/node_modules
       - /app/node_modules
     labels:
       - traefik.enable=true
@@ -83,7 +91,15 @@ services:
       SECRET_PSEUDONYMISATION: developpement-pseudonymisation-local
     volumes:
       - ./backend:/app/backend
+      # Les contrats sont montes comme l'espace qui les consomme : sans cette
+      # ligne, le conteneur servirait la copie figee dans l'image et une
+      # edition sur l'hote resterait invisible.
+      - ./shared:/app/shared
+      # Volumes anonymes : le montage de l'hote recouvrirait sinon les
+      # `node_modules` installes dans l'image, que l'hote n'a pas au meme
+      # endroit. Un par espace monte, `shared` compris.
       - /app/backend/node_modules
+      - /app/shared/node_modules
       - /app/node_modules
     depends_on:
       mongo:

@@ -33,6 +33,12 @@ verifie au demarrage que les index declares existent et refuse de servir sinon,
 en sortant en code non nul et en nommant l'index manquant. Sur un volume neuf,
 sauter `db:index` donne donc un backend qui redemarre en boucle.
 
+Sur une pile deja lancee avant l'ajout de l'espace `shared/`, ajouter
+`--renew-anon-volumes` a la derniere commande. Le `node_modules` des conteneurs
+est un volume anonyme, que Docker Compose conserve d'une recreation a l'autre :
+un volume date d'avant ne porte pas le lien vers le nouvel espace, et le rendu
+serveur echoue alors sur `Cannot find package '@scalar/shared'`.
+
 `MONGODB_URI` est requise et doit commencer par `mongodb://` ou `mongodb+srv://` ;
 le compose la fournit au service `backend`. Aucune valeur par defaut.
 
@@ -50,6 +56,21 @@ et deux deploiements qui la partageraient rendraient leurs pseudonymes
 comparables. `backend/.env.example` documente les deux.
 
 ## Tests
+
+Les trois verifications tournent sur les trois espaces depuis la racine, et ce
+sont exactement celles que la CI lance :
+
+```bash
+npm run lint        # eslint ; refuse au front de redeclarer une reponse d'API
+npm run typecheck   # types des trois espaces, plus chargement du graphe par Node
+npm run test        # vitest
+```
+
+`.github/workflows/verification.yml` les rejoue sur chaque push vers `master` et
+chaque pull request. Il ne monte aucune base : les cas qui en exigent une s'y
+sautent, comme en local.
+
+Un espace a la fois, quand seul celui-la a bouge :
 
 ```bash
 npm run test --workspace backend       # sans base : les cas qui en exigent une sont sautes

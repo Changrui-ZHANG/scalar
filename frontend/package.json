@@ -9,12 +9,14 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "test": "vitest run",
+    "typecheck": "nuxt typecheck",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write ."
   },
   "dependencies": {
     "@pinia/nuxt": "^1.0.2",
+    "@scalar/shared": "*",
     "@tailwindcss/vite": "^4.3.3",
     "nuxt": "^4.5.2",
     "pinia": "^4.0.3",
@@ -30,6 +32,8 @@
     "happy-dom": "^20.11.6",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
-    "vitest": "^4.1.11"
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.11",
+    "vue-tsc": "^3.3.11"
   }
 }

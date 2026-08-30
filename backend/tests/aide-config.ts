@@ -1,4 +1,4 @@
-import { LONGUEUR_MINIMALE_SECRET } from '../src/contracts/proxy.ts'
+import { LONGUEUR_MINIMALE_SECRET } from '@scalar/shared/proxy.ts'
 import type { Config } from '../src/config/index.ts'
 
 export const SECRET_DE_TEST = 's'.repeat(LONGUEUR_MINIMALE_SECRET)

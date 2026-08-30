@@ -1,6 +1,6 @@
 import { config as chargerFichierEnv } from 'dotenv'
 import * as v from 'valibot'
-import { estSecretDeRemplissage, LONGUEUR_MINIMALE_SECRET } from '../contracts/proxy.ts'
+import { estSecretDeRemplissage, LONGUEUR_MINIMALE_SECRET } from '@scalar/shared/proxy.ts'
 
 // Seul endroit du backend qui lit process.env — y compris pour savoir d'ou le
 // peupler. Le chargement du fichier vit donc ici et nulle part ailleurs :

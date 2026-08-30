@@ -1,7 +1,7 @@
 import type { Request, RequestHandler } from 'express'
 import * as v from 'valibot'
-import { ErreurApi, MAX_VIOLATIONS, MESSAGES_VIOLATION } from '../contracts/erreurs.ts'
-import type { NatureViolation, Violation } from '../contracts/erreurs.ts'
+import { ErreurApi, MAX_VIOLATIONS, MESSAGES_VIOLATION } from '@scalar/shared/erreurs.ts'
+import type { NatureViolation, Violation } from '@scalar/shared/erreurs.ts'
 
 export type Emplacement = 'corps' | 'requete' | 'chemin'
 

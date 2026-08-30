@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express'
-import { CODES_ERREUR, ErreurApi } from '../contracts/erreurs.ts'
-import type { CodeErreur, CorpsErreur } from '../contracts/erreurs.ts'
+import { CODES_ERREUR, ErreurApi } from '@scalar/shared/erreurs.ts'
+import type { CodeErreur, CorpsErreur } from '@scalar/shared/erreurs.ts'
 
 export type { CorpsErreur }
 
@@ -64,7 +64,7 @@ function detailInterne(erreur: unknown): string {
 }
 
 // Middleware terminal : toutes les erreurs de l'API passent par ici, et le
-// corps servi est integralement construit depuis le catalogue de `contracts` —
+// corps servi est integralement construit depuis le catalogue de `shared` —
 // jamais depuis l'exception, dont ni le message ni la trace ne sortent.
 export function gestionErreur(
   erreur: unknown,

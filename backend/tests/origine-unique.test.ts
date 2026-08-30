@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import request from 'supertest'
 import express, { type Express } from 'express'
 import { construireApp } from '../src/app.ts'
-import { SAUTS_PROXY_DE_CONFIANCE } from '../src/contracts/proxy.ts'
+import { SAUTS_PROXY_DE_CONFIANCE } from '@scalar/shared/proxy.ts'
 import {
   construireIdentiteClient,
   lireIdentiteClient,

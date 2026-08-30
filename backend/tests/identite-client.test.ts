@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   LONGUEUR_PSEUDONYME,
   SAUTS_PROXY_DE_CONFIANCE,
-} from '../src/contracts/proxy.ts'
+} from '@scalar/shared/proxy.ts'
 import { resoudreIdentiteClient } from '../src/middlewares/identite-client.middleware.ts'
 
 const SECRET = 'secret-de-test-de-trente-deux-car'
 const AUTRE_SECRET = 'autre-secret-de-trente-deux-carac'
 
 describe('nombre de sauts de proxy de confiance', () => {
-  it('est declare dans contracts, pas devine a la lecture', () => {
+  it('est declare dans shared, pas devine a la lecture', () => {
     expect(SAUTS_PROXY_DE_CONFIANCE).toBeGreaterThanOrEqual(1)
     expect(Number.isInteger(SAUTS_PROXY_DE_CONFIANCE)).toBe(true)
   })

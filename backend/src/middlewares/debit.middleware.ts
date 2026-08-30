@@ -1,9 +1,9 @@
 import type { RequestHandler } from 'express'
 import { rateLimit } from 'express-rate-limit'
 import type { AugmentedRequest } from 'express-rate-limit'
-import { ErreurApi } from '../contracts/erreurs.ts'
-import { PLAFOND_DEFAUT } from '../contracts/limites.ts'
-import type { Plafond } from '../contracts/limites.ts'
+import { ErreurApi } from '@scalar/shared/erreurs.ts'
+import { PLAFOND_DEFAUT } from '@scalar/shared/limites.ts'
+import type { Plafond } from '@scalar/shared/limites.ts'
 import { lireIdentiteClient } from './identite-client.middleware.ts'
 
 // Seul middleware de limitation de debit du backend, premier maillon de

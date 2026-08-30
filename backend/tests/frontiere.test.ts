@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest'
 import express, { type Express } from 'express'
 import request from 'supertest'
 import { construireApp } from '../src/app.ts'
-import { SAUTS_PROXY_DE_CONFIANCE } from '../src/contracts/proxy.ts'
+import { EN_TETE_TRANSFERT, SAUTS_PROXY_DE_CONFIANCE } from '@scalar/shared/proxy.ts'
 import { construireIdentiteClient } from '../src/middlewares/identite-client.middleware.ts'
 import { assemblerChaine, verifierOrdreChaine } from '../src/middlewares/chaine.ts'
 import { construireDebit } from '../src/middlewares/debit.middleware.ts'
 import { gestionErreur, routeIntrouvable } from '../src/middlewares/erreur.middleware.ts'
-import { PLAFOND_DEFAUT, TAILLE_MAX_CORPS } from '../src/contracts/limites.ts'
+import { PLAFOND_DEFAUT, TAILLE_MAX_CORPS } from '@scalar/shared/limites.ts'
 import { configDeTest, SECRET_DE_TEST } from './aide-config.ts'
 
 // Une adresse dans la chaine de transfert : sans elle l'identite est `interne`
@@ -31,10 +31,13 @@ function appPlafonnee(maximum: number): Express {
 }
 
 describe('plafond de debit', () => {
+  // L'en-tete est nommee par le contrat, pas ecrite ici : ce cas echoue si le
+  // middleware cesse de lire celle que le contrat declare, ce qu'un litteral
+  // recopie des deux cotes laisserait passer.
   it('laisse passer une requete sous le plafond', async () => {
     const reponse = await request(construireApp(configDeTest()))
       .get('/api/v1/health')
-      .set('X-Forwarded-For', CLIENT_PUBLIC)
+      .set(EN_TETE_TRANSFERT, CLIENT_PUBLIC)
 
     expect(reponse.status).toBe(200)
     expect(reponse.body.statut).toBe('ok')

@@ -1,7 +1,7 @@
 import { Schema } from 'mongoose'
 
 // Le vocabulaire d'entite est en anglais, au singulier, et se declare dans
-// `contracts/collections.ts`. Les identifiants internes de ce depot restent en
+// `shared/collections.ts`. Les identifiants internes de ce depot restent en
 // francais ; seul ce qui s'ecrit en base est contraint, parce que seul cela
 // coute une migration.
 export const NOM_MODELE_USER = 'User'

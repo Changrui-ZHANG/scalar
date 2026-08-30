@@ -1,0 +1,57 @@
+# Ce que ce workflow prouve : que le depot passe le lint, le typecheck et la
+# suite de tests **sans base de donnees**. Les douze cas backend qui exigent un
+# MongoDB reel se sautent ici, faute de `MONGODB_URI_TEST` — ils ne tournent
+# que dans le reseau du compose, et les faire tourner en CI reste a faire.
+# Trois etapes, pas une de plus : l'audit de dependances appartient a la
+# story 9.6.
+name: Verification
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+# Lecture seule : ce workflow ne publie rien et n'ecrit sur aucune ressource.
+permissions:
+  contents: read
+
+# Une PR poussee trois fois de suite n'a pas besoin de trois verifications :
+# seule la derniere dit quelque chose, les precedentes sont annulees.
+concurrency:
+  group: verification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    # Genereux au regard des trois minutes que ces etapes prennent, et borne :
+    # une execution bloquee doit echouer, pas occuper un agent six heures.
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # La version vient de `engines.node` du package.json racine : un seul
+      # endroit la declare, et la CI ne peut pas deriver de la machine locale.
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: package.json
+          cache: npm
+
+      # `npm ci` et non `npm install` : la CI installe ce que le verrou dit,
+      # sinon elle verifie un arbre de dependances que personne n'a valide.
+      # Le postinstall du frontend (`nuxt prepare`) genere le
+      # `.nuxt/eslint.config.mjs` dont depend l'etape de lint.
+      - run: npm ci
+
+      # Le lint d'abord : c'est lui qui porte le refus d'une interface de
+      # reponse d'API cote front, et une violation doit faire echouer ce
+      # workflow.
+      - run: npm run lint
+
+      # Le typecheck couvre les trois espaces, front compris depuis que
+      # `nuxt typecheck` existe : c'est lui, et non le lint, qui rend visible
+      # une divergence entre un contrat et ce que le front en fait.
+      - run: npm run typecheck
+
+      - run: npm run test

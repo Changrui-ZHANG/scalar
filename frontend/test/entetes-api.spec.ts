@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { entetesAPropager } from '../app/utils/entetes-api'
+import { EN_TETE_TRANSFERT } from '@scalar/shared/proxy.ts'
+import { A_PROPAGER, entetesAPropager } from '../app/utils/entetes-api'
 
 describe('en-tetes propages par le rendu serveur', () => {
   it('propage le cookie, sans quoi une page rendue au serveur perd la session', () => {
@@ -12,6 +13,13 @@ describe('en-tetes propages par le rendu serveur', () => {
     const entetes = entetesAPropager({ 'x-forwarded-for': '203.0.113.7' })
 
     expect(entetes['x-forwarded-for']).toBe('203.0.113.7')
+  })
+
+  // Le cas precedent construit son entree lui-meme et passerait donc encore si
+  // la liste fermee cessait de nommer l'en-tete du contrat. Celui-ci regarde la
+  // liste, seul endroit ou ce couplage existe reellement.
+  it('nomme cette chaine depuis le contrat partage, pas depuis une chaine recopiee', () => {
+    expect(A_PROPAGER).toContain(EN_TETE_TRANSFERT)
   })
 
   it('ne propage rien d autre : un `host` recopie casserait le routage', () => {

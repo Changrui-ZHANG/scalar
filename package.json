@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "frontend",
-    "backend"
+    "backend",
+    "shared"
   ],
   "engines": {
     "node": "^24.11.0"

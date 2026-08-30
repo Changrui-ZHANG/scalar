@@ -1,6 +1,6 @@
 import type { RequestHandler } from 'express'
-import { ORDRE_CHAINE } from '../contracts/limites.ts'
-import type { MaillonChaine } from '../contracts/limites.ts'
+import { ORDRE_CHAINE } from '@scalar/shared/limites.ts'
+import type { MaillonChaine } from '@scalar/shared/limites.ts'
 
 export interface Maillon {
   readonly nom: MaillonChaine

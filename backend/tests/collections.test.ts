@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import mongoose from 'mongoose'
-import { COLLECTIONS, NOMS_COLLECTIONS } from '../src/contracts/collections.ts'
+import { COLLECTIONS, NOMS_COLLECTIONS } from '@scalar/shared/collections.ts'
 import { enregistrerModeles } from '../src/models/index.ts'
 
 beforeAll(() => {

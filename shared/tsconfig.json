@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2023"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+
+    // Node retire les types sans les compiler : `enum`, proprietes de
+    // constructeur et decorateurs passeraient le typecheck et seraient
+    // rejetes au demarrage. Le `verify:runtime` du backend n'atteint ces
+    // fichiers que parce qu'il les importe un par un ; un contrat que seul le
+    // front consommerait y echapperait. Cette option, elle, ne depend de
+    // personne.
+    "erasableSyntaxOnly": true,
+
+    "skipLibCheck": true,
+    "noEmit": true,
+
+    // Vide a dessein : un contrat decrit une forme echangee entre deux
+    // executions, il ne parle ni a Node ni au DOM. Le jour ou l'un d'eux a
+    // besoin d'un module natif, ce n'est pas cette liste qu'il faut ouvrir
+    // sans y penser — c'est le contrat qu'il faut relire, et `@types/node` en
+    // dependance de developpement de cet espace si la reponse est oui.
+    "types": []
+  },
+  "include": ["."]
+}

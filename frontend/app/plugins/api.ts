@@ -1,4 +1,4 @@
-import { entetesAPropager } from '~/utils/entetes-api'
+import { A_PROPAGER, entetesAPropager } from '~/utils/entetes-api'
 
 // Service unique d'appel a l'API. Aucun composant ne construit d'URL d'API ni
 // ne rappelle ces options.
@@ -12,7 +12,7 @@ export default defineNuxtPlugin(() => {
   const api = $fetch.create({
     baseURL: import.meta.server ? config.apiInterne : config.public.apiBase,
     credentials: 'include',
-    headers: entetesAPropager(useRequestHeaders(['cookie', 'x-forwarded-for'])),
+    headers: entetesAPropager(useRequestHeaders([...A_PROPAGER])),
   })
 
   return { provide: { api } }
