@@ -6,11 +6,11 @@ import { PLAFOND_DEFAUT } from '../contracts/limites.ts'
 import type { Plafond } from '../contracts/limites.ts'
 import { lireIdentiteClient } from './identite-client.middleware.ts'
 
-// Seul middleware de limitation de debit du backend (AD-25), premier maillon de
+// Seul middleware de limitation de debit du backend, premier maillon de
 // la chaine — donc avant toute session, et avant le parseur de corps : un
 // appelant deja au-dela de son plafond ne fait pas lire son corps.
 //
-// La cle est le pseudonyme d'AD-33, jamais une adresse : le compteur est un
+// La cle est un pseudonyme, jamais une adresse : le compteur est un
 // ecrit, et une adresse en clair n'a pas le droit d'y figurer.
 export function construireDebit(plafond: Plafond = PLAFOND_DEFAUT): RequestHandler {
   return rateLimit({
@@ -20,7 +20,7 @@ export function construireDebit(plafond: Plafond = PLAFOND_DEFAUT): RequestHandl
     legacyHeaders: false,
 
     // Un appel qui n'a traverse aucun proxy de confiance est interne et
-    // echappe aux plafonds anonymes (AD-33). Sans cette exemption, tout le
+    // echappe aux plafonds anonymes. Sans cette exemption, tout le
     // rendu serveur partagerait un seul seau.
     skip: (requete) => lireIdentiteClient(requete).nature === 'interne',
 

@@ -64,7 +64,7 @@ function enViolations(problemes: readonly v.BaseIssue<unknown>[]): readonly Viol
 
 // Le resultat n'est pas reecrit sur la requete : en Express 5 `query` est un
 // accesseur, et surtout un service ne doit pouvoir lire que la sortie du schema
-// — jamais l'objet brut reste a cote (AD-7). D'ou le couple middleware/lecteur :
+// — jamais l'objet brut reste a cote. D'ou le couple middleware/lecteur :
 // le seul chemin vers la donnee validee est type par le schema.
 export function valider<S extends v.GenericSchema>(
   emplacement: Emplacement,

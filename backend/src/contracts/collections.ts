@@ -1,14 +1,12 @@
-// Table normative des collections, reprise du §Propriete des collections de
-// l'epine. AD-2 s'y adosse : une collection absente d'ici n'existe pas, et un
-// seul module en detient l'ecriture.
+// Table normative des collections : une collection absente d'ici n'existe
+// pas, et un seul module en detient l'ecriture.
 //
-// Le vocabulaire est celui du Glossaire du PRD : anglais, au singulier. C'est
-// la seule partie du code que cette contrainte touche, parce que c'est la
-// seule qui s'ecrive en base — un nom de champ persiste ne se renomme pas
-// sans migration.
+// Le vocabulaire est en anglais, au singulier. C'est la seule partie du code
+// que cette contrainte touche, parce que c'est la seule qui s'ecrive en base —
+// un nom de champ persiste ne se renomme pas sans migration.
 //
-// L'epine annonce cette cloture testable ; `tests/collections.test.ts` la
-// verifie. Ajouter un modele sans l'ajouter ici fait echouer ce test.
+// `tests/collections.test.ts` verifie cette cloture : enregistrer un modele
+// sans l'ajouter ici fait echouer ce test.
 export interface CollectionDeclaree {
   readonly nom: string
   readonly module: string

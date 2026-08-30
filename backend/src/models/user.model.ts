@@ -1,9 +1,9 @@
 import { Schema } from 'mongoose'
 
-// Le vocabulaire d'entite suit le Glossaire du PRD : anglais, au singulier
-// pour le modele (§Propriete des collections de l'epine). Les identifiants
-// internes de ce depot restent en francais ; seul ce qui s'ecrit en base est
-// contraint, parce que seul cela coute une migration.
+// Le vocabulaire d'entite est en anglais, au singulier, et se declare dans
+// `contracts/collections.ts`. Les identifiants internes de ce depot restent en
+// francais ; seul ce qui s'ecrit en base est contraint, parce que seul cela
+// coute une migration.
 export const NOM_MODELE_USER = 'User'
 export const COLLECTION_USERS = 'users'
 export const VERSION_SCHEMA_USER = 1

@@ -35,7 +35,7 @@ const schema = v.object({
     v.nonEmpty(),
     v.regex(/^mongodb(\+srv)?:\/\//, 'doit commencer par mongodb:// ou mongodb+srv://'),
   ),
-  // Secret de pseudonymisation de l'identite de client (AD-33). Sans valeur
+  // Secret de pseudonymisation de l'identite de client. Sans valeur
   // par defaut : un secret partage entre deux deploiements rendrait les
   // pseudonymes comparables d'un environnement a l'autre.
   SECRET_PSEUDONYMISATION: v.pipe(

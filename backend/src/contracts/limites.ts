@@ -1,4 +1,4 @@
-// Toute limite declaree du backend vit ici (AD-15). Une valeur en dur ailleurs
+// Toute limite declaree du backend vit ici. Une valeur en dur ailleurs
 // dans le code est une violation, pas un raccourci.
 //
 // Une exception assumee : le nombre de sauts de proxy de confiance est aussi
@@ -10,9 +10,9 @@
 // corps abusif soit refuse avant d'etre mis en memoire.
 export const TAILLE_MAX_CORPS = '128kb'
 
-// Chaine d'autorisation imposee (AD-5). L'ordre est la donnee ; `chaine.ts`
+// Chaine d'autorisation imposee. L'ordre est la donnee ; `chaine.ts`
 // verifie au demarrage que ce qui est monte en est une sous-sequence. Seul
-// `debit` existe aujourd'hui, les trois autres arrivent aux stories 1.7 a 1.9.
+// `debit` existe aujourd'hui ; les trois autres viendront avec l'authentification.
 export const ORDRE_CHAINE = ['debit', 'session', 'etatCompte', 'role'] as const
 
 export type MaillonChaine = (typeof ORDRE_CHAINE)[number]
@@ -22,8 +22,8 @@ export interface Plafond {
   readonly maximum: number
 }
 
-// Valeurs de depart, reglables : l'epine differe les chiffres, pas leur
-// emplacement (AD-25).
+// Valeurs de depart, reglables : ce qui est fige, c'est l'endroit ou elles se
+// declarent, jamais le chiffre lui-meme.
 //
 // Portee du compteur, a declarer parce qu'elle est une limite : le magasin est
 // celui d'`express-rate-limit` par defaut, donc **en memoire de processus**.
@@ -32,11 +32,11 @@ export interface Plafond {
 // n'execute qu'une instance ; le jour ou il y en a deux, c'est un magasin
 // partage qu'il faut, pas un chiffre plus bas.
 
-// S'applique a toute route, `/health` compris — AD-25 n'en exempte aucune.
+// S'applique a toute route, `/health` compris : aucune n'en est exemptee.
 // Large a dessein : une sonde d'orchestrateur ne doit jamais le franchir.
 export const PLAFOND_DEFAUT: Plafond = { fenetreMs: 60_000, maximum: 300 }
 
-// Reserve aux routes que AD-25 nomme : connexion, inscription, demande de
+// Reserve aux routes sensibles : connexion, inscription, demande de
 // reinitialisation, verification publique de Certification, catalogue anonyme,
 // creation de Soumission. Aucune n'existe encore ; la valeur est posee ici pour
 // qu'elles la prennent sans en inventer une.

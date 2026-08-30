@@ -1,9 +1,10 @@
 // Depositaire unique des reponses non-2xx. Un code absent de ce catalogue
 // n'existe pas : le middleware terminal ne sait servir que ce qui est declare
 // ici, et c'est ce qui empeche une route d'inventer sa propre forme d'erreur
-// (AD-6, AD-15). Les `message` sont servis tels quels : ils vouvoient, disent
-// ce qui s'est passe avant quoi faire, et ne reprennent aucune formule bannie
-// par EXPERIENCE.md (UX-DR328, UX-DR330, UX-DR336).
+// Les `message` sont servis tels quels : ils vouvoient, disent
+// ce qui s'est passe avant quoi faire, sans emoji ni point d'exclamation, et
+// ne reprennent aucune formule creuse du type « une erreur est survenue » ni
+// aucun code HTTP nu.
 
 export interface Violation {
   readonly chemin: string
@@ -11,7 +12,7 @@ export interface Violation {
 }
 
 // La forme du corps servi est un contrat, pas un detail du middleware qui
-// l'ecrit : le front la consommera des la story 1.7. Elle vit donc ici (AD-15).
+// l'ecrit : le front la consommera. Elle vit donc ici, avec le reste du contrat.
 export interface CorpsErreur {
   readonly code: CodeErreur
   readonly message: string
@@ -72,7 +73,7 @@ export const CODES_ERREUR = {
 
 export type CodeErreur = keyof typeof CODES_ERREUR
 
-// La forme de `details` est typee **par** code (AD-6). Un code absent de cette
+// La forme de `details` est typee **par** code. Un code absent de cette
 // carte n'en porte pas, et le type ci-dessous refuse alors d'en recevoir : y
 // ajouter une entree est un changement de contrat, pas un detail d'appel.
 export interface DetailsParCode {

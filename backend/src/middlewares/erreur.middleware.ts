@@ -6,7 +6,7 @@ export type { CorpsErreur }
 
 // Aucun statut n'est ecrit ici : la route introuvable est une erreur comme une
 // autre et passe par le terminal, sans quoi « un seul middleware produit toutes
-// les erreurs » serait faux des la premiere route (AD-6).
+// les erreurs » serait faux des la premiere route.
 export function routeIntrouvable(
   _requete: Request,
   _reponse: Response,

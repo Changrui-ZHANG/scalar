@@ -7,9 +7,9 @@ beforeAll(() => {
   enregistrerModeles()
 })
 
-// L'epine annonce cette cloture testable ; elle ne l'etait pas. Le defaut
+// Cette cloture etait annoncee testable depuis le debut sans l'etre. Le defaut
 // qu'elle attrape est reel : le modele s'est appele `Utilisateur` sur la
-// collection `utilisateurs` pendant quatre stories, sans que rien ne le dise.
+// collection `utilisateurs` pendant des semaines, sans que rien ne le dise.
 describe('cloture des collections', () => {
   it('n enregistre aucun modele absent de la table normative', () => {
     const enregistres = Object.keys(mongoose.models)

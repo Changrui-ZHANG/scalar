@@ -1,7 +1,7 @@
 import { entetesAPropager } from '~/utils/entetes-api'
 
-// Service unique d'appel a l'API (Rules.md 6.4, 6.6). Aucun composant ne
-// construit d'URL d'API ni ne rappelle ces options.
+// Service unique d'appel a l'API. Aucun composant ne construit d'URL d'API ni
+// ne rappelle ces options.
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
 

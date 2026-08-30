@@ -8,10 +8,10 @@ export interface Maillon {
 }
 
 // Sous-sequence, pas egalite : `session`, `etatCompte` et `role` arrivent aux
-// stories 1.7 a 1.9, et une chaine incomplete reste valide. Ce qui ne l'est pas,
+// avec l'authentification, et une chaine incomplete reste valide. Ce qui ne l'est pas,
 // c'est un maillon avant celui qui doit le preceder — un controle de role place
 // avant la session lirait un principal absent et, faute de refus par defaut,
-// accorderait l'acces (AD-5).
+// accorderait l'acces.
 export function verifierOrdreChaine(noms: readonly MaillonChaine[]): void {
   let curseur = 0
 
