@@ -1,9 +1,5 @@
 import mongoose, { type Model, type Schema } from 'mongoose'
-import {
-  NOM_MODELE_UTILISATEUR,
-  schemaUtilisateur,
-  type Utilisateur,
-} from './utilisateur.model.ts'
+import { NOM_MODELE_USER, schemaUser, type User } from './user.model.ts'
 
 interface Declaration {
   readonly nom: string
@@ -11,7 +7,7 @@ interface Declaration {
 }
 
 const DECLARATIONS: readonly Declaration[] = [
-  { nom: NOM_MODELE_UTILISATEUR, schema: schemaUtilisateur },
+  { nom: NOM_MODELE_USER, schema: schemaUser },
 ]
 
 // Un modele est enregistre une seule fois, ici. Un service le recoit, il ne
@@ -35,8 +31,8 @@ export function enregistrerModeles(): void {
   }
 }
 
-export function modeleUtilisateur(): Model<Utilisateur> {
+export function modeleUser(): Model<User> {
   enregistrerModeles()
 
-  return mongoose.model<Utilisateur>(NOM_MODELE_UTILISATEUR)
+  return mongoose.model<User>(NOM_MODELE_USER)
 }

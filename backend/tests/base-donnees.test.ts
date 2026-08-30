@@ -8,8 +8,8 @@ import { SECRET_DE_TEST } from './aide-config.ts'
 import { chargerConfig } from '../src/config/index.ts'
 import { INDEX_REQUIS } from '../src/contracts/index-requis.ts'
 import { BaseDonneesService, masquerUri } from '../src/services/base-donnees.service.ts'
-import { enregistrerModeles, modeleUtilisateur } from '../src/models/index.ts'
-import { normaliserAdresse } from '../src/models/utilisateur.model.ts'
+import { enregistrerModeles, modeleUser } from '../src/models/index.ts'
+import { normaliserEmail } from '../src/models/user.model.ts'
 
 const URI_TEST = process.env.MONGODB_URI_TEST
 const RACINE = fileURLToPath(new URL('..', import.meta.url))
@@ -230,29 +230,29 @@ describe('masquage de la chaine de connexion', () => {
 
 describe('normalisation de la cle d unicite', () => {
   it('rend identiques deux adresses de casse et d espaces differents', () => {
-    expect(normaliserAdresse('Alice@Ex.COM ')).toBe(normaliserAdresse('alice@ex.com'))
+    expect(normaliserEmail('Alice@Ex.COM ')).toBe(normaliserEmail('alice@ex.com'))
   })
 
   it('rend identiques deux formes Unicode canoniquement equivalentes', () => {
-    expect(normaliserAdresse('ａlice@ex.com')).toBe(normaliserAdresse('alice@ex.com'))
+    expect(normaliserEmail('ａlice@ex.com')).toBe(normaliserEmail('alice@ex.com'))
   })
 
   it('retire les caracteres de largeur nulle', () => {
-    expect(normaliserAdresse('alice​@ex.com')).toBe('alice@ex.com')
+    expect(normaliserEmail('alice​@ex.com')).toBe('alice@ex.com')
   })
 
   // Le hook relie la saisie a l'index unique : c'est le seul lien entre les
   // deux, et il se verifie sans connexion — la validation mongoose est locale.
   it('remplit le champ indexe a la validation du document', async () => {
-    const document = new (modeleUtilisateur())({ nomAffiche: 'Alice', adresse: 'Alice@Ex.COM ' })
+    const document = new (modeleUser())({ displayName: 'Alice', email: 'Alice@Ex.COM ' })
 
     await document.validate()
 
-    expect(document.adresseNormalisee).toBe('alice@ex.com')
+    expect(document.normalizedEmail).toBe('alice@ex.com')
   })
 
   it('laisse la validation parler quand l adresse manque, sans lever de TypeError', async () => {
-    const document = new (modeleUtilisateur())({ nomAffiche: 'Alice' })
+    const document = new (modeleUser())({ displayName: 'Alice' })
 
     await expect(document.validate()).rejects.toThrow(mongoose.Error.ValidationError)
   })
@@ -261,21 +261,21 @@ describe('normalisation de la cle d unicite', () => {
 describe('registre de modeles', () => {
   it('reste sans effet quand il est rejoue, et ne garde qu un modele', () => {
     enregistrerModeles()
-    const premier = modeleUtilisateur()
+    const premier = modeleUser()
 
     expect(() => enregistrerModeles()).not.toThrow()
-    expect(modeleUtilisateur()).toBe(premier)
-    expect(Object.keys(mongoose.models).filter((nom) => nom === 'Utilisateur')).toHaveLength(1)
+    expect(modeleUser()).toBe(premier)
+    expect(Object.keys(mongoose.models).filter((nom) => nom === 'User')).toHaveLength(1)
   })
 
   it('refuse un nom deja pris par un autre schema', () => {
-    mongoose.deleteModel('Utilisateur')
-    mongoose.model('Utilisateur', new mongoose.Schema({ autre: String }))
+    mongoose.deleteModel('User')
+    mongoose.model('User', new mongoose.Schema({ autre: String }))
 
     try {
       expect(() => enregistrerModeles()).toThrow('deja enregistre avec un autre schema')
     } finally {
-      mongoose.deleteModel('Utilisateur')
+      mongoose.deleteModel('User')
       enregistrerModeles()
     }
   })
@@ -400,7 +400,7 @@ describe.skipIf(!URI_TEST)('index requis, sur une base reelle', () => {
   it('signale un index du bon nom construit sur d autres cles', async () => {
     await mongoose.connection.db
       ?.collection(collection)
-      .createIndex({ nomAffiche: 1 }, { name: nomIndex, unique: true })
+      .createIndex({ displayName: 1 }, { name: nomIndex, unique: true })
 
     expect((await service.verifierIndex()).join(' ')).toContain('cles inattendues')
   })
@@ -425,7 +425,7 @@ describe.skipIf(!URI_TEST)('index requis, sur une base reelle', () => {
   it('nomme le conflit quand un index du meme nom existe avec d autres options', async () => {
     await mongoose.connection.db
       ?.collection(collection)
-      .createIndex({ nomAffiche: 1 }, { name: nomIndex })
+      .createIndex({ displayName: 1 }, { name: nomIndex })
 
     await expect(service.creerIndex()).rejects.toThrow(/supprimez-le puis rejouez/)
   })
@@ -433,26 +433,26 @@ describe.skipIf(!URI_TEST)('index requis, sur une base reelle', () => {
   it('ne garde qu un document quand deux insertions concurrentes portent la meme adresse', async () => {
     await service.creerIndex()
 
-    const modele = modeleUtilisateur()
+    const modele = modeleUser()
     const resultats = await Promise.allSettled([
-      modele.create({ nomAffiche: 'Alice', adresse: 'alice@ex.com' }),
-      modele.create({ nomAffiche: 'Alice bis', adresse: 'alice@ex.com' }),
+      modele.create({ displayName: 'Alice', email: 'alice@ex.com' }),
+      modele.create({ displayName: 'Alice bis', email: 'alice@ex.com' }),
     ])
 
     const rejets = resultats.filter((resultat) => resultat.status === 'rejected')
 
     expect(rejets).toHaveLength(1)
     expect(String((rejets[0] as PromiseRejectedResult).reason)).toContain('11000')
-    expect(await modele.countDocuments({ adresseNormalisee: 'alice@ex.com' })).toBe(1)
+    expect(await modele.countDocuments({ normalizedEmail: 'alice@ex.com' })).toBe(1)
   })
 
   it('traite deux casses differentes comme une seule adresse', async () => {
     await service.creerIndex()
 
-    const modele = modeleUtilisateur()
+    const modele = modeleUser()
 
-    await modele.create({ nomAffiche: 'Alice', adresse: 'Alice@Ex.COM ' })
-    await expect(modele.create({ nomAffiche: 'Autre', adresse: 'alice@ex.com' })).rejects.toThrow()
+    await modele.create({ displayName: 'Alice', email: 'Alice@Ex.COM ' })
+    await expect(modele.create({ displayName: 'Autre', email: 'alice@ex.com' })).rejects.toThrow()
 
     expect(await modele.countDocuments({})).toBe(1)
   })
@@ -462,12 +462,12 @@ describe.skipIf(!URI_TEST)('index requis, sur une base reelle', () => {
   it('renormalise la cle indexee quand l adresse change par mise a jour', async () => {
     await service.creerIndex()
 
-    const modele = modeleUtilisateur()
-    const cree = await modele.create({ nomAffiche: 'Alice', adresse: 'alice@ex.com' })
+    const modele = modeleUser()
+    const cree = await modele.create({ displayName: 'Alice', email: 'alice@ex.com' })
 
-    await modele.updateOne({ _id: cree._id }, { $set: { adresse: 'Bob@Ex.COM ' } })
+    await modele.updateOne({ _id: cree._id }, { $set: { email: 'Bob@Ex.COM ' } })
 
-    expect((await modele.findById(cree._id))?.adresseNormalisee).toBe('bob@ex.com')
+    expect((await modele.findById(cree._id))?.normalizedEmail).toBe('bob@ex.com')
   })
 
   it(

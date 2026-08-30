@@ -10,9 +10,9 @@ export interface IndexRequis {
 
 export const INDEX_REQUIS: readonly IndexRequis[] = [
   {
-    collection: 'utilisateurs',
-    nom: 'adresseNormalisee_unique',
-    cles: { adresseNormalisee: 1 },
+    collection: 'users',
+    nom: 'normalizedEmail_unique',
+    cles: { normalizedEmail: 1 },
     unique: true,
   },
 ]
