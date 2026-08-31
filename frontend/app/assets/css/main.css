@@ -15,8 +15,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;600;700&display=swap');
 
 @import 'tailwindcss';
-@import 'tw-animate-css';
-@import 'shadcn-vue/tailwind.css';
 
 /* Le thème suit la préférence système tant que personne n'a choisi, et l'attribut
  * `data-theme` gagne dès qu'un choix existe. La bascule à trois positions qui
