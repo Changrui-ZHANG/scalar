@@ -82,7 +82,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    command: npm run dev --workspace backend
+    command: sh -c "npm run db:index --workspace backend && npm run dev --workspace backend"
     environment:
       MONGODB_URI: mongodb://mongo:27017/scalar?replicaSet=rs0
       # Explicite, jamais implicite : c'est cette valeur qui retire l'attribut
