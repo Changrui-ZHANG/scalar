@@ -51,7 +51,7 @@ export const schemaUser = new Schema<User>(
     displayName: { type: String, required: true, trim: true, maxlength: LONGUEUR_MAX_NOM_AFFICHE },
     email: { type: String, required: true, trim: true, maxlength: LONGUEUR_MAX_EMAIL },
     normalizedEmail: { type: String, required: true, maxlength: LONGUEUR_MAX_EMAIL },
-    accountState: { type: String, required: true, enum: [...ETATS_COMPTE], default: 'unverified' },
+    accountState: { type: String, required: true, enum: [...ETATS_COMPTE], default: 'active' },
     // `select: false` au niveau du schema : le hachage n'est plus selectionne
     // par defaut nulle part, donc aucune projection oubliee ne peut le servir.
     // C'est le filet sous le contrat — pas l'inverse : la charge utile de

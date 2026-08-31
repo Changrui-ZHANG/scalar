@@ -160,18 +160,17 @@ describe.skipIf(!URI_TEST)('inscription sur une base reelle', () => {
     await modeleSession().deleteMany({})
   })
 
-  it('cree un compte non verifie, ouvre une session et pose le cookie', async () => {
+  it('cree un compte actif, ouvre une session et pose le cookie', async () => {
     const reponse = await request(app()).post(CHEMIN).send(saisieValide())
 
     expect(reponse.status).toBe(201)
-    expect(reponse.body.accountState).toBe('unverified')
+    expect(reponse.body.accountState).toBe('active')
     expect(reponse.body.displayName).toBe('Alice Martin')
-    expect(reponse.body.situations).toEqual(['compteNonVerifie'])
-    expect(reponse.body.adresseAVerifier).toBe('alice@exemple.test')
+    expect(reponse.body.situations).toEqual([])
 
     const enBase = await modeleUser().findOne({ normalizedEmail: 'alice@exemple.test' })
 
-    expect(enBase?.accountState).toBe('unverified')
+    expect(enBase?.accountState).toBe('active')
     expect(await modeleSession().countDocuments({})).toBe(1)
   })
 
