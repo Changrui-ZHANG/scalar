@@ -2,7 +2,7 @@ import { A_PROPAGER, entetesAPropager } from '~/utils/entetes-api'
 
 // Service unique d'appel a l'API. Aucun composant ne construit d'URL d'API ni
 // ne rappelle ces options.
-export default defineNuxtPlugin(() => {
+export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig()
 
   // Cote navigateur, l'API est un chemin de la meme origine : le cookie part
@@ -15,5 +15,15 @@ export default defineNuxtPlugin(() => {
     headers: entetesAPropager(useRequestHeaders([...A_PROPAGER])),
   })
 
-  return { provide: { api } }
+  return {
+    provide: {
+      api: ((...args: Parameters<typeof api>) => {
+        const customApi = (nuxtApp as unknown as { _customApi?: typeof api })?._customApi
+        if (customApi) {
+          return customApi(...args)
+        }
+        return api(...args)
+      }) as typeof api,
+    },
+  }
 })

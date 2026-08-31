@@ -35,6 +35,4 @@ export const COLLECTIONS: readonly CollectionDeclaree[] = [
   { nom: 'AuditEntry', module: 'admin' },
 ]
 
-export const NOMS_COLLECTIONS: readonly string[] = COLLECTIONS.map(
-  (collection) => collection.nom,
-)
+export const NOMS_COLLECTIONS: readonly string[] = COLLECTIONS.map((collection) => collection.nom)

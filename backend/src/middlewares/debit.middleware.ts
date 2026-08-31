@@ -2,8 +2,8 @@ import type { RequestHandler } from 'express'
 import { rateLimit } from 'express-rate-limit'
 import type { AugmentedRequest } from 'express-rate-limit'
 import { ErreurApi } from '@scalar/shared/erreurs.ts'
-import { PLAFOND_DEFAUT } from '@scalar/shared/limites.ts'
-import type { Plafond } from '@scalar/shared/limites.ts'
+import { PLAFOND_DEFAUT, PLAFONDS_PAR_ROUTE } from '@scalar/shared/limites.ts'
+import type { Plafond, PlafondDeRoute } from '@scalar/shared/limites.ts'
 import { lireIdentiteClient } from './identite-client.middleware.ts'
 
 // Seul middleware de limitation de debit du backend, premier maillon de
@@ -78,4 +78,50 @@ export function construireDebit(plafond: Plafond = PLAFOND_DEFAUT): RequestHandl
       )
     },
   })
+}
+
+// Chemin d'une requete sans sa chaine de requete, et sans barre finale hors
+// racine : `/api/v1/accounts?x=1`, `/api/v1/accounts/` et `/api/v1/accounts`
+// designent la meme route, et trois ecritures d'un meme chemin ne doivent pas
+// donner trois seaux dont deux echappent au plafond sensible.
+export function cheminDeRoute(url: string): string {
+  const sansRequete = url.split('?')[0] ?? ''
+  const nettoye = sansRequete.length > 1 ? sansRequete.replace(/\/+$/, '') : sansRequete
+
+  return nettoye.toLowerCase()
+}
+
+// Le maillon `debit` reellement monte. Il reste **unique** — un seul maillon
+// dans la chaine, un seul endroit qui plafonne — mais il choisit son seau selon
+// la route atteinte.
+//
+// C'est une substitution, jamais un cumul : une route sensible consomme son
+// seau et **pas** celui par defaut. Monter un second maillon `debit` sur la
+// route aurait double le decompte sur exactement les routes qu'on veut
+// resserrer, et l'aurait applique **apres** `session`, alors que le plafond
+// doit tomber avant elle, sur les surfaces anonymes.
+export function construireDebitParRoute(
+  routes: readonly PlafondDeRoute[] = PLAFONDS_PAR_ROUTE,
+  defaut: Plafond = PLAFOND_DEFAUT,
+): RequestHandler {
+  const parDefaut = construireDebit(defaut)
+
+  // Un limiteur par route declaree, construit au montage : `express-rate-limit`
+  // tient son compteur dans la fermeture, donc en construire un par requete
+  // remettrait le seau a zero a chaque appel.
+  const sensibles = routes.map((route) => ({
+    methode: route.methode.toUpperCase(),
+    chemin: cheminDeRoute(route.chemin),
+    middleware: construireDebit(route.plafond),
+  }))
+
+  return (requete, reponse, suivant) => {
+    const chemin = cheminDeRoute(requete.originalUrl)
+    const methode = requete.method.toUpperCase()
+    const choisi = sensibles.find(
+      (route) => route.methode === methode && route.chemin === chemin,
+    )
+
+    ;(choisi?.middleware ?? parDefaut)(requete, reponse, suivant)
+  }
 }

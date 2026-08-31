@@ -1,1 +1,218 @@
+/* Fondation visuelle de Scalar.
+ *
+ * Deux couches, et l'ordre compte. En dessous, les jetons de marque relevés
+ * dans `DESIGN.md` : ce sont eux qui portent une décision, et aucune de leurs
+ * valeurs ne se réécrit dans un composant. Au-dessus, le pontage vers les
+ * jetons sémantiques de shadcn-vue, qui est ce qui rend la bibliothèque
+ * héritée conforme à la marque sans qu'un seul de ses composants soit modifié.
+ *
+ * Seuls les jetons que les deux premiers écrans emploient réellement sont
+ * posés. L'îlot de code, les couleurs de statut, la coloration syntaxique et
+ * les rôles typographiques restants viennent avec les surfaces qui les
+ * emploient — les poser d'avance, c'est les poser sans les mesurer.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;600;700&display=swap');
+
 @import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn-vue/tailwind.css';
+
+/* Le thème suit la préférence système tant que personne n'a choisi, et l'attribut
+ * `data-theme` gagne dès qu'un choix existe. La bascule à trois positions qui
+ * l'écrira arrive plus tard ; le point d'accroche est posé maintenant pour que
+ * les jetons n'aient pas à être repris à ce moment-là.
+ */
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme='light']), :root:not([data-theme='light']) *) {
+      @slot;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Jetons de marque. Convention de `DESIGN.md` : jeton nu = thème clair, les
+ * mêmes noms redéfinis plus bas pour le sombre. Aucune valeur n'est inventée.
+ * ------------------------------------------------------------------------ */
+
+:root {
+  color-scheme: light;
+
+  --surface: #f6f3ec;
+  --surface-container: #efeadf;
+  --on-surface: #201d18;
+  --on-surface-muted: #6b6459;
+  --brand-border: #d8d1c2;
+  --border-strong: #8a8175;
+  --brand-primary: #5b4636;
+  --primary-hover: #46362a;
+  --brand-primary-foreground: #f6f3ec;
+  --danger: #b8432c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --surface: #1b1815;
+    --surface-container: #241f19;
+    --on-surface: #ece6d8;
+    --on-surface-muted: #a89e8c;
+    --brand-border: #3a3229;
+    --border-strong: #6f6659;
+    --brand-primary: #cf9f6f;
+    --primary-hover: #dcb488;
+    --brand-primary-foreground: #201d18;
+    --danger: #f0876f;
+  }
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --surface: #1b1815;
+  --surface-container: #241f19;
+  --on-surface: #ece6d8;
+  --on-surface-muted: #a89e8c;
+  --brand-border: #3a3229;
+  --border-strong: #6f6659;
+  --brand-primary: #cf9f6f;
+  --primary-hover: #dcb488;
+  --brand-primary-foreground: #201d18;
+  --danger: #f0876f;
+}
+
+/* ---------------------------------------------------------------------------
+ * Pontage vers les jetons sémantiques de shadcn-vue.
+ *
+ * Trois lignes ne sont pas de la recopie et cassent le pontage par défaut :
+ *
+ *   `input` ← `border-strong`, jamais `border`. À 1.37:1 en clair et 1.40:1 en
+ *   sombre, `border` est une séparation décorative : il délimite une card, il
+ *   n'identifie pas un champ de saisie. Tout contour porteur prend
+ *   `border-strong`, qui tient le seuil de 3:1 des composants d'interface.
+ *
+ *   `accent` ← `surface-container`, surtout pas `primary` : sinon un simple
+ *   survol shadcn devient un aplat de marque.
+ *
+ *   `ring` ← `primary`, parce que l'anneau de focus est l'un des trois usages
+ *   réservés de l'accent unique, avec les appels à l'action et les liens actifs.
+ * ------------------------------------------------------------------------ */
+
+:root,
+[data-theme='dark'] {
+  --background: var(--surface);
+  --foreground: var(--on-surface);
+  --card: var(--surface-container);
+  --card-foreground: var(--on-surface);
+  --popover: var(--surface-container);
+  --popover-foreground: var(--on-surface);
+  --primary: var(--brand-primary);
+  --primary-foreground: var(--brand-primary-foreground);
+  --secondary: var(--surface-container);
+  --secondary-foreground: var(--on-surface);
+  --muted: var(--surface-container);
+  --muted-foreground: var(--on-surface-muted);
+  --accent: var(--surface-container);
+  --accent-foreground: var(--on-surface);
+  --destructive: var(--danger);
+  --border: var(--brand-border);
+  --input: var(--border-strong);
+  --ring: var(--brand-primary);
+}
+
+@theme inline {
+  /* Familles : aucune pile système en rôle principal, et une pile de repli
+   * complète derrière chacune — une police qui ne charge pas ne doit pas
+   * renvoyer l'interface au sérif par défaut du navigateur. */
+  --font-display:
+    'Bricolage Grotesque', ui-sans-serif, system-ui, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-sans:
+    'DM Sans', ui-sans-serif, system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  /* Rôles typographiques employés par ces deux écrans. Déclarés en `rem` et non
+   * en `px` — les tailles de `DESIGN.md` sont écrites en pixels par commodité de
+   * lecture — pour que le zoom du navigateur et la taille de police système
+   * s'appliquent. */
+  --text-display-sm: 2.125rem;
+  --text-display-sm--line-height: 1.12;
+  --text-display-sm--font-weight: 800;
+  --text-display-sm--letter-spacing: -0.02em;
+
+  --text-title: 1.375rem;
+  --text-title--line-height: 1.25;
+  --text-title--font-weight: 800;
+  --text-title--letter-spacing: -0.01em;
+
+  --text-subtitle: 1.0625rem;
+  --text-subtitle--line-height: 1.35;
+  --text-subtitle--font-weight: 700;
+
+  --text-body: 1rem;
+  --text-body--line-height: 1.65;
+  --text-body--font-weight: 400;
+
+  --text-body-sm: 0.84375rem;
+  --text-body-sm--line-height: 1.6;
+  --text-body-sm--font-weight: 400;
+
+  /* Rayons : champs de saisie en `sm`, boutons et cards en `md`, panneaux en
+   * `lg`. `full` reste réservé aux étiquettes de statut — un bouton en pilule
+   * intégrale ne se distinguerait plus d'un statut. */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  /* L'échelle 4-based de Tailwind est héritée sans retouche ; seuls ces
+   * espacements nommés sont des décisions. */
+  --spacing-panel-pad: 28px;
+  --spacing-section-y: 52px;
+  --container-content: 1180px;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  /* Anneau de focus : 3px de l'accent unique, décollé de 2px, visible sur tous
+   * les éléments interactifs. Posé en base plutôt que composant par composant —
+   * un composant qui l'oublierait deviendrait inutilisable au clavier sans que
+   * rien ne le signale. */
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+}

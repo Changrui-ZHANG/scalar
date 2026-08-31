@@ -6,6 +6,13 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ['@nuxt/eslint', '@pinia/nuxt'],
   css: ['~/assets/css/main.css'],
+  components: [
+    // shadcn-vue livre, pour chaque composant, un `index.ts` (la fabrique de
+    // variantes) a cote du `.vue`. Sans cette restriction Nuxt voit deux
+    // fichiers resolvant le meme nom et avertit a chaque demarrage.
+    { path: '~/components/ui', extensions: ['vue'], pathPrefix: false },
+    '~/components',
+  ],
   runtimeConfig: {
     // Base absolue utilisee par le rendu serveur seul : Nitro appelle le
     // backend directement, sans traverser le proxy. Surchargee par

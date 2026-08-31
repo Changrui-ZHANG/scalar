@@ -15,6 +15,7 @@ interface IndexReel {
   sparse?: boolean
   partialFilterExpression?: unknown
   collation?: unknown
+  expireAfterSeconds?: number
 }
 
 // Un message d'erreur du pilote recopie parfois la chaine de connexion, avec
@@ -62,9 +63,16 @@ export class BaseDonneesService {
       const chemin = `${requis.collection}.${requis.nom}`
 
       try {
-        await base
-          .collection(requis.collection)
-          .createIndex(requis.cles, { name: requis.nom, unique: requis.unique })
+        await base.collection(requis.collection).createIndex(requis.cles, {
+          name: requis.nom,
+          unique: requis.unique,
+          // Compose plutot que passe a `undefined` : le pilote serialise la
+          // cle presente, et `expireAfterSeconds: undefined` cree un index
+          // TTL a zero seconde sur toutes les collections declarees ici.
+          ...(requis.expireApresSecondes === undefined
+            ? {}
+            : { expireAfterSeconds: requis.expireApresSecondes }),
+        })
       } catch (erreur) {
         const code = codeDe(erreur)
 
@@ -118,6 +126,17 @@ export class BaseDonneesService {
 
       if (requis.unique && (reel.sparse === true || reel.partialFilterExpression || reel.collation)) {
         ecarts.push(`${chemin} — unicite restreinte a un sous-ensemble des documents`)
+      }
+
+      // Un TTL absent laisserait la collection croitre sans fin ; un TTL
+      // present la ou aucun n'est declare effacerait des documents qu'aucune
+      // regle n'autorise a effacer. Les deux ecarts sont nommes separement.
+      if (reel.expireAfterSeconds !== requis.expireApresSecondes) {
+        ecarts.push(
+          requis.expireApresSecondes === undefined
+            ? `${chemin} — expiration TTL de ${String(reel.expireAfterSeconds)} s non declaree`
+            : `${chemin} — expiration TTL attendue a ${requis.expireApresSecondes} s, trouvee ${String(reel.expireAfterSeconds)}`,
+        )
       }
     }
 

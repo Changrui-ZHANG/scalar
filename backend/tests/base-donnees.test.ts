@@ -1,131 +1,29 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { once } from 'node:events'
-import { createServer } from 'node:net'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { pathToFileURL } from 'node:url'
 import mongoose from 'mongoose'
 import { SECRET_DE_TEST } from './aide-config.ts'
+import {
+  attendreDemarrage,
+  DELAI_PROCESS_MS,
+  lancer,
+  lancerJusquAlaSortie,
+  portLibre,
+} from './aide-process.ts'
 import { chargerConfig } from '../src/config/index.ts'
 import { INDEX_REQUIS } from '@scalar/shared/index-requis.ts'
 import { BaseDonneesService, masquerUri } from '../src/services/base-donnees.service.ts'
 import { enregistrerModeles, modeleUser } from '../src/models/index.ts'
 import { normaliserEmail } from '../src/models/user.model.ts'
 
+// Ces cas portent sur la normalisation et sur les index, pas sur le hachage :
+// une chaine quelconque suffit a satisfaire le champ requis, et hacher pour de
+// vrai leur couterait 40 ms chacun sans rien prouver de plus.
+const HACHAGE_FACTICE = '$argon2id$v=19$m=19456,t=2,p=1$factice$factice'
+
+// Ces cas exigent une base reelle. Sans `MONGODB_URI_TEST`, le fichier reste
+// vert : `npm run test` ne doit pas dependre de Docker.
 const URI_TEST = process.env.MONGODB_URI_TEST
-const RACINE = fileURLToPath(new URL('..', import.meta.url))
-
-// Chemin qui n'existe pas : dotenv ne trouve rien et ne peuple rien.
-const SANS_FICHIER_ENV = '.env.absent-volontairement'
-
-// Le chargement du graphe d'imports coute plusieurs secondes a froid : tout
-// test qui lance le vrai point d'entree doit porter son propre delai, sinon
-// les 5 s par defaut de vitest le font echouer sur un cache froid.
-const DELAI_PROCESS_MS = 45_000
-
-interface Resultat {
-  readonly code: number | null
-  readonly stdout: string
-  readonly stderr: string
-}
-
-// Un port fixe ferait passer les tests de refus pour la mauvaise raison
-// (EADDRINUSE au lieu de l'index manquant).
-async function portLibre(): Promise<string> {
-  const serveur = createServer()
-
-  await new Promise<void>((resoudre) => serveur.listen(0, '127.0.0.1', resoudre))
-
-  const adresse = serveur.address()
-  const port = typeof adresse === 'object' && adresse !== null ? adresse.port : 0
-
-  await new Promise<void>((resoudre) => serveur.close(() => resoudre()))
-
-  return String(port)
-}
-
-// L'environnement est reconstruit sans MONGODB_URI pour que le shell de
-// l'executant ne fausse pas le cas « variable absente ».
-function environnementPropre(supplement: Record<string, string>): Record<string, string> {
-  const base: Record<string, string> = {}
-
-  for (const [cle, valeur] of Object.entries(process.env)) {
-    const ecarte =
-      cle === 'MONGODB_URI' || cle === 'MONGODB_URI_TEST' || cle === 'SECRET_PSEUDONYMISATION'
-
-    if (!ecarte && valeur !== undefined) {
-      base[cle] = valeur
-    }
-  }
-
-  return { ...base, ...supplement }
-}
-
-function lancer(supplement: Record<string, string>): ChildProcessWithoutNullStreams {
-  return spawn(process.execPath, ['src/index.ts'], {
-    cwd: RACINE,
-    // Le secret est fourni par defaut : ces tests portent sur la base et les
-    // index, pas sur lui, et le laisser absent les ferait echouer ailleurs.
-    // Le chemin de fichier pointe volontairement dans le vide : un `.env`
-    // present chez l'executant repeuplerait les variables retirees expres.
-    env: environnementPropre({
-      CHEMIN_FICHIER_ENV: SANS_FICHIER_ENV,
-      SECRET_PSEUDONYMISATION: SECRET_DE_TEST,
-      ...supplement,
-    }),
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-}
-
-async function lancerJusquAlaSortie(supplement: Record<string, string>): Promise<Resultat> {
-  const enfant = lancer(supplement)
-
-  let stdout = ''
-  let stderr = ''
-
-  enfant.stdout.on('data', (morceau: Buffer) => (stdout += morceau.toString()))
-  enfant.stderr.on('data', (morceau: Buffer) => (stderr += morceau.toString()))
-
-  // Course avec `error` : sans elle, un spawn impossible ne produit jamais
-  // `exit` et le test pend jusqu'au delai de la suite, sans diagnostic.
-  const [code] = (await Promise.race([
-    once(enfant, 'exit'),
-    once(enfant, 'error').then(([erreur]) => {
-      throw erreur
-    }),
-  ])) as [number | null, string | null]
-
-  return { code, stdout, stderr }
-}
-
-async function attendreDemarrage(enfant: ChildProcessWithoutNullStreams): Promise<() => string> {
-  let stdout = ''
-
-  // Le tube stderr doit etre draine, sinon l'enfant bloque quand il se remplit.
-  enfant.stderr.resume()
-
-  await new Promise<void>((resoudre, rejeter) => {
-    const minuteur = setTimeout(
-      () => rejeter(new Error(`pas demarre : ${stdout}`)),
-      DELAI_PROCESS_MS - 5_000,
-    )
-
-    enfant.stdout.on('data', (morceau: Buffer) => {
-      stdout += morceau.toString()
-
-      if (stdout.includes('api demarree')) {
-        clearTimeout(minuteur)
-        resoudre()
-      }
-    })
-
-    enfant.once('exit', () => {
-      clearTimeout(minuteur)
-      rejeter(new Error(`sorti avant d ecouter : ${stdout}`))
-    })
-  })
-
-  return () => stdout
-}
 
 describe('configuration', () => {
   let erreurs: string[]
@@ -244,7 +142,11 @@ describe('normalisation de la cle d unicite', () => {
   // Le hook relie la saisie a l'index unique : c'est le seul lien entre les
   // deux, et il se verifie sans connexion — la validation mongoose est locale.
   it('remplit le champ indexe a la validation du document', async () => {
-    const document = new (modeleUser())({ displayName: 'Alice', email: 'Alice@Ex.COM ' })
+    const document = new (modeleUser())({
+      displayName: 'Alice',
+      email: 'Alice@Ex.COM ',
+      passwordHash: HACHAGE_FACTICE,
+    })
 
     await document.validate()
 
@@ -435,8 +337,8 @@ describe.skipIf(!URI_TEST)('index requis, sur une base reelle', () => {
 
     const modele = modeleUser()
     const resultats = await Promise.allSettled([
-      modele.create({ displayName: 'Alice', email: 'alice@ex.com' }),
-      modele.create({ displayName: 'Alice bis', email: 'alice@ex.com' }),
+      modele.create({ displayName: 'Alice', email: 'alice@ex.com', passwordHash: HACHAGE_FACTICE }),
+      modele.create({ displayName: 'Alice bis', email: 'alice@ex.com', passwordHash: HACHAGE_FACTICE }),
     ])
 
     const rejets = resultats.filter((resultat) => resultat.status === 'rejected')
@@ -451,8 +353,8 @@ describe.skipIf(!URI_TEST)('index requis, sur une base reelle', () => {
 
     const modele = modeleUser()
 
-    await modele.create({ displayName: 'Alice', email: 'Alice@Ex.COM ' })
-    await expect(modele.create({ displayName: 'Autre', email: 'alice@ex.com' })).rejects.toThrow()
+    await modele.create({ displayName: 'Alice', email: 'Alice@Ex.COM ', passwordHash: HACHAGE_FACTICE })
+    await expect(modele.create({ displayName: 'Autre', email: 'alice@ex.com', passwordHash: HACHAGE_FACTICE })).rejects.toThrow()
 
     expect(await modele.countDocuments({})).toBe(1)
   })
@@ -463,7 +365,11 @@ describe.skipIf(!URI_TEST)('index requis, sur une base reelle', () => {
     await service.creerIndex()
 
     const modele = modeleUser()
-    const cree = await modele.create({ displayName: 'Alice', email: 'alice@ex.com' })
+    const cree = await modele.create({
+      displayName: 'Alice',
+      email: 'alice@ex.com',
+      passwordHash: HACHAGE_FACTICE,
+    })
 
     await modele.updateOne({ _id: cree._id }, { $set: { email: 'Bob@Ex.COM ' } })
 

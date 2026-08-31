@@ -1,7 +1,7 @@
 import type { Request, RequestHandler } from 'express'
 import * as v from 'valibot'
-import { ErreurApi, MAX_VIOLATIONS, MESSAGES_VIOLATION } from '@scalar/shared/erreurs.ts'
-import type { NatureViolation, Violation } from '@scalar/shared/erreurs.ts'
+import { ErreurApi } from '@scalar/shared/erreurs.ts'
+import { enViolations } from '@scalar/shared/violations.ts'
 
 export type Emplacement = 'corps' | 'requete' | 'chemin'
 
@@ -27,39 +27,6 @@ function sourceDe(requete: Request, emplacement: Emplacement): unknown {
   // parametres de chemin : le schema validerait la mauvaise source, et une
   // donnee non validee atteindrait le service.
   throw new Error(`Emplacement de validation inconnu : « ${String(emplacement)} ».`)
-}
-
-// Traduction volontairement grossiere : le `chemin` dit quel champ est en
-// cause, ce message dit quoi en faire. Reprendre le texte de valibot servirait
-// de l'anglais, decrirait le schema, et rejouerait la valeur recue.
-function natureDe(probleme: v.BaseIssue<unknown>): NatureViolation {
-  if (probleme.received === 'undefined') {
-    return 'absent'
-  }
-
-  if (probleme.kind === 'schema') {
-    return 'type'
-  }
-
-  if (probleme.type.includes('length') || probleme.type === 'size') {
-    return 'longueur'
-  }
-
-  if (probleme.type === 'value' || probleme.type.endsWith('_value')) {
-    return 'valeur'
-  }
-
-  return 'forme'
-}
-
-function enViolations(problemes: readonly v.BaseIssue<unknown>[]): readonly Violation[] {
-  return problemes.slice(0, MAX_VIOLATIONS).map((probleme) => ({
-    chemin:
-      probleme.path
-        ?.map((segment) => (segment.key === undefined ? '(racine)' : String(segment.key)))
-        .join('.') ?? '(racine)',
-    message: MESSAGES_VIOLATION[natureDe(probleme)],
-  }))
 }
 
 // Le resultat n'est pas reecrit sur la requete : en Express 5 `query` est un

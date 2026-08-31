@@ -16,19 +16,31 @@ const NOM_DE_REPONSE_API = /^((Corps|Reponse|Response)\w*|\w+(Reponse|Response|P
 const MESSAGE_REPONSE_API =
   "Ce nom decrit une reponse d'API. Ne la redeclarez pas ici : importez son contrat depuis `shared/`. Un type de props de composant reste legitime, mais ne doit pas se lire comme une reponse."
 
-export default withNuxt({
-  rules: {
-    'no-restricted-syntax': [
-      'error',
-      // Les quatre facons de declarer une forme en TypeScript. En omettre une
-      // suffit a contourner la regle sans effort : une reponse d'API declaree
-      // en classe passait les deux premiers selecteurs.
-      ...['TSInterfaceDeclaration', 'TSTypeAliasDeclaration', 'ClassDeclaration', 'TSEnumDeclaration'].map(
-        (sorte) => ({
+export default withNuxt(
+  {
+    // Les composants de `components/ui/` sont livres par shadcn-vue et repris
+    // tels quels : `DESIGN.md` interdit explicitement de les personnaliser, et
+    // les corriger pour satisfaire une regle de style les ferait diverger de
+    // l'amont a la premiere mise a jour. Ils ne sont donc pas lintes.
+    ignores: ['app/components/ui/**'],
+  },
+  {
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        // Les quatre facons de declarer une forme en TypeScript. En omettre une
+        // suffit a contourner la regle sans effort : une reponse d'API declaree
+        // en classe passait les deux premiers selecteurs.
+        ...[
+          'TSInterfaceDeclaration',
+          'TSTypeAliasDeclaration',
+          'ClassDeclaration',
+          'TSEnumDeclaration',
+        ].map((sorte) => ({
           selector: `${sorte}[id.name=${NOM_DE_REPONSE_API}]`,
           message: MESSAGE_REPONSE_API,
-        }),
-      ),
-    ],
+        })),
+      ],
+    },
   },
-})
+)

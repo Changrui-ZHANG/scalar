@@ -1,18 +1,21 @@
 // Toute limite declaree du backend vit ici. Une valeur en dur ailleurs
 // dans le code est une violation, pas un raccourci.
 //
-// Une exception assumee : le nombre de sauts de proxy de confiance est aussi
-// une limite declaree, mais il vit dans `proxy.ts` avec le reste de ce que le
-// backend sait de ce qui se tient devant lui, ou son commentaire est lisible
-// en contexte. Il n'est pas redeclare ici.
+// Deux exceptions assumees, et pas une de plus. Le nombre de sauts de proxy de
+// confiance vit dans `proxy.ts`, avec le reste de ce que le backend sait de ce
+// qui se tient devant lui ; le plancher argon2id vit dans `hachage.ts`, a cote
+// de l'algorithme qu'il borne. Dans les deux cas le commentaire n'est lisible
+// qu'en contexte. Ni l'un ni l'autre n'est redeclare ici.
 
 // Assez pour un formulaire ou un extrait de code soumis, assez peu pour qu'un
 // corps abusif soit refuse avant d'etre mis en memoire.
 export const TAILLE_MAX_CORPS = '128kb'
 
 // Chaine d'autorisation imposee. L'ordre est la donnee ; `chaine.ts`
-// verifie au demarrage que ce qui est monte en est une sous-sequence. Seul
-// `debit` existe aujourd'hui ; les trois autres viendront avec l'authentification.
+// verifie au demarrage que ce qui est monte en est une sous-sequence. `debit`
+// et `session` sont montes globalement ; `etatCompte` et `role` se montent par
+// route, et `etatCompte` ne peut pas rejoindre le montage global — il
+// refuserait l'inscription elle-meme, faite par un visiteur sans compte.
 export const ORDRE_CHAINE = ['debit', 'session', 'etatCompte', 'role'] as const
 
 export type MaillonChaine = (typeof ORDRE_CHAINE)[number]
@@ -38,6 +41,30 @@ export const PLAFOND_DEFAUT: Plafond = { fenetreMs: 60_000, maximum: 300 }
 
 // Reserve aux routes sensibles : connexion, inscription, demande de
 // reinitialisation, verification publique de Certification, catalogue anonyme,
-// creation de Soumission. Aucune n'existe encore ; la valeur est posee ici pour
-// qu'elles la prennent sans en inventer une.
+// creation de Soumission.
 export const PLAFOND_SENSIBLE: Plafond = { fenetreMs: 900_000, maximum: 10 }
+
+// Voie d'application par route. C'est une **substitution**, pas un cumul : une
+// route nommee ici consomme son seau sensible et **ne consomme pas** le seau
+// par defaut. L'alternative — un second maillon `debit` monte sur la route —
+// echouait deux fois : le decompte devenait double sur exactement les routes
+// qu'on voulait resserrer, et ce maillon aurait tourne **apres** `session`,
+// alors que le plafond doit s'appliquer avant elle, sur les surfaces anonymes.
+//
+// Le chemin est celui que porte la requete, prefixe compris, sans chaine de
+// requete. La methode est comparee en majuscules.
+export interface PlafondDeRoute {
+  readonly methode: string
+  readonly chemin: string
+  readonly plafond: Plafond
+}
+
+export const PLAFONDS_PAR_ROUTE: readonly PlafondDeRoute[] = [
+  { methode: 'POST', chemin: '/api/v1/accounts', plafond: PLAFOND_SENSIBLE },
+]
+
+// Duree de vie absolue d'une session, portee par `expiresAt`. Le chemin de
+// lecture la verifie lui-meme : l'index TTL qui balaie la collection a une
+// granularite de l'ordre de la minute, et une session expiree resterait donc
+// utilisable pendant ce delai si on lui faisait confiance.
+export const DUREE_SESSION_MS = 30 * 24 * 60 * 60 * 1000

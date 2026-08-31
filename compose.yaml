@@ -85,6 +85,10 @@ services:
     command: npm run dev --workspace backend
     environment:
       MONGODB_URI: mongodb://mongo:27017/scalar?replicaSet=rs0
+      # Explicite, jamais implicite : c'est cette valeur qui retire l'attribut
+      # `Secure` du cookie de session. Le compose sert en clair sur localhost,
+      # ou un cookie `Secure` ne serait jamais renvoye par le navigateur.
+      NODE_ENV: development
       # Developpement uniquement. En production la valeur vient du gestionnaire
       # de secrets : deux deploiements qui la partageraient rendraient leurs
       # pseudonymes comparables.

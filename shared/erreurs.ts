@@ -1,3 +1,5 @@
+import type { EtatCompte } from './compte.ts'
+
 // Depositaire unique des reponses non-2xx. Un code absent de ce catalogue
 // n'existe pas : le middleware terminal ne sait servir que ce qui est declare
 // ici, et c'est ce qui empeche une route d'inventer sa propre forme d'erreur
@@ -51,19 +53,38 @@ export const CODES_ERREUR = {
   },
   REQUETE_INVALIDE: {
     statut: 400,
-    message: "Votre demande n'a pas la forme attendue. Corrigez les champs indiqués puis renvoyez-la.",
+    message:
+      "Votre demande n'a pas la forme attendue. Corrigez les champs indiqués puis renvoyez-la.",
   },
   CORPS_ILLISIBLE: {
     statut: 400,
-    message: "Le corps de votre demande n'a pas pu être lu comme du JSON. Vérifiez sa syntaxe puis renvoyez-la.",
+    message:
+      "Le corps de votre demande n'a pas pu être lu comme du JSON. Vérifiez sa syntaxe puis renvoyez-la.",
   },
   CORPS_TROP_VOLUMINEUX: {
     statut: 413,
-    message: 'Le corps de votre demande dépasse la taille maximale acceptée. Réduisez son contenu puis renvoyez-la.',
+    message:
+      'Le corps de votre demande dépasse la taille maximale acceptée. Réduisez son contenu puis renvoyez-la.',
   },
   DEBIT_DEPASSE: {
     statut: 429,
-    message: 'Vous avez atteint le nombre de demandes autorisées sur cette période. Attendez la réinitialisation indiquée avant de réessayer.',
+    message:
+      'Vous avez atteint le nombre de demandes autorisées sur cette période. Attendez la réinitialisation indiquée avant de réessayer.',
+  },
+  ADRESSE_DEJA_UTILISEE: {
+    statut: 409,
+    message:
+      'Cette adresse est déjà associée à un compte. Connectez-vous, ou inscrivez-vous avec une autre adresse.',
+  },
+  ETAT_COMPTE_INSUFFISANT: {
+    statut: 403,
+    message:
+      "L'état de votre compte ne permet pas encore cette action. Vérifiez votre adresse, puis reprenez où vous en étiez.",
+  },
+  ORIGINE_REFUSEE: {
+    statut: 403,
+    message:
+      "Votre demande provient d'une origine que ce service ne sert pas. Rechargez la page depuis l'adresse du produit, puis renvoyez-la.",
   },
   ERREUR_INTERNE: {
     statut: 500,
@@ -82,7 +103,24 @@ export interface DetailsParCode {
     readonly fenetreSecondes: number
     readonly reinitialisationA: string
   }
+  // L'etat courant et l'etat exige, parce qu'une surface doit pouvoir dire
+  // laquelle des situations du compte bloque — « verifiez votre adresse » et
+  // « votre compte est suspendu » n'appellent pas la meme suite. Aucun autre
+  // champ : ce refus se produit sur une session deja resolue, donc l'appelant
+  // n'apprend rien qu'il ne sache de son propre compte.
+  ETAT_COMPTE_INSUFFISANT: {
+    // Optionnel, et non rempli par une valeur de repli : un appelant sans
+    // session n'a pas d'etat courant, et lui en inventer un — « efface », par
+    // exemple — ferait servir une information fausse plutot qu'absente.
+    readonly etatCourant?: EtatCompte
+    readonly etatExige: EtatCompte
+  }
 }
+
+// `ADRESSE_DEJA_UTILISEE` et `ORIGINE_REFUSEE` ne portent pas de `details`, et
+// leur absence de cette carte est ce qui l'interdit au constructeur. Pour le
+// premier c'est delibere : le `code` dit deja que l'adresse est prise, y
+// ajouter le moindre champ n'aiderait personne d'autre qu'un enumerateur.
 
 export type DetailsDe<C extends CodeErreur> = C extends keyof DetailsParCode
   ? DetailsParCode[C]

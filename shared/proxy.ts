@@ -46,5 +46,4 @@ export function estSecretDeRemplissage(valeur: string): boolean {
 // de confiance n'a pas d'identite de client a nommer, et lui en fabriquer une
 // ferait partager un seau de limitation a tout le rendu serveur.
 export type IdentiteClient =
-  | { readonly nature: 'publique'; readonly pseudonyme: string }
-  | { readonly nature: 'interne' }
+  { readonly nature: 'publique'; readonly pseudonyme: string } | { readonly nature: 'interne' }
