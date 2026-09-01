@@ -90,4 +90,9 @@ export class SessionService {
 
     return { id: utilisateur.id as string, accountState: utilisateur.accountState }
   }
+
+  // Supprime la session correspondant a l'empreinte du jeton lors d'une deconnexion explicite.
+  async fermer(jeton: string): Promise<void> {
+    await modeleSession().deleteOne({ tokenHash: empreinte(jeton) })
+  }
 }

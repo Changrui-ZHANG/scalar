@@ -1,8 +1,9 @@
 import { ErreurApi } from '@scalar/shared/erreurs.ts'
 import type { EntreeInscription } from '@scalar/shared/inscription.ts'
-import type { ChargeUtileSession, SituationCompte } from '@scalar/shared/session.ts'
-import type { EtatCompte } from '@scalar/shared/compte.ts'
-import { modeleUser } from '../models/index.ts'
+import type { EntreeConnexion } from '@scalar/shared/connexion.ts'
+import type { ChargeUtileSession, Principal, SituationCompte } from '@scalar/shared/session.ts'
+import { etatSuffit, type EtatCompte } from '@scalar/shared/compte.ts'
+import { modeleUser, normaliserEmail } from '../models/index.ts'
 import { MotDePasseService } from './mot-de-passe.service.ts'
 import { SessionService, type SessionOuverte } from './session.service.ts'
 
@@ -15,6 +16,11 @@ export interface CompteCree {
   // session. Ne peut pas se produire aujourd'hui — un compte nait
   // `unverified` — mais le type le dit plutot que de le supposer.
   readonly session: SessionOuverte | undefined
+}
+
+export interface SessionEtablie {
+  readonly chargeUtile: ChargeUtileSession
+  readonly session: SessionOuverte
 }
 
 function codeDe(erreur: unknown): number | undefined {
@@ -86,5 +92,83 @@ export class AuthService {
       },
       session,
     }
+  }
+
+  // Authentifie un utilisateur par son adresse et mot de passe.
+  // Reponse strictement uniforme contre l'enumeration et timing-safe via hash factice.
+  async connecter(entree: EntreeConnexion): Promise<SessionEtablie> {
+    const emailNormalise = normaliserEmail(entree.email)
+    const utilisateur = await modeleUser()
+      .findOne({ normalizedEmail: emailNormalise })
+      .select('+passwordHash')
+
+    if (!utilisateur) {
+      // Comparison factice pour neutraliser l'attaque temporelle
+      await this.motsDePasse.verifierFactice(entree.motDePasse)
+      throw new ErreurApi('IDENTIFIANTS_INVALIDES')
+    }
+
+    const motDePasseValide = await this.motsDePasse.verifier(
+      utilisateur.passwordHash,
+      entree.motDePasse,
+    )
+
+    if (!motDePasseValide) {
+      throw new ErreurApi('IDENTIFIANTS_INVALIDES')
+    }
+
+    if (!etatSuffit(utilisateur.accountState, 'unverified')) {
+      throw new ErreurApi('IDENTIFIANTS_INVALIDES')
+    }
+
+    const session = await this.sessions.ouvrir({
+      id: utilisateur._id,
+      accountState: utilisateur.accountState,
+    })
+
+    if (session === undefined) {
+      throw new ErreurApi('IDENTIFIANTS_INVALIDES')
+    }
+
+    const situations = situationsDe(utilisateur.accountState)
+
+    return {
+      chargeUtile: {
+        id: utilisateur.id as string,
+        displayName: utilisateur.displayName,
+        accountState: utilisateur.accountState,
+        situations,
+        ...(situations.includes('compteNonVerifie')
+          ? { adresseAVerifier: utilisateur.email }
+          : {}),
+      },
+      session,
+    }
+  }
+
+  // Renvoie la charge utile correspondant a un principal authentifie.
+  async obtenirChargeUtile(principal: Principal): Promise<ChargeUtileSession> {
+    const utilisateur = await modeleUser().findById(principal.id)
+
+    if (!utilisateur || !etatSuffit(utilisateur.accountState, 'unverified')) {
+      throw new ErreurApi('NON_AUTHENTIFIE')
+    }
+
+    const situations = situationsDe(utilisateur.accountState)
+
+    return {
+      id: utilisateur.id as string,
+      displayName: utilisateur.displayName,
+      accountState: utilisateur.accountState,
+      situations,
+      ...(situations.includes('compteNonVerifie')
+        ? { adresseAVerifier: utilisateur.email }
+        : {}),
+    }
+  }
+
+  // Ferme la session en base.
+  async deconnecter(jeton: string): Promise<void> {
+    await this.sessions.fermer(jeton)
   }
 }

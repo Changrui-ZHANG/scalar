@@ -61,6 +61,7 @@ export interface PlafondDeRoute {
 
 export const PLAFONDS_PAR_ROUTE: readonly PlafondDeRoute[] = [
   { methode: 'POST', chemin: '/api/v1/accounts', plafond: PLAFOND_SENSIBLE },
+  { methode: 'POST', chemin: '/api/v1/sessions', plafond: PLAFOND_SENSIBLE },
 ]
 
 // Duree de vie absolue d'une session, portee par `expiresAt`. Le chemin de

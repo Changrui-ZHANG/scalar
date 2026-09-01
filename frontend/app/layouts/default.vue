@@ -2,6 +2,16 @@
 import { useSessionStore } from '~/stores/session'
 
 const session = useSessionStore()
+const { $api } = useNuxtApp()
+
+async function deconnecter() {
+  try {
+    await $api('/sessions', { method: 'DELETE' })
+  } finally {
+    session.fermer()
+    await navigateTo('/')
+  }
+}
 </script>
 
 <template>
@@ -9,20 +19,35 @@ const session = useSessionStore()
     <header class="border-b">
       <nav class="max-w-content mx-auto flex items-center justify-between p-4">
         <NuxtLink to="/" class="font-display text-title">Scalar</NuxtLink>
-        <NuxtLink
-          v-if="!session.compte"
-          to="/inscription"
-          class="text-body-sm text-primary underline-offset-4 hover:underline"
-        >
-          Créer un compte
-        </NuxtLink>
-        <NuxtLink
-          v-else
-          to="/tableau-de-bord"
-          class="text-body-sm text-primary underline-offset-4 hover:underline"
-        >
-          Tableau de bord
-        </NuxtLink>
+        <div v-if="!session.compte" class="flex items-center gap-4">
+          <NuxtLink
+            to="/connexion"
+            class="text-body-sm text-primary underline-offset-4 hover:underline"
+          >
+            Se connecter
+          </NuxtLink>
+          <NuxtLink
+            to="/inscription"
+            class="text-body-sm text-primary underline-offset-4 hover:underline"
+          >
+            Créer un compte
+          </NuxtLink>
+        </div>
+        <div v-else class="flex items-center gap-4">
+          <NuxtLink
+            to="/tableau-de-bord"
+            class="text-body-sm text-primary underline-offset-4 hover:underline"
+          >
+            Tableau de bord
+          </NuxtLink>
+          <button
+            type="button"
+            class="text-body-sm text-muted-foreground underline-offset-4 hover:underline hover:text-foreground cursor-pointer"
+            @click="deconnecter"
+          >
+            Se déconnecter
+          </button>
+        </div>
       </nav>
     </header>
 

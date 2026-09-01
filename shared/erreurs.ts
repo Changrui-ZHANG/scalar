@@ -76,6 +76,15 @@ export const CODES_ERREUR = {
     message:
       'Cette adresse est déjà associée à un compte. Connectez-vous, ou inscrivez-vous avec une autre adresse.',
   },
+  IDENTIFIANTS_INVALIDES: {
+    statut: 401,
+    message:
+      "L'adresse email ou le mot de passe est incorrect. Vérifiez vos identifiants puis réessayez.",
+  },
+  NON_AUTHENTIFIE: {
+    statut: 401,
+    message: 'Cette action exige une session active. Connectez-vous puis réessayez.',
+  },
   ETAT_COMPTE_INSUFFISANT: {
     statut: 403,
     message:

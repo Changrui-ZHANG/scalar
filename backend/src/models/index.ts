@@ -1,6 +1,8 @@
 import mongoose, { type Model, type Schema } from 'mongoose'
 import { NOM_MODELE_SESSION, schemaSession, type Session } from './session.model.ts'
-import { NOM_MODELE_USER, schemaUser, type User } from './user.model.ts'
+import { NOM_MODELE_USER, normaliserEmail, schemaUser, type User } from './user.model.ts'
+
+export { normaliserEmail }
 
 interface Declaration {
   readonly nom: string

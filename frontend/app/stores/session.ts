@@ -27,5 +27,9 @@ export const useSessionStore = defineStore('session', () => {
     compte.value = charge
   }
 
-  return { compte, situation, ouvrir }
+  function fermer() {
+    compte.value = null
+  }
+
+  return { compte, situation, ouvrir, fermer }
 })
