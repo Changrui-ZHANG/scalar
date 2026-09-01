@@ -8,6 +8,7 @@ services:
     command:
       - --providers.docker=true
       - --providers.docker.exposedByDefault=false
+      - --providers.docker.network=bordure
       - --entryPoints.web.address=:80
       # Tableau de bord sans authentification : developpement seulement, et le
       # port n'est publie que sur la boucle locale (voir `ports`). Il n'a rien
@@ -110,6 +111,7 @@ services:
         condition: service_healthy
     labels:
       - traefik.enable=true
+      - traefik.docker.network=bordure
       - traefik.http.routers.backend.rule=PathPrefix(`/api/v1`)
       - traefik.http.routers.backend.entryPoints=web
       - traefik.http.routers.backend.priority=10
@@ -126,8 +128,8 @@ services:
     volumes:
       - mongo-data:/data/db
     healthcheck:
-      # Sain seulement une fois le replica set reellement initialise.
-      test: ['CMD', 'mongosh', '--quiet', '--eval', 'rs.status().ok']
+      # Sain seulement une fois le replica set reellement initialise et pret a ecrire.
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.hello().isWritablePrimary || process.exit(1)']
       interval: 5s
       timeout: 5s
       retries: 30
