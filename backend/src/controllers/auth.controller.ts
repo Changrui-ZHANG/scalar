@@ -1,9 +1,11 @@
-import type { CookieOptions, NextFunction, Request, Response } from 'express'
+import { Router, type CookieOptions, type NextFunction, type Request, type Response } from 'express'
 import { DUREE_SESSION_MS } from '@scalar/shared/limites.ts'
 import { NOM_COOKIE_PREFERENCES, NOM_COOKIE_SESSION } from '@scalar/shared/session.ts'
 import { ErreurApi } from '@scalar/shared/erreurs.ts'
+import { schemaInscription } from '@scalar/shared/inscription.ts'
+import { schemaConnexion } from '@scalar/shared/connexion.ts'
 import type { AuthService } from '../services/auth.service.ts'
-import type { Valide } from '../middlewares/validation.middleware.ts'
+import { valider, type Valide } from '../middlewares/validation.middleware.ts'
 import type { EntreeInscription } from '@scalar/shared/inscription.ts'
 import type { EntreeConnexion } from '@scalar/shared/connexion.ts'
 import { lireCookie, lirePrincipal } from '../middlewares/session.middleware.ts'
@@ -18,15 +20,10 @@ export class AuthController {
 
   // Affectations explicites : une propriete de parametre genererait du code a
   // l'execution, que Node rejette apres retrait des types.
-  constructor(
-    service: AuthService,
-    valideInscription: Valide<EntreeInscription>,
-    valideConnexion: Valide<EntreeConnexion>,
-    cookieSecurise: boolean,
-  ) {
+  constructor(service: AuthService, cookieSecurise: boolean) {
     this.service = service
-    this.valideInscription = valideInscription
-    this.valideConnexion = valideConnexion
+    this.valideInscription = valider('corps', schemaInscription)
+    this.valideConnexion = valider('corps', schemaConnexion)
     this.cookieSecurise = cookieSecurise
   }
 
@@ -141,5 +138,22 @@ export class AuthController {
     } catch (erreur) {
       suivant(erreur)
     }
+  }
+
+  // `POST /accounts` : creation de compte. `POST /sessions`, `DELETE
+  // /sessions`, `GET /sessions/current` : cycle de vie des sessions.
+  //
+  // Le plafond sensible ne se monte pas ici : il est declare dans
+  // `shared/limites.ts` et applique par le premier maillon de la chaine,
+  // avant la session. Ce qui se monte par route, c'est la validation.
+  buildRouter(): Router {
+    const routeur = Router()
+
+    routeur.post('/accounts', this.valideInscription.middleware, this.creerCompte)
+    routeur.post('/sessions', this.valideConnexion.middleware, this.connecter)
+    routeur.delete('/sessions', this.deconnecter)
+    routeur.get('/sessions/current', this.obtenirSessionCourante)
+
+    return routeur
   }
 }

@@ -1,4 +1,4 @@
-import type { Request, Response } from 'express'
+import { Router, type Request, type Response } from 'express'
 import { SanteService } from '../services/sante.service.ts'
 
 export class SanteController {
@@ -13,5 +13,13 @@ export class SanteController {
 
   lire = (_requete: Request, reponse: Response): void => {
     reponse.json(this.service.lireEtat())
+  }
+
+  buildRouter(): Router {
+    const routeur = Router()
+
+    routeur.get('/health', this.lire)
+
+    return routeur
   }
 }
