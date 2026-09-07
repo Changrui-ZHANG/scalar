@@ -95,6 +95,10 @@ export const CODES_ERREUR = {
     message:
       "Votre demande provient d'une origine que ce service ne sert pas. Rechargez la page depuis l'adresse du produit, puis renvoyez-la.",
   },
+  EXERCICE_INTROUVABLE: {
+    statut: 404,
+    message: "Cet exercice n'existe pas ou n'est plus disponible. Vérifiez le lien utilisé.",
+  },
   ERREUR_INTERNE: {
     statut: 500,
     message: "Le serveur n'a pas pu traiter votre demande. Réessayez dans quelques instants.",

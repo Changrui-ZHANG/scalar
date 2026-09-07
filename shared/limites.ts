@@ -69,3 +69,17 @@ export const PLAFONDS_PAR_ROUTE: readonly PlafondDeRoute[] = [
 // granularite de l'ordre de la minute, et une session expiree resterait donc
 // utilisable pendant ce delai si on lui faisait confiance.
 export const DUREE_SESSION_MS = 30 * 24 * 60 * 60 * 1000
+
+// Bornes AD-8 du tableau `tests` embarque dans `Exercise` : imposees a
+// l'ecrivain du modele, pas relues au bord. Un embarquement non borne devient
+// une collection le jour ou il croit avec l'usage — ici il ne croit pas, un
+// Exercice a un nombre de tests fixe par son auteur, d'ou une borne stricte
+// plutot qu'une pagination.
+export const NOMBRE_MAX_TESTS_EXERCICE = 50
+
+// Environ 2 ko par test en moyenne sur 50 tests : assez pour un corps de test
+// et son assertion, tres loin de la limite BSON de 16 Mo, et sous la taille
+// maximale d'un corps de requete entrant (`TAILLE_MAX_CORPS`) pour qu'un
+// exercice cree via l'API ne puisse jamais depasser cette borne autrement
+// qu'en la violant explicitement.
+export const OCTETS_MAX_TESTS_EXERCICE = 100_000

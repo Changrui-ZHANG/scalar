@@ -1,4 +1,5 @@
 import mongoose, { type Model, type Schema } from 'mongoose'
+import { NOM_MODELE_EXERCISE, schemaExercise, type Exercise } from './exercise.model.ts'
 import { NOM_MODELE_SESSION, schemaSession, type Session } from './session.model.ts'
 import { NOM_MODELE_USER, normaliserEmail, schemaUser, type User } from './user.model.ts'
 
@@ -12,6 +13,7 @@ interface Declaration {
 const DECLARATIONS: readonly Declaration[] = [
   { nom: NOM_MODELE_USER, schema: schemaUser },
   { nom: NOM_MODELE_SESSION, schema: schemaSession },
+  { nom: NOM_MODELE_EXERCISE, schema: schemaExercise },
 ]
 
 // Un modele est enregistre une seule fois, ici. Un service le recoit, il ne
@@ -45,4 +47,10 @@ export function modeleSession(): Model<Session> {
   enregistrerModeles()
 
   return mongoose.model<Session>(NOM_MODELE_SESSION)
+}
+
+export function modeleExercise(): Model<Exercise> {
+  enregistrerModeles()
+
+  return mongoose.model<Exercise>(NOM_MODELE_EXERCISE)
 }

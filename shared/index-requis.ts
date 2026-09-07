@@ -39,4 +39,13 @@ export const INDEX_REQUIS: readonly IndexRequis[] = [
     unique: false,
     expireApresSecondes: 0,
   },
+  // Un exercice se consulte par son slug depuis l'URL : l'unicite empeche que
+  // deux documents repondent a la meme adresse, ce que la lecture par slug
+  // resoudrait alors au hasard.
+  {
+    collection: 'exercises',
+    nom: 'slug_unique',
+    cles: { slug: 1 },
+    unique: true,
+  },
 ]
