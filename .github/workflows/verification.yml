@@ -10,6 +10,7 @@ on:
   push:
     branches: [master]
   pull_request:
+  workflow_dispatch: #Permet de déclencher manuellement
 
 # Lecture seule : ce workflow ne publie rien et n'ecrit sur aucune ressource.
 permissions:
