@@ -62,6 +62,7 @@ export interface PlafondDeRoute {
 export const PLAFONDS_PAR_ROUTE: readonly PlafondDeRoute[] = [
   { methode: 'POST', chemin: '/api/v1/accounts', plafond: PLAFOND_SENSIBLE },
   { methode: 'POST', chemin: '/api/v1/sessions', plafond: PLAFOND_SENSIBLE },
+  { methode: 'POST', chemin: '/api/v1/submissions', plafond: PLAFOND_SENSIBLE },
 ]
 
 // Duree de vie absolue d'une session, portee par `expiresAt`. Le chemin de
@@ -83,3 +84,25 @@ export const NOMBRE_MAX_TESTS_EXERCICE = 50
 // exercice cree via l'API ne puisse jamais depasser cette borne autrement
 // qu'en la violant explicitement.
 export const OCTETS_MAX_TESTS_EXERCICE = 100_000
+
+// Longueur d'une cle de deduplication (AD-7, AD-9) : une chaine opaque
+// fournie par l'appelant, jamais interpretee, seulement bornee pour qu'un
+// index unique construit dessus ne recoive pas une cle arbitrairement
+// longue. Large au regard d'un UUID ou d'un hachage, tres loin de la taille
+// maximale d'un corps de requete entrant.
+export const LONGUEUR_MAX_CLE_DEDUPLICATION = 128
+
+// Longueur maximale du `code` soumis (AD-7) : assez pour un exercice reel,
+// tres loin de la limite BSON, et sous la taille maximale d'un corps de
+// requete entrant (`TAILLE_MAX_CORPS`) pour qu'une Soumission creee via l'API
+// ne puisse jamais depasser cette borne autrement qu'en la violant
+// explicitement.
+export const LONGUEUR_MAX_CODE_SOUMISSION = 50_000
+
+// Plafond de quota minimal (AD-14) pour l'operation `executionSandbox` :
+// valeurs de depart, reglables comme les plafonds de debit ci-dessus. Ce
+// qui est fige, c'est l'endroit ou elles se declarent, jamais le chiffre.
+// Fenetre glissante d'un jour plutot qu'une fenetre calendaire : un plafond
+// mensuel ou une remise a zero a heure fixe restent hors du perimetre
+// minimal construit ici.
+export const PLAFOND_QUOTA_SANDBOX: Plafond = { fenetreMs: 24 * 60 * 60 * 1000, maximum: 20 }

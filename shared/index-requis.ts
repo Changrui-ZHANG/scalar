@@ -48,4 +48,22 @@ export const INDEX_REQUIS: readonly IndexRequis[] = [
     cles: { slug: 1 },
     unique: true,
   },
+  // Ferme AD-9 par index, jamais par lecture : une resoumission concurrente sur
+  // la meme cle rencontre l'index, pas une fenetre de « lire puis creer ».
+  {
+    collection: 'submissions',
+    nom: 'userId_requestKey_unique',
+    cles: { userId: 1, requestKey: 1 },
+    unique: true,
+  },
+  // Meme raisonnement (AD-9) applique au compteur de quota (AD-14) : deux
+  // reservations concurrentes sur le meme utilisateur, la meme operation et la
+  // meme periode doivent rencontrer un seul document, jamais deux compteurs qui
+  // se partageraient le meme plafond au hasard.
+  {
+    collection: 'quotacounters',
+    nom: 'userId_operation_period_unique',
+    cles: { userId: 1, operation: 1, period: 1 },
+    unique: true,
+  },
 ]

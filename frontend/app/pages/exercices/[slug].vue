@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ProjectionExercicePublique } from '@scalar/shared/exercise.ts'
 import type { CorpsErreur } from '@scalar/shared/erreurs.ts'
+import type { CreatedSubmissionProjection } from '@scalar/shared/submission.ts'
 
 const route = useRoute()
 const { $api } = useNuxtApp()
@@ -8,6 +9,11 @@ const { $api } = useNuxtApp()
 const exercice = ref<ProjectionExercicePublique | null>(null)
 const chargement = ref(true)
 const erreur = ref<string | null>(null)
+
+const code = ref('')
+const enSoumission = ref(false)
+const idSoumission = ref<string | null>(null)
+const erreurSoumission = ref<string | null>(null)
 
 async function charger() {
   chargement.value = true
@@ -17,6 +23,12 @@ async function charger() {
     exercice.value = await $api<ProjectionExercicePublique>(
       `/exercises/${encodeURIComponent(route.params.slug as string)}`,
     )
+
+    // Nouvel exercice, nouvel etat de soumission : celui du precedent n'a
+    // plus de sens ici.
+    code.value = exercice.value.starterCode
+    idSoumission.value = null
+    erreurSoumission.value = null
   } catch (echec) {
     const corps = (echec as { data?: CorpsErreur }).data
 
@@ -27,6 +39,36 @@ async function charger() {
       "Cet exercice n'a pas pu être chargé. Vérifiez votre connexion, puis réessayez."
   } finally {
     chargement.value = false
+  }
+}
+
+async function soumettre() {
+  if (!exercice.value) {
+    return
+  }
+
+  enSoumission.value = true
+  erreurSoumission.value = null
+
+  try {
+    const projection = await $api<CreatedSubmissionProjection>('/submissions', {
+      method: 'POST',
+      body: {
+        exerciseSlug: exercice.value.slug,
+        code: code.value,
+        requestKey: crypto.randomUUID(),
+      },
+    })
+
+    idSoumission.value = projection.id
+  } catch (echec) {
+    const corps = (echec as { data?: CorpsErreur }).data
+
+    erreurSoumission.value =
+      corps?.message ??
+      "Cette soumission n'a pas pu être envoyée. Vérifiez votre connexion, puis réessayez."
+  } finally {
+    enSoumission.value = false
   }
 }
 
@@ -69,9 +111,33 @@ useSeoMeta({
       <p class="text-body text-foreground mt-4 whitespace-pre-line">{{ exercice.statement }}</p>
 
       <h2 class="text-title text-foreground mt-8">Code de départ</h2>
-      <pre
-        class="bg-muted border-border mt-2 overflow-x-auto rounded-md border p-4"
-      ><code class="font-mono text-body-sm">{{ exercice.starterCode }}</code></pre>
+      <textarea
+        v-model="code"
+        :disabled="enSoumission"
+        rows="10"
+        class="bg-muted border-border text-foreground text-body-sm mt-2 w-full rounded-md border p-4 font-mono"
+      />
+
+      <button
+        type="button"
+        :disabled="enSoumission"
+        class="bg-primary text-primary-foreground text-body-sm mt-4 rounded-md px-4 py-2 disabled:opacity-50"
+        @click="soumettre"
+      >
+        Soumettre
+      </button>
+
+      <p v-if="idSoumission" class="text-body-sm text-foreground mt-2">
+        En file — identifiant : {{ idSoumission }}
+      </p>
+
+      <p
+        v-if="erreurSoumission"
+        role="alert"
+        class="text-body-sm text-destructive border-destructive mt-2 rounded-sm border p-3"
+      >
+        {{ erreurSoumission }}
+      </p>
     </div>
 
     <!-- Ilot de tests : tests visibles avec leur code, puis le decompte des

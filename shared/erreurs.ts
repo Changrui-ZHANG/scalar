@@ -99,6 +99,11 @@ export const CODES_ERREUR = {
     statut: 404,
     message: "Cet exercice n'existe pas ou n'est plus disponible. Vérifiez le lien utilisé.",
   },
+  QUOTA_DEPASSE: {
+    statut: 429,
+    message:
+      'Vous avez atteint votre quota pour cette période. Attendez la réinitialisation indiquée avant de réessayer.',
+  },
   ERREUR_INTERNE: {
     statut: 500,
     message: "Le serveur n'a pas pu traiter votre demande. Réessayez dans quelques instants.",
@@ -127,6 +132,14 @@ export interface DetailsParCode {
     // exemple — ferait servir une information fausse plutot qu'absente.
     readonly etatCourant?: EtatCompte
     readonly etatExige: EtatCompte
+  }
+  // Meme esprit que `DEBIT_DEPASSE` : le plafond touche et l'instant de
+  // reinitialisation, pour que l'appelant sache combien de temps attendre.
+  // Pas de `fenetreSecondes` ici — la fenetre d'un quota n'est pas une donnee
+  // que l'appelant a besoin de connaitre pour agir, contrairement au debit.
+  QUOTA_DEPASSE: {
+    readonly maximum: number
+    readonly reinitialisationA: string
   }
 }
 

@@ -81,12 +81,12 @@ describe("page d'exercice", () => {
     expect(rendu.text()).toContain('Écrivez une fonction qui additionne deux nombres.')
   })
 
-  it('affiche le code de départ', async () => {
+  it('affiche le code de départ dans une zone de texte éditable', async () => {
     appelApi.mockResolvedValue(exerciceMock())
 
     const rendu = await monter()
 
-    expect(rendu.text()).toContain('function addition(a, b) {}')
+    expect(rendu.find('textarea').element.value).toBe('function addition(a, b) {}')
   })
 
   it('affiche le décompte total et le code de chaque test visible', async () => {
@@ -181,5 +181,61 @@ describe("page d'exercice", () => {
     expect(appelApi).toHaveBeenCalledTimes(2)
     expect(appelApi).toHaveBeenLastCalledWith('/exercises/soustraction-de-deux-nombres')
     expect(rendu.find('h1').text()).toBe('Soustraction de deux nombres')
+  })
+
+  it('soumet le code et affiche l’état en file avec l’identifiant reçu', async () => {
+    appelApi.mockResolvedValueOnce(exerciceMock())
+
+    const rendu = await monter()
+
+    let resoudreSoumission: (valeur: unknown) => void = () => {}
+    appelApi.mockReturnValueOnce(
+      new Promise((resoudre) => {
+        resoudreSoumission = resoudre
+      }),
+    )
+
+    const bouton = rendu.find('button')
+    await bouton.trigger('click')
+
+    // Pendant l'appel : la zone de texte et le bouton sont desactives.
+    expect(rendu.find('textarea').attributes('disabled')).toBeDefined()
+    expect(bouton.attributes('disabled')).toBeDefined()
+
+    resoudreSoumission({ id: 'soumission-1', status: 'queued', acceptedAt: '2026-09-08T00:00:00Z' })
+    await flushPromises()
+
+    expect(appelApi).toHaveBeenLastCalledWith('/submissions', {
+      method: 'POST',
+      body: {
+        exerciseSlug: 'addition-de-deux-nombres',
+        code: 'function addition(a, b) {}',
+        requestKey: expect.any(String),
+      },
+    })
+    expect(rendu.text()).toContain('En file')
+    expect(rendu.text()).toContain('soumission-1')
+    expect(rendu.find('textarea').attributes('disabled')).toBeUndefined()
+    expect(rendu.find('button').attributes('disabled')).toBeUndefined()
+  })
+
+  it('affiche le message du serveur quand la soumission échoue', async () => {
+    appelApi.mockResolvedValueOnce(exerciceMock())
+
+    const rendu = await monter()
+
+    appelApi.mockRejectedValueOnce({
+      data: {
+        code: 'QUOTA_DEPASSE',
+        message: 'Vous avez atteint votre quota pour cette période.',
+      },
+    })
+
+    await rendu.find('button').trigger('click')
+    await flushPromises()
+
+    expect(rendu.find('[role="alert"]').text()).toBe(
+      'Vous avez atteint votre quota pour cette période.',
+    )
   })
 })

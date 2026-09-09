@@ -2,6 +2,12 @@ import mongoose, { type Model, type Schema } from 'mongoose'
 import { NOM_MODELE_EXERCISE, schemaExercise, type Exercise } from './exercise.model.ts'
 import { NOM_MODELE_SESSION, schemaSession, type Session } from './session.model.ts'
 import { NOM_MODELE_USER, normaliserEmail, schemaUser, type User } from './user.model.ts'
+import {
+  NOM_MODELE_QUOTA_COUNTER,
+  schemaQuotaCounter,
+  type QuotaCounter,
+} from './quota-counter.model.ts'
+import { NOM_MODELE_SUBMISSION, schemaSubmission, type Submission } from './submission.model.ts'
 
 export { normaliserEmail }
 
@@ -14,6 +20,8 @@ const DECLARATIONS: readonly Declaration[] = [
   { nom: NOM_MODELE_USER, schema: schemaUser },
   { nom: NOM_MODELE_SESSION, schema: schemaSession },
   { nom: NOM_MODELE_EXERCISE, schema: schemaExercise },
+  { nom: NOM_MODELE_SUBMISSION, schema: schemaSubmission },
+  { nom: NOM_MODELE_QUOTA_COUNTER, schema: schemaQuotaCounter },
 ]
 
 // Un modele est enregistre une seule fois, ici. Un service le recoit, il ne
@@ -53,4 +61,16 @@ export function modeleExercise(): Model<Exercise> {
   enregistrerModeles()
 
   return mongoose.model<Exercise>(NOM_MODELE_EXERCISE)
+}
+
+export function modeleSubmission(): Model<Submission> {
+  enregistrerModeles()
+
+  return mongoose.model<Submission>(NOM_MODELE_SUBMISSION)
+}
+
+export function modeleQuotaCounter(): Model<QuotaCounter> {
+  enregistrerModeles()
+
+  return mongoose.model<QuotaCounter>(NOM_MODELE_QUOTA_COUNTER)
 }
