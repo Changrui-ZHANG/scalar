@@ -2,12 +2,14 @@ import { Router } from 'express'
 import type { Config } from '../config/index.ts'
 import { AuthController } from '../controllers/auth.controller.ts'
 import { ExerciseController } from '../controllers/exercise.controller.ts'
+import { RunnerCallbackController } from '../controllers/runner-callback.controller.ts'
 import { SanteController } from '../controllers/sante.controller.ts'
 import { SubmissionController } from '../controllers/submission.controller.ts'
 import { AuthService } from '../services/auth.service.ts'
 import { ExerciseService } from '../services/exercise.service.ts'
 import { MotDePasseService } from '../services/mot-de-passe.service.ts'
 import { QuotaService } from '../services/quota.service.ts'
+import { RunnerAdapter } from '../services/runner.adapter.ts'
 import { SubmissionService } from '../services/submission.service.ts'
 
 // Racine de composition : construit les services et les controleurs, puis
@@ -27,12 +29,14 @@ export function construireRouteurApi(config: Config): Router {
 
   const serviceExercise = new ExerciseService()
   const serviceQuota = new QuotaService()
-  const serviceSubmission = new SubmissionService(serviceExercise, serviceQuota)
+  const adaptateurRunner = new RunnerAdapter(config.URL_RUNNER, config.SECRET_RUNNER_DEPOT)
+  const serviceSubmission = new SubmissionService(serviceExercise, serviceQuota, adaptateurRunner)
 
   routeur.use(new SanteController().buildRouter())
   routeur.use(new AuthController(serviceAuth, config.NODE_ENV !== 'development').buildRouter())
   routeur.use(new ExerciseController(serviceExercise).buildRouter())
   routeur.use(new SubmissionController(serviceSubmission).buildRouter())
+  routeur.use(new RunnerCallbackController(serviceSubmission, config.SECRET_RUNNER_RAPPEL).buildRouter())
 
   return routeur
 }

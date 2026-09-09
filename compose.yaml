@@ -94,6 +94,11 @@ services:
       # de secrets : deux deploiements qui la partageraient rendraient leurs
       # pseudonymes comparables.
       SECRET_PSEUDONYMISATION: developpement-pseudonymisation-local
+      # Deux secrets distincts (AD-16), un par sens d'appel — jamais la meme
+      # valeur, sans quoi un compromis de l'un compromet l'autre.
+      SECRET_RUNNER_DEPOT: developpement-runner-depot-local
+      SECRET_RUNNER_RAPPEL: developpement-runner-rappel-local
+      URL_RUNNER: http://runner:4000
     volumes:
       - ./backend:/app/backend
       # Les contrats sont montes comme l'espace qui les consomme : sans cette
@@ -116,11 +121,39 @@ services:
       - traefik.http.routers.backend.entryPoints=web
       - traefik.http.routers.backend.priority=10
       - traefik.http.services.backend.loadbalancer.server.port=3001
-    # Seul service des deux reseaux : joignable par le proxy et par le rendu
-    # serveur, et seul a atteindre la base.
+    # Trois reseaux, aucun de trop : joignable par le proxy et par le rendu
+    # serveur, seul a atteindre la base, et seul a atteindre le runner.
     networks:
       - bordure
       - donnees
+      - execution
+
+  runner:
+    build:
+      context: .
+      dockerfile: runner/Dockerfile
+    command: npm run dev --workspace runner
+    environment:
+      NODE_ENV: development
+      SECRET_RUNNER_DEPOT: developpement-runner-depot-local
+      SECRET_RUNNER_RAPPEL: developpement-runner-rappel-local
+      URL_RAPPEL_API: http://backend:3001/api/v1/runner-callbacks
+    volumes:
+      - ./runner:/app/runner
+      - ./shared:/app/shared
+      - /app/runner/node_modules
+      - /app/shared/node_modules
+      - /app/node_modules
+      # Seul acces au socket Docker de tout le compose (AD-3) : c'est la
+      # mecanique deja tranchee par l'architecture (`dockerode`), en
+      # lecture-ecriture parce que creer un conteneur l'exige — surface
+      # d'escalade reelle si le runner est compromis, a ne jamais etendre sans
+      # repasser par la revue humaine (voir spec-2-5, Ask First).
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Aucun port publie (AD-3) : joignable uniquement depuis le reseau
+    # interne `execution`, jamais depuis `bordure` ni `donnees`.
+    networks:
+      - execution
 
   mongo:
     image: mongo:8.0.29
@@ -155,15 +188,15 @@ services:
     networks:
       - donnees
 
-# Deux reseaux plutot qu'un. L'identite de client se resout par position dans
-# la chaine de transfert : elle suppose que rien d'autre que le
-# proxy et le rendu serveur ne parle au backend. Le reseau par defaut unique
-# faisait de cette supposition une convention ; ces deux reseaux en font une
-# frontiere. A tenir quand le workspace `runner/`, qui executera du code non
-# fiable, rejoindra le compose : il n'a rien a faire sur `bordure`.
+# Trois reseaux plutot qu'un. L'identite de client se resout par position
+# dans la chaine de transfert : elle suppose que rien d'autre que le proxy et
+# le rendu serveur ne parle au backend. `execution` est le reseau interne
+# backend <-> runner, ni `bordure` ni `donnees` : le runner, qui execute du
+# code non fiable, n'a rien a faire sur l'un ou l'autre.
 networks:
   bordure:
   donnees:
+  execution:
 
 volumes:
   mongo-data:

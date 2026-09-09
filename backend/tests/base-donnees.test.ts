@@ -2,7 +2,12 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { once } from 'node:events'
 import { pathToFileURL } from 'node:url'
 import mongoose from 'mongoose'
-import { SECRET_DE_TEST } from './aide-config.ts'
+import {
+  SECRET_DE_TEST,
+  SECRET_RUNNER_DEPOT_DE_TEST,
+  SECRET_RUNNER_RAPPEL_DE_TEST,
+  URL_RUNNER_DE_TEST,
+} from './aide-config.ts'
 import {
   attendreDemarrage,
   DELAI_PROCESS_MS,
@@ -61,7 +66,13 @@ describe('configuration', () => {
 
   it('accepte les deux schemas valides', () => {
     for (const uri of ['mongodb://hote:27017/base', 'mongodb+srv://hote/base']) {
-      const env = { MONGODB_URI: uri, SECRET_PSEUDONYMISATION: SECRET_DE_TEST }
+      const env = {
+        MONGODB_URI: uri,
+        SECRET_PSEUDONYMISATION: SECRET_DE_TEST,
+        SECRET_RUNNER_DEPOT: SECRET_RUNNER_DEPOT_DE_TEST,
+        SECRET_RUNNER_RAPPEL: SECRET_RUNNER_RAPPEL_DE_TEST,
+        URL_RUNNER: URL_RUNNER_DE_TEST,
+      }
 
       expect(chargerConfig(env as NodeJS.ProcessEnv).MONGODB_URI).toBe(uri)
     }

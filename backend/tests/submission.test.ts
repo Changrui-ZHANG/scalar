@@ -17,8 +17,9 @@ import {
   modeleUser,
 } from '../src/models/index.ts'
 import { SessionService } from '../src/services/session.service.ts'
-import { configDeTest } from './aide-config.ts'
+import { configDeTest, URL_RUNNER_DE_TEST } from './aide-config.ts'
 import { uriDeTest, verifierBaseDeTest } from './aide-base.ts'
+import { demarrerRunnerDouble, type RunnerDouble } from './aide-runner-double.ts'
 
 const URI_TEST = uriDeTest('submission')
 const CHEMIN = '/api/v1/submissions'
@@ -136,16 +137,26 @@ describe('bornes de la fenetre de quota (sans base)', () => {
 describe.skipIf(!URI_TEST)('soumission de code sur une base reelle', () => {
   const service = new BaseDonneesService()
   const sessions = new SessionService()
+  let runnerDouble: RunnerDouble
+
+  // Reaffecte `app` de la portee englobante (AD-3 : chaque adaptateur
+  // externe expose un double) — admet tout travail par defaut, un cas
+  // reaffecte `runnerDouble.comportement` pour exercer la file ou le rejet.
+  function app() {
+    return construireApp(configDeTest({ URL_RUNNER: runnerDouble.url }))
+  }
 
   beforeAll(async () => {
     await service.connecter(URI_TEST as string, 5_000)
     await service.creerIndex()
+    runnerDouble = await demarrerRunnerDouble()
   })
 
   afterAll(async () => {
     verifierBaseDeTest(mongoose.connection.name ?? '')
     await mongoose.connection.dropDatabase()
     await service.deconnecter()
+    await runnerDouble.fermer()
   })
 
   beforeEach(async () => {
@@ -153,6 +164,8 @@ describe.skipIf(!URI_TEST)('soumission de code sur une base reelle', () => {
     await modeleExercise().deleteMany({})
     await modeleSubmission().deleteMany({})
     await modeleQuotaCounter().deleteMany({})
+    runnerDouble.comportement = () => ({ statut: 202, corps: { admis: true } })
+    runnerDouble.appels = []
   })
 
   async function creerUtilisateur(accountState: EtatCompte = 'active') {
@@ -190,7 +203,31 @@ describe.skipIf(!URI_TEST)('soumission de code sur une base reelle', () => {
     return `${NOM_COOKIE_SESSION}=${ouverte.jeton}`
   }
 
-  it('accepte une soumission valide et rend son identifiant immediatement', async () => {
+  it('depose aupres du runner et passe running quand il admet immediatement (AD-3, AD-26)', async () => {
+    const utilisateur = await creerUtilisateur()
+    await creerExercicePublie()
+    const cookie = await cookieDeSession(utilisateur)
+
+    const reponse = await request(app()).post(CHEMIN).set('Cookie', cookie).send(saisieValide())
+
+    expect(reponse.status).toBe(201)
+    expect(reponse.body.status).toBe('running')
+    expect(typeof reponse.body.id).toBe('string')
+    expect(typeof reponse.body.acceptedAt).toBe('string')
+    expect(await modeleSubmission().countDocuments({})).toBe(1)
+
+    const persistee = await modeleSubmission().findById(reponse.body.id)
+    expect(persistee?.startedAt).toBeInstanceOf(Date)
+
+    // Le travail depose porte exactement la forme fermee d'AD-3.
+    expect(runnerDouble.appels).toEqual([
+      { languageId: 'javascript', code: saisieValide().code, tests: [] },
+    ])
+  })
+
+  it('reste queued avec une position observable quand le runner met en file (AD-26)', async () => {
+    runnerDouble.comportement = () => ({ statut: 202, corps: { admis: false, position: 3 } })
+
     const utilisateur = await creerUtilisateur()
     await creerExercicePublie()
     const cookie = await cookieDeSession(utilisateur)
@@ -199,9 +236,75 @@ describe.skipIf(!URI_TEST)('soumission de code sur une base reelle', () => {
 
     expect(reponse.status).toBe(201)
     expect(reponse.body.status).toBe('queued')
-    expect(typeof reponse.body.id).toBe('string')
-    expect(typeof reponse.body.acceptedAt).toBe('string')
+
+    const persistee = await modeleSubmission().findById(reponse.body.id)
+    expect(persistee?.queuePosition).toBe(3)
+    expect(persistee?.startedAt).toBeUndefined()
+  })
+
+  it('libere le quota reserve et reste queued quand le runner est injoignable (AD-14, AD-28)', async () => {
+    const utilisateur = await creerUtilisateur()
+    await creerExercicePublie()
+    const cookie = await cookieDeSession(utilisateur)
+
+    // Bypass expres du double : pointe sur une adresse ou rien n ecoute.
+    const instance = construireApp(configDeTest({ URL_RUNNER: URL_RUNNER_DE_TEST }))
+    const reponse = await request(instance).post(CHEMIN).set('Cookie', cookie).send(saisieValide())
+
+    expect(reponse.status).toBe(201)
+    expect(reponse.body.status).toBe('queued')
     expect(await modeleSubmission().countDocuments({})).toBe(1)
+
+    const compteur = await modeleQuotaCounter().findOne({ userId: utilisateur._id })
+    expect(compteur?.count).toBe(0)
+  })
+
+  it('libere le quota reserve et reste queued quand le runner repond hors 2xx (AD-14, AD-28)', async () => {
+    runnerDouble.comportement = () => ({ statut: 500, corps: { erreur: 'panne simulee du runner' } })
+
+    const utilisateur = await creerUtilisateur()
+    await creerExercicePublie()
+    const cookie = await cookieDeSession(utilisateur)
+
+    const reponse = await request(app()).post(CHEMIN).set('Cookie', cookie).send(saisieValide())
+
+    expect(reponse.status).toBe(201)
+    expect(reponse.body.status).toBe('queued')
+    expect(await modeleSubmission().countDocuments({})).toBe(1)
+
+    const compteur = await modeleQuotaCounter().findOne({ userId: utilisateur._id })
+    expect(compteur?.count).toBe(0)
+  })
+
+  // Preuve que l'accesseur `interne-runner` (AD-21) reselectionne bien le
+  // corps d'un test cache — exclu par defaut du modele (AD-13) — plutot que
+  // de le laisser silencieusement absent : sans cette assertion, un
+  // `.select('+tests.code')` retire par erreur laisserait passer tous les
+  // autres tests de ce fichier, qui n'utilisent que des exercices sans test.
+  it('transmet au runner le corps complet d un test, y compris cache (AD-13, AD-21)', async () => {
+    const utilisateur = await creerUtilisateur()
+    await creerExercicePublie({
+      tests: [
+        {
+          name: 'test cache',
+          assertion: 'verifie le resultat',
+          code: "test('cache', () => { assert.equal(addition(1, 1), 2) })",
+          hidden: true,
+        },
+      ],
+    })
+    const cookie = await cookieDeSession(utilisateur)
+
+    const reponse = await request(app()).post(CHEMIN).set('Cookie', cookie).send(saisieValide())
+
+    expect(reponse.status).toBe(201)
+    expect(runnerDouble.appels).toEqual([
+      {
+        languageId: 'javascript',
+        code: saisieValide().code,
+        tests: [{ name: 'test cache', code: "test('cache', () => { assert.equal(addition(1, 1), 2) })" }],
+      },
+    ])
   })
 
   it('refuse un compte non verifie, sans creer de Soumission', async () => {

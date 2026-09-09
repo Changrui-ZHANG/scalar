@@ -32,7 +32,8 @@ function parametreArgon2(plancher: number) {
   )
 }
 
-const schema = v.object({
+const schema = v.pipe(
+  v.object({
   // Decide la pose de l'attribut `Secure` sur le cookie de session : partout
   // sauf en developpement. La liste est close a dessein — un environnement non
   // reconnu ferait retomber la decision sur un « sinon », et ce « sinon »
@@ -75,7 +76,50 @@ const schema = v.object({
   ARGON2_MEMOIRE_KIB: parametreArgon2(PLANCHER_ARGON2.memoireKiB),
   ARGON2_ITERATIONS: parametreArgon2(PLANCHER_ARGON2.iterations),
   ARGON2_PARALLELISME: parametreArgon2(PLANCHER_ARGON2.parallelisme),
-})
+  // Deux secrets distincts (AD-16), un par sens d'appel : celui-ci porte le
+  // depot API -> runner. Sans valeur par defaut, comme le secret de
+  // pseudonymisation.
+  SECRET_RUNNER_DEPOT: v.pipe(
+    v.string(),
+    v.minLength(
+      LONGUEUR_MINIMALE_SECRET,
+      `doit faire au moins ${LONGUEUR_MINIMALE_SECRET} caracteres`,
+    ),
+    v.check(
+      (valeur) => !estSecretDeRemplissage(valeur),
+      'porte encore une valeur de remplissage : generez-en une aleatoire',
+    ),
+  ),
+  // Celui-ci porte le rappel runner -> API, dans l'autre sens : jamais la
+  // meme valeur que le precedent, sans quoi un secret compromis l'est dans
+  // les deux sens a la fois.
+  SECRET_RUNNER_RAPPEL: v.pipe(
+    v.string(),
+    v.minLength(
+      LONGUEUR_MINIMALE_SECRET,
+      `doit faire au moins ${LONGUEUR_MINIMALE_SECRET} caracteres`,
+    ),
+    v.check(
+      (valeur) => !estSecretDeRemplissage(valeur),
+      'porte encore une valeur de remplissage : generez-en une aleatoire',
+    ),
+  ),
+  // Base du runner, joignable uniquement sur le reseau interne (AD-3) :
+  // jamais lue ailleurs que par `runner.adapter.ts`.
+  URL_RUNNER: v.pipe(
+    v.string(),
+    v.nonEmpty(),
+    v.regex(/^https?:\/\//, 'doit commencer par http:// ou https://'),
+  ),
+  }),
+  // Les deux commentaires ci-dessus l'annoncent : jamais la meme valeur.
+  // Rien ne le verifiait avant ce controle croise — un operateur pouvait
+  // poser deux fois le meme secret sans que rien ne le refuse.
+  v.check(
+    (config) => config.SECRET_RUNNER_DEPOT !== config.SECRET_RUNNER_RAPPEL,
+    'SECRET_RUNNER_DEPOT et SECRET_RUNNER_RAPPEL doivent porter des valeurs distinctes (AD-16)',
+  ),
+)
 
 export type Config = v.InferOutput<typeof schema>
 

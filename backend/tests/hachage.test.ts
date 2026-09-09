@@ -4,6 +4,11 @@ import { ALGORITHME_ARGON2ID, PLANCHER_ARGON2 } from '@scalar/shared/hachage.ts'
 import { chargerConfig } from '../src/config/index.ts'
 import { MotDePasseService } from '../src/services/mot-de-passe.service.ts'
 import { DELAI_PROCESS_MS, lancerJusquAlaSortie, portLibre } from './aide-process.ts'
+import {
+  SECRET_RUNNER_DEPOT_DE_TEST,
+  SECRET_RUNNER_RAPPEL_DE_TEST,
+  URL_RUNNER_DE_TEST,
+} from './aide-config.ts'
 
 const MOT_DE_PASSE = 'un mot de passe assez long'
 
@@ -14,6 +19,9 @@ function envValide(surcharges: Record<string, string> = {}): NodeJS.ProcessEnv {
   return {
     MONGODB_URI: 'mongodb://hote:27017/base',
     SECRET_PSEUDONYMISATION: 's'.repeat(64),
+    SECRET_RUNNER_DEPOT: SECRET_RUNNER_DEPOT_DE_TEST,
+    SECRET_RUNNER_RAPPEL: SECRET_RUNNER_RAPPEL_DE_TEST,
+    URL_RUNNER: URL_RUNNER_DE_TEST,
     ...surcharges,
   } as NodeJS.ProcessEnv
 }

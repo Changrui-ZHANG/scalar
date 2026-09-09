@@ -2,7 +2,12 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { once } from 'node:events'
 import { createServer } from 'node:net'
 import { fileURLToPath } from 'node:url'
-import { SECRET_DE_TEST } from './aide-config.ts'
+import {
+  SECRET_DE_TEST,
+  SECRET_RUNNER_DEPOT_DE_TEST,
+  SECRET_RUNNER_RAPPEL_DE_TEST,
+  URL_RUNNER_DE_TEST,
+} from './aide-config.ts'
 
 // Lancement du vrai point d'entree, partage par les tests qui verifient un
 // refus de demarrer. Ils sont plusieurs a en avoir besoin — index manquant,
@@ -25,6 +30,9 @@ const ECARTEES = new Set([
   'MONGODB_URI',
   'MONGODB_URI_TEST',
   'SECRET_PSEUDONYMISATION',
+  'SECRET_RUNNER_DEPOT',
+  'SECRET_RUNNER_RAPPEL',
+  'URL_RUNNER',
   'ARGON2_MEMOIRE_KIB',
   'ARGON2_ITERATIONS',
   'ARGON2_PARALLELISME',
@@ -73,6 +81,9 @@ export function lancer(supplement: Record<string, string>): ChildProcessWithoutN
     env: environnementPropre({
       CHEMIN_FICHIER_ENV: SANS_FICHIER_ENV,
       SECRET_PSEUDONYMISATION: SECRET_DE_TEST,
+      SECRET_RUNNER_DEPOT: SECRET_RUNNER_DEPOT_DE_TEST,
+      SECRET_RUNNER_RAPPEL: SECRET_RUNNER_RAPPEL_DE_TEST,
+      URL_RUNNER: URL_RUNNER_DE_TEST,
       ...supplement,
     }),
     stdio: ['ignore', 'pipe', 'pipe'],

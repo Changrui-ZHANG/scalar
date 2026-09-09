@@ -2,10 +2,12 @@ import * as v from 'valibot'
 import { LONGUEUR_MAX_SLUG_EXERCICE } from './exercise.ts'
 import { LONGUEUR_MAX_CLE_DEDUPLICATION, LONGUEUR_MAX_CODE_SOUMISSION } from './limites.ts'
 
-// Contrat de l'entite `Submission`, module `submissions`. Seul `queued`
-// existe dans le perimetre de cette story : le calcul du verdict (story 2.6)
-// introduira les statuts qui suivent une execution reelle.
-export const SUBMISSION_STATUSES = ['queued'] as const
+// Contrat de l'entite `Submission`, module `submissions`. `running` rejoint
+// `queued` avec la story 2.5 : le runner execute reellement le travail et
+// rappelle un resultat brut. Les quatre statuts terminaux (`passed`,
+// `failed`, `error`, `timeout`) restent entierement a la story 2.6, qui
+// ecrira la classification et la table d'interpretation (AD-11).
+export const SUBMISSION_STATUSES = ['queued', 'running'] as const
 
 export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number]
 

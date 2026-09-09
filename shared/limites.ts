@@ -106,3 +106,27 @@ export const LONGUEUR_MAX_CODE_SOUMISSION = 50_000
 // mensuel ou une remise a zero a heure fixe restent hors du perimetre
 // minimal construit ici.
 export const PLAFOND_QUOTA_SANDBOX: Plafond = { fenetreMs: 24 * 60 * 60 * 1000, maximum: 20 }
+
+// Bornes du module `runner` (story 2.5). AD-28 : l'appel de depot API -> runner
+// est un appel sortant comme les trois autres (LLM, Stripe, SMTP) et porte donc
+// un delai maximal et une politique de reprise explicites. Le delai couvre
+// uniquement la decision d'admission — quasi instantanee, le runner ne
+// bloquant jamais sur l'execution elle-meme (AD-26) — jamais l'execution
+// complete du conteneur.
+export const DELAI_MAX_DEPOT_RUNNER_MS = 2_000
+
+// Nombre total de tentatives, la premiere comprise. Le depot n'est pas une
+// operation idempotente au sens strict, mais le runner ne detient aucun etat
+// (AD-3) : rejouer un depot refuse par timeout ne double aucune execution
+// deja engagee, il echoue juste de nouveau.
+export const TENTATIVES_MAX_DEPOT_RUNNER = 2
+
+// Plafond d'executions sandbox simultanees (AD-26), decide et applique par le
+// runner seul — c'est lui, jamais l'API, qui connait sa charge reelle.
+export const PLAFOND_CONCURRENCE_RUNNER = 4
+
+// Troncature de la sortie brute d'une execution (AD-24), en octets **et** en
+// lignes : deux plafonds distincts, parce qu'une sortie bavarde en lignes
+// courtes epuiserait le second sans jamais atteindre le premier.
+export const TRONCATURE_SORTIE_OCTETS_MAX = 262_144
+export const TRONCATURE_SORTIE_LIGNES_MAX = 1_000

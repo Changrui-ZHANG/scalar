@@ -104,6 +104,20 @@ export const CODES_ERREUR = {
     message:
       'Vous avez atteint votre quota pour cette période. Attendez la réinitialisation indiquée avant de réessayer.',
   },
+  SECRET_SERVICE_INVALIDE: {
+    statut: 401,
+    message:
+      "Cette requête inter-service n'a pas pu être authentifiée. Vérifiez le secret transmis.",
+  },
+  TRAVAIL_RUNNER_INVALIDE: {
+    statut: 400,
+    message:
+      "Ce travail n'a pas la forme fermée attendue par le runner. Vérifiez les clés transmises.",
+  },
+  SOUMISSION_INTROUVABLE: {
+    statut: 404,
+    message: "Cette soumission n'existe pas ou plus.",
+  },
   ERREUR_INTERNE: {
     statut: 500,
     message: "Le serveur n'a pas pu traiter votre demande. Réessayez dans quelques instants.",

@@ -1,6 +1,7 @@
 import type { HydratedDocument } from 'mongoose'
 import { ErreurApi } from '@scalar/shared/erreurs.ts'
 import type { ProjectionExercicePublique, TestCache, TestVisible } from '@scalar/shared/exercise.ts'
+import type { RunnerTestCase } from '@scalar/shared/runner.ts'
 import { modeleExercise } from '../models/index.ts'
 import type { Exercise } from '../models/exercise.model.ts'
 
@@ -61,5 +62,19 @@ export class ExerciseService {
     }
 
     return versProjectionPublique(exercice)
+  }
+
+  // Accesseur distinct, reserve au runner (AD-21 : projection `interne-runner`,
+  // separee de la projection `publique`). Seul endroit du backend qui
+  // reselectionne le corps d'un test **cache** — jamais vers un navigateur
+  // (AD-13), toujours vers le seul consommateur qui doit executer ce corps.
+  async trouverTestsPourRunner(exerciseId: string): Promise<readonly RunnerTestCase[]> {
+    const exercice = await modeleExercise().findById(exerciseId).select('+tests.code')
+
+    if (!exercice) {
+      throw new ErreurApi('EXERCICE_INTROUVABLE')
+    }
+
+    return exercice.tests.map((test) => ({ name: test.name, code: test.code }))
   }
 }

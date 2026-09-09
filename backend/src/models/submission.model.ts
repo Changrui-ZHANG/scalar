@@ -3,6 +3,7 @@ import { LONGUEUR_MAX_SLUG_EXERCICE } from '@scalar/shared/exercise.ts'
 import {
   LONGUEUR_MAX_CLE_DEDUPLICATION,
   LONGUEUR_MAX_CODE_SOUMISSION,
+  TRONCATURE_SORTIE_OCTETS_MAX,
 } from '@scalar/shared/limites.ts'
 import { SUBMISSION_STATUSES, type SubmissionStatus } from '@scalar/shared/submission.ts'
 import { NOM_MODELE_USER } from './user.model.ts'
@@ -35,6 +36,21 @@ export interface Submission {
   // sur `Exercise`.
   pathId?: Types.ObjectId
   pathVersion?: number
+  // Champs de la story 2.5 : un resultat brut, jamais un verdict — la
+  // classification en quatre valeurs et `failureOrigin` restent a la story
+  // 2.6 (voir le Spec Change Log de cette spec). `startedAt` est pose des
+  // l'admission par le runner (AD-26) ; `finishedAt` et les champs `raw*`
+  // n'arrivent qu'au rappel.
+  startedAt?: Date
+  finishedAt?: Date
+  rawExitCode?: number | null
+  rawSignal?: string | null
+  rawOutput?: string
+  rawOutputTronque?: boolean
+  // Position en file au moment du depot, quand le plafond de concurrence du
+  // runner est atteint (AD-26). Observable, mais sans consommateur UI dans
+  // le perimetre de cette story.
+  queuePosition?: number
   schemaVersion: number
 }
 
@@ -58,6 +74,13 @@ export const schemaSubmission = new Schema<Submission>(
     acceptedAt: { type: Date, required: true },
     pathId: { type: Schema.Types.ObjectId, required: false },
     pathVersion: { type: Number, required: false },
+    startedAt: { type: Date, required: false },
+    finishedAt: { type: Date, required: false },
+    rawExitCode: { type: Number, required: false },
+    rawSignal: { type: String, required: false },
+    rawOutput: { type: String, required: false, maxlength: TRONCATURE_SORTIE_OCTETS_MAX },
+    rawOutputTronque: { type: Boolean, required: false },
+    queuePosition: { type: Number, required: false },
     schemaVersion: { type: Number, required: true, default: VERSION_SCHEMA_SUBMISSION },
   },
   {
