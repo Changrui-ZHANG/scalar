@@ -24,6 +24,8 @@ function corpsValide(surcharges: Record<string, unknown> = {}): Record<string, u
     output: 'tout va bien',
     outputTruncated: false,
     finishedAt: new Date().toISOString(),
+    timedOut: false,
+    tests: [],
     ...surcharges,
   }
 }
@@ -139,22 +141,148 @@ describe.skipIf(!URI_TEST)('rappel runner sur une base reelle', () => {
     expect(reponse.body.code).toBe('SOUMISSION_INTROUVABLE')
   })
 
-  it('ecrit le resultat brut et passe (ou reste) running avec le bon secret', async () => {
+  it('ecrit le resultat brut et passe (ou reste) running avec le bon secret, verdict passed sur exitCode 0', async () => {
     const soumission = await creerSoumission()
 
     const reponse = await request(app())
       .post(`/api/v1/runner-callbacks/${soumission.id}`)
       .set(EN_TETE_SECRET, SECRET_RUNNER_RAPPEL_DE_TEST)
-      .send(corpsValide({ output: 'sortie du conteneur', exitCode: 1, signal: null }))
+      .send(corpsValide({ output: 'sortie du conteneur', exitCode: 0, signal: null }))
 
     expect(reponse.status).toBe(204)
 
     const relue = await modeleSubmission().findById(soumission.id)
     expect(relue?.status).toBe('running')
-    expect(relue?.rawExitCode).toBe(1)
+    expect(relue?.rawExitCode).toBe(0)
     expect(relue?.rawOutput).toBe('sortie du conteneur')
     expect(relue?.rawOutputTronque).toBe(false)
     expect(relue?.finishedAt).toBeInstanceOf(Date)
     expect(relue?.startedAt).toBeInstanceOf(Date)
+    expect(relue?.verdict).toBe('passed')
+    expect(relue?.failureOrigin).toBeUndefined()
+    expect(relue?.toObject().progressionEffect).toEqual({ status: 'pending' })
+  })
+
+  it('classe failed avec le detail par test quand une assertion echoue', async () => {
+    const soumission = await creerSoumission()
+
+    const reponse = await request(app())
+      .post(`/api/v1/runner-callbacks/${soumission.id}`)
+      .set(EN_TETE_SECRET, SECRET_RUNNER_RAPPEL_DE_TEST)
+      .send(
+        corpsValide({
+          exitCode: 1,
+          firstTestAt: new Date().toISOString(),
+          tests: [{ name: 'addition', status: 'failed', expected: '5', actual: '4' }],
+        }),
+      )
+
+    expect(reponse.status).toBe(204)
+
+    const relue = await modeleSubmission().findById(soumission.id)
+    expect(relue?.verdict).toBe('failed')
+    expect(relue?.failureOrigin).toBe('apprenant')
+    expect(relue?.toObject().testResults).toEqual([
+      { index: 0, name: 'addition', status: 'failed', expected: '5', actual: '4' },
+    ])
+  })
+
+  it('classe error/typage quand la compilation TypeScript echoue avant tout test', async () => {
+    const soumission = await creerSoumission()
+
+    const reponse = await request(app())
+      .post(`/api/v1/runner-callbacks/${soumission.id}`)
+      .set(EN_TETE_SECRET, SECRET_RUNNER_RAPPEL_DE_TEST)
+      .send(corpsValide({ exitCode: 2, output: 'soumission.ts(1,1): erreur de typage' }))
+
+    expect(reponse.status).toBe(204)
+
+    const relue = await modeleSubmission().findById(soumission.id)
+    expect(relue?.verdict).toBe('error')
+    expect(relue?.failureOrigin).toBe('apprenant')
+    expect(relue?.firstTestAt).toBeUndefined()
+  })
+
+  it('classe error/execution quand le process crashe hors assertion apres le demarrage des tests', async () => {
+    const soumission = await creerSoumission()
+
+    const reponse = await request(app())
+      .post(`/api/v1/runner-callbacks/${soumission.id}`)
+      .set(EN_TETE_SECRET, SECRET_RUNNER_RAPPEL_DE_TEST)
+      .send(corpsValide({ exitCode: 1, firstTestAt: new Date().toISOString(), tests: [] }))
+
+    expect(reponse.status).toBe(204)
+
+    const relue = await modeleSubmission().findById(soumission.id)
+    expect(relue?.verdict).toBe('error')
+    expect(relue?.failureOrigin).toBe('apprenant')
+    expect(relue?.firstTestAt).toBeInstanceOf(Date)
+  })
+
+  it('classe timeout quand timedOut est vrai, quel que soit le code de sortie', async () => {
+    const soumission = await creerSoumission()
+
+    const reponse = await request(app())
+      .post(`/api/v1/runner-callbacks/${soumission.id}`)
+      .set(EN_TETE_SECRET, SECRET_RUNNER_RAPPEL_DE_TEST)
+      .send(corpsValide({ exitCode: null, signal: 'SIGKILL', timedOut: true }))
+
+    expect(reponse.status).toBe(204)
+
+    const relue = await modeleSubmission().findById(soumission.id)
+    expect(relue?.verdict).toBe('timeout')
+    expect(relue?.failureOrigin).toBe('apprenant')
+  })
+
+  it('classe error/plateforme quand exitCode est nul hors timeout (echec runner avant toute execution)', async () => {
+    const soumission = await creerSoumission()
+
+    const reponse = await request(app())
+      .post(`/api/v1/runner-callbacks/${soumission.id}`)
+      .set(EN_TETE_SECRET, SECRET_RUNNER_RAPPEL_DE_TEST)
+      .send(
+        corpsValide({
+          exitCode: null,
+          signal: null,
+          timedOut: false,
+          output: 'Echec interne du runner, avant toute execution : demon injoignable',
+        }),
+      )
+
+    expect(reponse.status).toBe(204)
+
+    const relue = await modeleSubmission().findById(soumission.id)
+    expect(relue?.verdict).toBe('error')
+    expect(relue?.failureOrigin).toBe('plateforme')
+  })
+
+  it('garde le verdict deja ecrit sur un rappel tardif, et ne complete que sortie et detail', async () => {
+    const soumission = await creerSoumission()
+
+    const premier = await request(app())
+      .post(`/api/v1/runner-callbacks/${soumission.id}`)
+      .set(EN_TETE_SECRET, SECRET_RUNNER_RAPPEL_DE_TEST)
+      .send(corpsValide({ exitCode: 0, output: 'premiere sortie' }))
+
+    expect(premier.status).toBe(204)
+
+    const tardif = await request(app())
+      .post(`/api/v1/runner-callbacks/${soumission.id}`)
+      .set(EN_TETE_SECRET, SECRET_RUNNER_RAPPEL_DE_TEST)
+      .send(
+        corpsValide({
+          exitCode: 1,
+          output: 'sortie tardive',
+          tests: [{ name: 'addition', status: 'failed' }],
+        }),
+      )
+
+    expect(tardif.status).toBe(204)
+
+    const relue = await modeleSubmission().findById(soumission.id)
+    expect(relue?.verdict).toBe('passed')
+    expect(relue?.failureOrigin).toBeUndefined()
+    expect(relue?.rawOutput).toBe('sortie tardive')
+    expect(relue?.toObject().testResults).toEqual([{ index: 0, name: 'addition', status: 'failed' }])
   })
 })

@@ -3,8 +3,14 @@ import { request as requeteHttp } from 'node:http'
 import { Writable, type Duplex } from 'node:stream'
 import Docker from 'dockerode'
 import { TRONCATURE_SORTIE_LIGNES_MAX, TRONCATURE_SORTIE_OCTETS_MAX } from '@scalar/shared/limites.ts'
-import type { RunnerJob } from '@scalar/shared/runner.ts'
+import type { RunnerJob, RunnerTestResult } from '@scalar/shared/runner.ts'
 import { resoudreImage } from './registre.ts'
+import {
+  CHEMIN_SCRIPT_WRAPPER,
+  MARQUEUR_DEBUT_RESULTAT,
+  MARQUEUR_FIN_RESULTAT,
+  fichiersVerificationTypage,
+} from './verificationTypage.ts'
 
 // Reprend l'invocation Docker durcie du pic (spike/sandbox-2-1/lancer.ts:115-155)
 // via `dockerode` plutot que le binaire `docker` en sous-processus. Toutes les
@@ -14,8 +20,20 @@ const LIMITES = {
   memoireOctets: 256 * 1024 * 1024, // --memory (et --memory-swap egal, contre le report en swap)
   processus: 64, // --pids-limit
   descripteurs: 256, // --ulimit nofile
-  tailleEcritureOctets: 2_097_152, // --ulimit fsize
-  espaceTravail: '16m', // taille du tmpfs /work
+  // --ulimit fsize : plafond par fichier (jamais cumulatif) applique par le
+  // noyau a tout processus du conteneur, extraction du tar comprise. Porte a
+  // 12 Mo (etait 2 Mo avant la story 2.6) parce que le plus gros fichier
+  // embarque (`typescript.js`, environ 9,1 Mo) depassait l'ancien plafond :
+  // `tar` recevait alors SIGXFSZ en l'ecrivant, le conteneur mourait avant
+  // meme d'avoir lu tout `stdin`, et l'ecriture du tar echouait par un EOF
+  // cote hote — jamais un blocage, mais un echec disproportionne pour une
+  // borne qui ne visait que la sortie d'un programme soumis.
+  tailleEcritureOctets: 12 * 1024 * 1024,
+  // Taille du tmpfs /work. Portee a 32 Mo (etait 16 Mo avant la story 2.6) :
+  // le compilateur TypeScript embarque (`verificationTypage.ts`) pese
+  // environ 10 Mo une fois les fichiers de bibliotheque inutiles ecartes,
+  // et le code soumis reste tres loin de cette taille.
+  espaceTravail: '32m',
   dureeMs: 20_000, // surveillance cote hote
   sursisAvantAbandonMs: 5_000, // delai apres `kill` avant d'abandonner l'attente du demon
 }
@@ -27,7 +45,17 @@ export interface ResultatExecution {
   readonly signal: string | null
   readonly output: string
   readonly outputTruncated: boolean
-  readonly killedByHost: boolean
+  // Decide uniquement par le runner (host kill), jamais deduit d'un delai
+  // applicatif (AD-11) : nomme comme le champ homonyme du rappel
+  // (`RunnerCallbackBody.timedOut`), une seule source de verite.
+  readonly timedOut: boolean
+  // Detail par test resolu, extrait du message JSON de fin du wrapper
+  // (`verificationTypage.ts`). Vide quand la compilation echoue avant tout
+  // lancement de `node --test`.
+  readonly tests: readonly RunnerTestResult[]
+  // Absent pour la meme raison que `tests` est vide : la compilation a
+  // echoue avant que le wrapper ne pose cet instant.
+  readonly firstTestAt?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -58,10 +86,23 @@ function enTeteTar(nom: string, taille: number): Buffer {
   return entete
 }
 
-function construireTar(nom: string, contenu: Buffer): Buffer {
-  const rembourrage = Buffer.alloc((512 - (contenu.length % 512)) % 512)
+interface FichierTar {
+  readonly nom: string
+  readonly contenu: Buffer
+}
 
-  return Buffer.concat([enTeteTar(nom, contenu.length), contenu, rembourrage, Buffer.alloc(1024)])
+function entreeTar(fichier: FichierTar): Buffer {
+  const rembourrage = Buffer.alloc((512 - (fichier.contenu.length % 512)) % 512)
+
+  return Buffer.concat([enTeteTar(fichier.nom, fichier.contenu.length), fichier.contenu, rembourrage])
+}
+
+// Archive a plusieurs fichiers (story 2.6 : le compilateur TypeScript et son
+// wrapper rejoignent `soumission.ts`) : un seul marqueur de fin d'archive
+// (deux blocs nuls), a la toute fin — deux blocs nuls entre deux entrees
+// seraient lus par `tar` comme une fin d'archive prematuree.
+function construireTar(fichiers: readonly FichierTar[]): Buffer {
+  return Buffer.concat([...fichiers.map(entreeTar), Buffer.alloc(1024)])
 }
 
 // Un seul fichier combine le code soumis et les cas de test, comme le
@@ -132,6 +173,45 @@ function ajouterAvecTroncature(
   if (lignes.length > TRONCATURE_SORTIE_LIGNES_MAX) {
     etat.sortie = lignes.slice(0, TRONCATURE_SORTIE_LIGNES_MAX).join('\n')
     etat.tronque = true
+  }
+}
+
+interface ResultatWrapper {
+  readonly output: string
+  readonly tests: readonly RunnerTestResult[]
+  readonly firstTestAt?: string
+}
+
+// Extrait le message JSON de fin ecrit par le wrapper d'execution
+// (`verificationTypage.ts`), repere entre ses deux marqueurs, et le retire de
+// la sortie rendue a l'appelant — jamais visible dans ce que verra
+// l'apprenant. Absent quand la compilation TypeScript a echoue (le wrapper
+// sort avant de l'ecrire) ou quand la sortie a ete tronquee avant de
+// l'atteindre : dans les deux cas, `tests` reste vide plutot que d'inventer
+// un detail par test.
+function extraireResultatWrapper(sortie: string): ResultatWrapper {
+  const debut = sortie.lastIndexOf(MARQUEUR_DEBUT_RESULTAT)
+
+  if (debut === -1) {
+    return { output: sortie, tests: [] }
+  }
+
+  const finMarqueur = sortie.indexOf(MARQUEUR_FIN_RESULTAT, debut)
+  const finCharge = debut + MARQUEUR_DEBUT_RESULTAT.length
+  const chargeUtile = sortie.slice(finCharge, finMarqueur === -1 ? sortie.length : finMarqueur)
+  const finRetrait = finMarqueur === -1 ? sortie.length : finMarqueur + MARQUEUR_FIN_RESULTAT.length
+  const sortieNettoyee = (sortie.slice(0, debut) + sortie.slice(finRetrait)).replace(/\n+$/, '')
+
+  try {
+    const parsed = JSON.parse(chargeUtile) as { firstTestAt?: string; tests?: unknown }
+
+    return {
+      output: sortieNettoyee,
+      tests: Array.isArray(parsed.tests) ? (parsed.tests as RunnerTestResult[]) : [],
+      firstTestAt: parsed.firstTestAt,
+    }
+  } catch {
+    return { output: sortieNettoyee, tests: [] }
   }
 }
 
@@ -234,13 +314,16 @@ export async function invoquerConteneur(job: RunnerJob): Promise<ResultatExecuti
   // defaut du pic signale dans `deferred-work.md`, ou deux pilotes concurrents
   // se detruisaient mutuellement leurs conteneurs.
   const nom = `${ETIQUETTE_RUNNER}-${randomBytes(8).toString('hex')}`
-  const tar = construireTar('soumission.ts', Buffer.from(construireScript(job), 'utf8'))
+  const tar = construireTar([
+    { nom: 'soumission.ts', contenu: Buffer.from(construireScript(job), 'utf8') },
+    ...fichiersVerificationTypage().map((fichier) => ({ nom: fichier.chemin, contenu: fichier.contenu })),
+  ])
 
   const conteneur = await docker.createContainer({
     name: nom,
     Image: image,
     Labels: { [ETIQUETTE_RUNNER]: '1' },
-    Cmd: ['sh', '-c', 'tar -xf - -C /work && exec node --test soumission.ts'],
+    Cmd: ['sh', '-c', `tar -xf - -C /work && exec node ${CHEMIN_SCRIPT_WRAPPER}`],
     WorkingDir: '/work',
     User: '65534:65534',
     OpenStdin: true,
@@ -347,12 +430,16 @@ export async function invoquerConteneur(job: RunnerJob): Promise<ResultatExecuti
     const { exitCode, signal } = await Promise.race([attenteConteneur, secours])
     annulerMinuteurs()
 
+    const resultatWrapper = extraireResultatWrapper(etatSortie.sortie)
+
     return {
       exitCode,
       signal,
-      output: etatSortie.sortie,
+      output: resultatWrapper.output,
       outputTruncated: etatSortie.tronque,
-      killedByHost: tueParHote,
+      timedOut: tueParHote,
+      tests: resultatWrapper.tests,
+      firstTestAt: resultatWrapper.firstTestAt,
     }
   } finally {
     annulerMinuteurs()

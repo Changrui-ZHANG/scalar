@@ -1,13 +1,58 @@
 import { Types, type HydratedDocument } from 'mongoose'
 import { ErreurApi } from '@scalar/shared/erreurs.ts'
-import type { RunnerCallbackBody } from '@scalar/shared/runner.ts'
+import { CODE_ECHEC_TYPAGE, type RunnerCallbackBody } from '@scalar/shared/runner.ts'
 import type { CreateSubmissionInput, CreatedSubmissionProjection } from '@scalar/shared/submission.ts'
+import type { SubmissionFailureOrigin, SubmissionVerdict } from '@scalar/shared/submission.ts'
 import { modeleSubmission } from '../models/index.ts'
 import type { Submission } from '../models/submission.model.ts'
 import type { ExerciseService } from './exercise.service.ts'
 import type { QuotaService } from './quota.service.ts'
 import type { RunnerAdapter } from './runner.adapter.ts'
 import { DUPLICATE_KEY_CODE, mongoErrorCode } from './erreur-mongo.util.ts'
+
+interface ClassificationResultatBrut {
+  readonly verdict: SubmissionVerdict
+  readonly failureOrigin?: SubmissionFailureOrigin
+}
+
+// Classe le resultat brut en l'une des quatre issues terminales (story 2.6).
+// `timedOut` prime sur tout : decide uniquement par le runner (host kill),
+// jamais deduit ici (AD-11). Le code de sortie dedie distingue ensuite un
+// echec de typage — jamais atteint `node --test` — d'un resultat ordinaire du
+// lanceur de tests natif, lui-meme distingue par le detail par test : au
+// moins un test « failed » signale une assertion de l'apprenant, son absence
+// avec un code non nul signale une exception non interceptee hors assertion.
+function classifierResultatBrut(corps: RunnerCallbackBody): ClassificationResultatBrut {
+  if (corps.timedOut) {
+    return { verdict: 'timeout', failureOrigin: 'apprenant' }
+  }
+
+  if (corps.exitCode === CODE_ECHEC_TYPAGE) {
+    return { verdict: 'error', failureOrigin: 'apprenant' }
+  }
+
+  if (corps.exitCode === 0) {
+    return { verdict: 'passed' }
+  }
+
+  if (corps.tests.some((cas) => cas.status === 'failed')) {
+    return { verdict: 'failed', failureOrigin: 'apprenant' }
+  }
+
+  // `exitCode` nul hors timeout : ni le lanceur de tests natif ni le wrapper
+  // de compilation ne rendent jamais ce code (0, CODE_ECHEC_TYPAGE ou celui
+  // de `node --test`, tous non nuls autrement). Seul le repli synthetique du
+  // runner avant toute execution reelle (demon injoignable, image absente,
+  // `createContainer` en echec — voir `serveur.ts`) le produit : aucune
+  // limite n'a ete franchie, la cause est une absence d'infrastructure, donc
+  // `plateforme` (AD-11 : « la limite franchie ou son absence »), jamais
+  // imputable au code de l'apprenant.
+  if (corps.exitCode === null) {
+    return { verdict: 'error', failureOrigin: 'plateforme' }
+  }
+
+  return { verdict: 'error', failureOrigin: 'apprenant' }
+}
 
 function toProjection(submission: HydratedDocument<Submission>): CreatedSubmissionProjection {
   return {
@@ -114,10 +159,15 @@ export class SubmissionService {
 
       if (admission === undefined) {
         // Runner injoignable malgre les tentatives (AD-28) : panne
-        // d'infrastructure, donc le quota reserve est libere (AD-14). La
-        // Soumission reste `queued` — aucun statut d'echec n'existe encore
-        // dans le perimetre de cette story (story 2.6).
+        // d'infrastructure, donc le quota reserve est libere (AD-14). Un
+        // verdict terminal est ecrit immediatement — jamais laisse `queued`
+        // sans indication (AD-11) : `status` reste `queued`, seul le verdict
+        // porte l'echec.
         await this.quota.release(userId, 'executionSandbox', reservation.period).catch(() => undefined)
+        creee.verdict = 'error'
+        creee.failureOrigin = 'plateforme'
+        creee.progressionEffect = { status: 'pending' }
+        await creee.save()
       } else if (admission.admis) {
         creee.status = 'running'
         creee.startedAt = new Date()
@@ -135,11 +185,11 @@ export class SubmissionService {
     return toProjection(creee)
   }
 
-  // Ecrit le resultat brut rapporte par le runner (AD-11, AD-24). Le statut
-  // passe (ou reste) `running`, que la Soumission ait ete admise
-  // immediatement ou mise en file au depot — dans les deux cas, arriver ici
-  // signifie qu'une execution a reellement eu lieu. Aucune classification :
-  // la story 2.6 lira ces champs pour ecrire le verdict terminal.
+  // Ecrit le resultat brut rapporte par le runner et classe le verdict
+  // terminal (AD-11, AD-24). Le statut passe (ou reste) `running` — jamais
+  // un des quatre verdicts, qui vit dans son propre champ. Un verdict deja
+  // ecrit est immuable : un rappel tardif ne fait que completer la sortie
+  // brute et le detail par test, jamais reclasser.
   async appliquerResultatBrut(submissionId: string, corps: RunnerCallbackBody): Promise<void> {
     // Une forme invalide leverait un `CastError` Mongoose depuis `findById`,
     // remontant en 500 indifferencie : verifiee ici, elle rejoint le
@@ -156,12 +206,38 @@ export class SubmissionService {
 
     submission.status = 'running'
     submission.startedAt ??= new Date()
+
+    // Le verdict s'ecrit dans sa propre ecriture, avant la sortie et le
+    // detail par test (AD-24) : une panne entre les deux laisse un verdict
+    // deja pose, jamais l'inverse. Rien a ecrire ici sur un rappel tardif,
+    // le verdict etant deja pose (AD-11).
+    if (submission.verdict === undefined) {
+      const classification = classifierResultatBrut(corps)
+
+      submission.verdict = classification.verdict
+      submission.failureOrigin = classification.failureOrigin
+      submission.firstTestAt = corps.firstTestAt ? new Date(corps.firstTestAt) : undefined
+      // Intention de progression a l'etat `pending` (AD-22, AD-31) : seule
+      // l'ecriture de cette intention est du perimetre de cette story, son
+      // balayage et sa consommation restent hors champ.
+      submission.progressionEffect = { status: 'pending' }
+
+      await submission.save()
+    }
+
     submission.finishedAt = new Date(corps.finishedAt)
     submission.rawExitCode = corps.exitCode
     submission.rawSignal = corps.signal
     submission.rawOutput = corps.output
     submission.rawOutputTronque = corps.outputTruncated
     submission.queuePosition = undefined
+    submission.testResults = corps.tests.map((cas, index) => ({
+      index,
+      name: cas.name,
+      status: cas.status,
+      expected: cas.expected,
+      actual: cas.actual,
+    }))
 
     await submission.save()
   }

@@ -3,9 +3,18 @@ import { LONGUEUR_MAX_SLUG_EXERCICE } from '@scalar/shared/exercise.ts'
 import {
   LONGUEUR_MAX_CLE_DEDUPLICATION,
   LONGUEUR_MAX_CODE_SOUMISSION,
+  LONGUEUR_MAX_VALEUR_TEST_RUNNER,
   TRONCATURE_SORTIE_OCTETS_MAX,
 } from '@scalar/shared/limites.ts'
-import { SUBMISSION_STATUSES, type SubmissionStatus } from '@scalar/shared/submission.ts'
+import { RUNNER_TEST_STATUSES } from '@scalar/shared/runner.ts'
+import {
+  SUBMISSION_FAILURE_ORIGINS,
+  SUBMISSION_STATUSES,
+  SUBMISSION_VERDICTS,
+  type SubmissionFailureOrigin,
+  type SubmissionStatus,
+  type SubmissionVerdict,
+} from '@scalar/shared/submission.ts'
 import { NOM_MODELE_USER } from './user.model.ts'
 import { NOM_MODELE_EXERCISE } from './exercise.model.ts'
 
@@ -15,7 +24,32 @@ export const VERSION_SCHEMA_SUBMISSION = 1
 
 // Reexporte pour la meme raison que `STATUTS_EXERCICE` sur `Exercise` : le
 // modele est l'endroit ou l'on vient chercher la forme d'une `Submission`.
-export { SUBMISSION_STATUSES, type SubmissionStatus }
+export {
+  SUBMISSION_FAILURE_ORIGINS,
+  SUBMISSION_STATUSES,
+  SUBMISSION_VERDICTS,
+  type SubmissionFailureOrigin,
+  type SubmissionStatus,
+  type SubmissionVerdict,
+}
+
+// Detail d'un test resolu, projete sur `Submission` (story 2.6). `index`
+// porte l'ordre d'execution — absent du contrat runner (`RunnerTestResult`),
+// c'est `submission.service` qui le pose au moment d'ecrire ce tableau.
+export interface SubmissionTestResult {
+  index: number
+  name: string
+  status: (typeof RUNNER_TEST_STATUSES)[number]
+  expected?: string
+  actual?: string
+}
+
+// Intention de progression a l'etat `pending` (AD-22, AD-31) : seule
+// l'ecriture de cette intention est du perimetre de cette story, jamais son
+// balayage ni sa consommation.
+export interface SubmissionProgressionEffect {
+  status: 'pending'
+}
 
 // Aucun comportement ici : la deduplication (AD-9), la reservation de quota
 // (AD-14) et la projection de sortie vivent dans
@@ -36,9 +70,7 @@ export interface Submission {
   // sur `Exercise`.
   pathId?: Types.ObjectId
   pathVersion?: number
-  // Champs de la story 2.5 : un resultat brut, jamais un verdict — la
-  // classification en quatre valeurs et `failureOrigin` restent a la story
-  // 2.6 (voir le Spec Change Log de cette spec). `startedAt` est pose des
+  // Champs de la story 2.5 : un resultat brut. `startedAt` est pose des
   // l'admission par le runner (AD-26) ; `finishedAt` et les champs `raw*`
   // n'arrivent qu'au rappel.
   startedAt?: Date
@@ -51,6 +83,18 @@ export interface Submission {
   // runner est atteint (AD-26). Observable, mais sans consommateur UI dans
   // le perimetre de cette story.
   queuePosition?: number
+  // Champs de la story 2.6 : la classification du resultat brut ci-dessus.
+  // `verdict` et `failureOrigin` sont ecrits une seule fois (AD-11) ; un
+  // rappel tardif ne les touche plus, seuls `testResults` et les champs
+  // `raw*` se completent. `firstTestAt` absent distingue un echec de
+  // compilation (jamais atteint `node --test`) d'une exception non
+  // interceptee (l'a atteint puis a crashe) — voir
+  // `services/interpretation-verdict.ts`.
+  verdict?: SubmissionVerdict
+  failureOrigin?: SubmissionFailureOrigin
+  firstTestAt?: Date
+  testResults?: SubmissionTestResult[]
+  progressionEffect?: SubmissionProgressionEffect
   schemaVersion: number
 }
 
@@ -81,6 +125,29 @@ export const schemaSubmission = new Schema<Submission>(
     rawOutput: { type: String, required: false, maxlength: TRONCATURE_SORTIE_OCTETS_MAX },
     rawOutputTronque: { type: Boolean, required: false },
     queuePosition: { type: Number, required: false },
+    verdict: { type: String, required: false, enum: [...SUBMISSION_VERDICTS] },
+    failureOrigin: { type: String, required: false, enum: [...SUBMISSION_FAILURE_ORIGINS] },
+    firstTestAt: { type: Date, required: false },
+    testResults: {
+      type: [
+        {
+          _id: false,
+          index: { type: Number, required: true },
+          name: { type: String, required: true },
+          status: { type: String, required: true, enum: [...RUNNER_TEST_STATUSES] },
+          expected: { type: String, required: false, maxlength: LONGUEUR_MAX_VALEUR_TEST_RUNNER },
+          actual: { type: String, required: false, maxlength: LONGUEUR_MAX_VALEUR_TEST_RUNNER },
+        },
+      ],
+      required: false,
+    },
+    progressionEffect: {
+      type: new Schema(
+        { status: { type: String, required: true, enum: ['pending'] } },
+        { _id: false },
+      ),
+      required: false,
+    },
     schemaVersion: { type: Number, required: true, default: VERSION_SCHEMA_SUBMISSION },
   },
   {

@@ -46,11 +46,11 @@ describe('invoquerConteneur (Docker reel)', () => {
     const resultat = await invoquerConteneur(job())
 
     expect(resultat.exitCode).toBe(0)
-    expect(resultat.killedByHost).toBe(false)
+    expect(resultat.timedOut).toBe(false)
     expect(await conteneursDuRunner()).toEqual([])
   }, 30_000)
 
-  it('rend un code non nul quand une assertion echoue', async () => {
+  it('rend un code non nul et le detail par test quand une assertion echoue', async () => {
     const resultat = await invoquerConteneur(
       job({
         tests: [
@@ -63,7 +63,54 @@ describe('invoquerConteneur (Docker reel)', () => {
     )
 
     expect(resultat.exitCode).not.toBe(0)
-    expect(resultat.killedByHost).toBe(false)
+    expect(resultat.timedOut).toBe(false)
+    expect(resultat.tests).toEqual([
+      { name: 'assertion fausse', status: 'failed', expected: '5', actual: '4' },
+    ])
+    expect(resultat.firstTestAt).toEqual(expect.any(String))
+  }, 30_000)
+
+  it('echoue avant tout test quand le type soumis est invalide, avec le code de sortie dedie', async () => {
+    const resultat = await invoquerConteneur(
+      job({
+        code: 'function additionner(a: number, b: number): number { return a + b }',
+        tests: [
+          {
+            name: 'type invalide',
+            code: "test('type invalide', () => { additionner('deux', 3) })",
+          },
+        ],
+      }),
+    )
+
+    expect(resultat.exitCode).toBe(2)
+    expect(resultat.timedOut).toBe(false)
+    expect(resultat.tests).toEqual([])
+    expect(resultat.firstTestAt).toBeUndefined()
+    expect(resultat.output).toContain('soumission.ts')
+  }, 30_000)
+
+  it('distingue une assertion echouee d une exception non interceptee hors assertion', async () => {
+    const resultat = await invoquerConteneur(
+      job({
+        code: '',
+        tests: [
+          {
+            name: 'exception non interceptee',
+            code: "test('exception non interceptee', () => { throw new Error('boum') })",
+          },
+        ],
+      }),
+    )
+
+    expect(resultat.exitCode).not.toBe(0)
+    expect(resultat.timedOut).toBe(false)
+    // Un throw ordinaire a l'interieur d'un test n'est pas une assertion
+    // `node:assert` : jamais ajoute au detail par test, pour que
+    // `submission.service` le classe `error` (famille execution) plutot que
+    // `failed` (voir spec-2-6, matrice I/O).
+    expect(resultat.tests).toEqual([])
+    expect(resultat.firstTestAt).toEqual(expect.any(String))
   }, 30_000)
 
   it('coupe l acces reseau : une tentative de sortie echoue toujours', async () => {
@@ -92,7 +139,7 @@ describe('invoquerConteneur (Docker reel)', () => {
       }),
     )
 
-    expect(resultat.killedByHost).toBe(true)
+    expect(resultat.timedOut).toBe(true)
     expect(resultat.signal).toBe('SIGKILL')
     expect(await conteneursDuRunner()).toEqual([])
   }, 40_000)

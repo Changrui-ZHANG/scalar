@@ -130,3 +130,10 @@ export const PLAFOND_CONCURRENCE_RUNNER = 4
 // courtes epuiserait le second sans jamais atteindre le premier.
 export const TRONCATURE_SORTIE_OCTETS_MAX = 262_144
 export const TRONCATURE_SORTIE_LIGNES_MAX = 1_000
+
+// Bornes du detail par test rapporte au rappel (story 2.6, AD-7 : aucune
+// donnee externe consommee sans schema). `expected`/`actual` viennent de la
+// serialisation d'une erreur d'assertion cote conteneur — jamais interpretes,
+// seulement bornes pour qu'une valeur assertee volumineuse ne grossisse pas
+// indefiniment le document `Submission`.
+export const LONGUEUR_MAX_VALEUR_TEST_RUNNER = 4_000

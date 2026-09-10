@@ -150,7 +150,8 @@ export function construireApp(config: Config): Express {
             signal: null,
             output: `Echec interne du runner, avant toute execution : ${erreur instanceof Error ? erreur.message : String(erreur)}`,
             outputTruncated: false,
-            killedByHost: false,
+            timedOut: false,
+            tests: [],
           }
         })
         .then((resultatExecution) =>
@@ -160,6 +161,9 @@ export function construireApp(config: Config): Express {
             output: resultatExecution.output,
             outputTruncated: resultatExecution.outputTruncated,
             finishedAt: new Date().toISOString(),
+            timedOut: resultatExecution.timedOut,
+            tests: [...resultatExecution.tests],
+            firstTestAt: resultatExecution.firstTestAt,
           }),
         )
         .finally(() => admission.liberer())

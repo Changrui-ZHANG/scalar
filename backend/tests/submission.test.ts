@@ -242,7 +242,7 @@ describe.skipIf(!URI_TEST)('soumission de code sur une base reelle', () => {
     expect(persistee?.startedAt).toBeUndefined()
   })
 
-  it('libere le quota reserve et reste queued quand le runner est injoignable (AD-14, AD-28)', async () => {
+  it('libere le quota reserve, ecrit error/plateforme et reste queued quand le runner est injoignable (AD-14, AD-28)', async () => {
     const utilisateur = await creerUtilisateur()
     await creerExercicePublie()
     const cookie = await cookieDeSession(utilisateur)
@@ -257,9 +257,14 @@ describe.skipIf(!URI_TEST)('soumission de code sur une base reelle', () => {
 
     const compteur = await modeleQuotaCounter().findOne({ userId: utilisateur._id })
     expect(compteur?.count).toBe(0)
+
+    const persistee = await modeleSubmission().findById(reponse.body.id)
+    expect(persistee?.status).toBe('queued')
+    expect(persistee?.verdict).toBe('error')
+    expect(persistee?.failureOrigin).toBe('plateforme')
   })
 
-  it('libere le quota reserve et reste queued quand le runner repond hors 2xx (AD-14, AD-28)', async () => {
+  it('libere le quota reserve, ecrit error/plateforme et reste queued quand le runner repond hors 2xx (AD-14, AD-28)', async () => {
     runnerDouble.comportement = () => ({ statut: 500, corps: { erreur: 'panne simulee du runner' } })
 
     const utilisateur = await creerUtilisateur()
@@ -274,6 +279,10 @@ describe.skipIf(!URI_TEST)('soumission de code sur une base reelle', () => {
 
     const compteur = await modeleQuotaCounter().findOne({ userId: utilisateur._id })
     expect(compteur?.count).toBe(0)
+
+    const persistee = await modeleSubmission().findById(reponse.body.id)
+    expect(persistee?.verdict).toBe('error')
+    expect(persistee?.failureOrigin).toBe('plateforme')
   })
 
   // Preuve que l'accesseur `interne-runner` (AD-21) reselectionne bien le
