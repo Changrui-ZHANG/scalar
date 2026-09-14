@@ -32,19 +32,19 @@ export async function creerExerciceDemo(): Promise<number> {
             {
               name: 'additionne deux nombres positifs',
               assertion: 'retourne la somme de a et b',
-              code: 'expect(addition(2, 3)).toBe(5)',
+              code: "test('additionne deux nombres positifs', () => { assert.equal(addition(2, 3), 5) })",
               hidden: false,
             },
             {
               name: 'gere zero',
               assertion: 'retourne b quand a vaut zero',
-              code: 'expect(addition(0, 4)).toBe(4)',
+              code: "test('gere zero', () => { assert.equal(addition(0, 4), 4) })",
               hidden: false,
             },
             {
               name: 'gere les nombres negatifs',
               assertion: 'retourne une somme correcte avec des negatifs',
-              code: 'expect(addition(-2, 3)).toBe(1)',
+              code: "test('gere les nombres negatifs', () => { assert.equal(addition(-2, 3), 1) })",
               hidden: true,
             },
           ],
