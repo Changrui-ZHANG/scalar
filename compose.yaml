@@ -1,0 +1,74 @@
+services:
+  traefik:
+    image: traefik:v3.7.11
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedByDefault=false
+      - --entryPoints.web.address=:80
+    ports:
+      - '127.0.0.1:8080:80'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_started
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    command: npm run dev --workspace frontend
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      NUXT_PUBLIC_API_BASE: /api/v1
+      NUXT_API_INTERNE: http://backend:3001/api/v1
+    ports:
+      - '127.0.0.1:3000:3000'
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+      - /app/node_modules
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=PathPrefix(`/`)
+      - traefik.http.routers.frontend.entryPoints=web
+      - traefik.http.routers.frontend.priority=1
+      - traefik.http.services.frontend.loadbalancer.server.port=3000
+    depends_on:
+      backend:
+        condition: service_started
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: npm run dev --workspace backend
+    environment:
+      PORT: 3001
+      MONGODB_URI: mongodb://mongo:27017/scalar
+    ports:
+      - '127.0.0.1:3001:3001'
+    volumes:
+      - ./backend:/app/backend
+      - /app/backend/node_modules
+      - /app/node_modules
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.backend.rule=PathPrefix(`/api/v1`)
+      - traefik.http.routers.backend.entryPoints=web
+      - traefik.http.routers.backend.priority=10
+      - traefik.http.services.backend.loadbalancer.server.port=3001
+    depends_on:
+      mongo:
+        condition: service_started
+
+  mongo:
+    image: mongo:8.0.29
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
