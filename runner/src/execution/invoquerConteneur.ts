@@ -34,6 +34,13 @@ const LIMITES = {
   // environ 10 Mo une fois les fichiers de bibliotheque inutiles ecartes,
   // et le code soumis reste tres loin de cette taille.
   espaceTravail: '32m',
+  // Surveillance cote hote. Mesure contre un demon Docker reel (story 2.6) :
+  // creation du conteneur, extraction du tar embarquant le compilateur, sa
+  // compilation `noEmit` puis `node --test` pour un cas nominal trivial
+  // prennent environ 6,5 s au total — marge confortable sous ce plafond,
+  // gardee par le test de regression `execution.test.ts` (« reste dans une
+  // marge confortable sous le plafond hote »). A resurveiller si un exercice
+  // reel s'avere sensiblement plus lourd que ce cas trivial.
   dureeMs: 20_000, // surveillance cote hote
   sursisAvantAbandonMs: 5_000, // delai apres `kill` avant d'abandonner l'attente du demon
 }
@@ -63,7 +70,19 @@ export interface ResultatExecution {
 // standard et n'est jamais monte depuis l'hote (patron du pic, inchange).
 // ---------------------------------------------------------------------------
 
+// Champ `name` du format ustar : 100 octets, jamais plus (pas de champ
+// `prefix` implemente ici pour l'etendre). `Buffer.write` tronquerait en
+// silence un nom plus long au lieu d'echouer : verifie ici plutot que de
+// livrer un fichier au mauvais nom dans le conteneur sans le signaler.
+const LONGUEUR_MAX_NOM_TAR = 100
+
 function enTeteTar(nom: string, taille: number): Buffer {
+  if (Buffer.byteLength(nom, 'ascii') > LONGUEUR_MAX_NOM_TAR) {
+    throw new Error(
+      `chemin trop long pour l'archive tar (ustar, ${LONGUEUR_MAX_NOM_TAR} octets max) : « ${nom} ».`,
+    )
+  }
+
   const entete = Buffer.alloc(512)
   const octal = (valeur: number, longueur: number): string =>
     `${valeur.toString(8).padStart(longueur - 1, '0')}\0`

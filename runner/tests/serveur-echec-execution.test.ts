@@ -1,6 +1,8 @@
 import { createServer, type Server } from 'node:http'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import request from 'supertest'
+import * as v from 'valibot'
+import { runnerCallbackSchema } from '@scalar/shared/runner.ts'
 import type { Config } from '../src/config.ts'
 
 const EN_TETE_SECRET = 'x-scalar-runner-secret'
@@ -97,5 +99,15 @@ describe('le rappel part meme quand invoquerConteneur echoue avant tout resultat
     expect(rappel['output']).toContain('demon Docker injoignable (simulation)')
     expect(rappel['outputTruncated']).toBe(false)
     expect(typeof rappel['finishedAt']).toBe('string')
+    expect(rappel['timedOut']).toBe(false)
+    expect(rappel['tests']).toEqual([])
+    expect(rappel['firstTestAt']).toBeUndefined()
+
+    // Le corps complet doit rester valide au regard du contrat (AD-7) : une
+    // regression qui casserait la forme de ce repli synthetique (`tests`
+    // omis, `timedOut` absent...) ferait echouer la validation cote API,
+    // laissant la Soumission bloquee sur `running` sans jamais recevoir de
+    // verdict — exactement ce que ce chemin de repli existe pour eviter.
+    expect(v.safeParse(runnerCallbackSchema, rappel).success).toBe(true)
   })
 })

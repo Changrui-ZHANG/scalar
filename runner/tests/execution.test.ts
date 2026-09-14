@@ -50,6 +50,19 @@ describe('invoquerConteneur (Docker reel)', () => {
     expect(await conteneursDuRunner()).toEqual([])
   }, 30_000)
 
+  // Garde de regression (story 2.6) : le compilateur TypeScript embarque
+  // s'ajoute avant chaque execution. Marge visee sous le plafond hote de 20 s
+  // (`invoquerConteneur.ts`, `LIMITES.dureeMs`) — un cas trivial mesure a
+  // environ 6,5 s en conditions normales ; 15 s laisse une marge confortable
+  // tout en detectant une regression qui devorerait ce budget.
+  it('reste dans une marge confortable sous le plafond hote pour un cas trivial', async () => {
+    const debut = Date.now()
+    const resultat = await invoquerConteneur(job())
+
+    expect(resultat.exitCode).toBe(0)
+    expect(Date.now() - debut).toBeLessThan(15_000)
+  }, 30_000)
+
   it('rend un code non nul et le detail par test quand une assertion echoue', async () => {
     const resultat = await invoquerConteneur(
       job({

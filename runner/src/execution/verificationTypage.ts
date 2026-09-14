@@ -2,6 +2,7 @@ import { createRequire } from 'node:module'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { CODE_ECHEC_TYPAGE } from '@scalar/shared/runner.ts'
+import { LONGUEUR_MAX_VALEUR_TEST_RUNNER } from '@scalar/shared/limites.ts'
 
 // Un fichier a embarquer dans le tar, chemin relatif a la racine de
 // l'archive (donc a `/work` une fois extrait dans le conteneur).
@@ -136,6 +137,7 @@ const { tap } = require('node:test/reporters')
 const CODE_ECHEC_TYPAGE = ${CODE_ECHEC_TYPAGE}
 const MARQUEUR_DEBUT = ${JSON.stringify(MARQUEUR_DEBUT_RESULTAT)}
 const MARQUEUR_FIN = ${JSON.stringify(MARQUEUR_FIN_RESULTAT)}
+const LONGUEUR_MAX_VALEUR_TEST = ${LONGUEUR_MAX_VALEUR_TEST_RUNNER}
 
 function verifierTypage() {
   const ts = require('./node_modules/typescript/lib/typescript.js')
@@ -168,9 +170,14 @@ function verifierTypage() {
   process.exit(CODE_ECHEC_TYPAGE)
 }
 
+// Tronque, jamais rejetee (meme discipline que la sortie brute cote hote,
+// AD-24) : une valeur assertee volumineuse ne doit jamais faire echouer la
+// validation du corps entier du rappel et laisser la Soumission bloquee sans
+// verdict.
 function valeurTexte(valeur) {
   if (valeur === undefined || valeur === null) return undefined
-  return typeof valeur === 'string' ? valeur : JSON.stringify(valeur)
+  const texte = typeof valeur === 'string' ? valeur : JSON.stringify(valeur)
+  return texte.length > LONGUEUR_MAX_VALEUR_TEST ? texte.slice(0, LONGUEUR_MAX_VALEUR_TEST) : texte
 }
 
 // Lance le lanceur de tests natif en processus (jamais un enfant separe :
@@ -186,7 +193,10 @@ function lancerTests() {
   const tests = []
   let toutReussi = true
 
-  const flux = run({ files: ['soumission.ts'] })
+  // \`concurrency: 1\` fixe : \`index\` (pose cote \`submission.service\`) doit
+  // refleter l'ordre source des tests de l'apprenant, jamais un ordre
+  // d'achevement concurrent que Node pourrait un jour changer par defaut.
+  const flux = run({ files: ['soumission.ts'], concurrency: 1 })
 
   flux.on('test:pass', (evenement) => {
     tests.push({ name: evenement.name, status: 'passed' })
