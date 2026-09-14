@@ -116,7 +116,7 @@ services:
         condition: service_healthy
     labels:
       - traefik.enable=true
-      - traefik.docker.network=bordure
+      - traefik.docker.network=scalar_bordure
       - traefik.http.routers.backend.rule=PathPrefix(`/api/v1`)
       - traefik.http.routers.backend.entryPoints=web
       - traefik.http.routers.backend.priority=10
