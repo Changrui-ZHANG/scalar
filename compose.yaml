@@ -51,6 +51,12 @@ services:
     environment:
       PORT: 3001
       MONGODB_URI: mongodb://mongo:27017/scalar
+      # Le moteur n'est joignable que par ce reseau interne : il n'est jamais
+      # expose par Traefik, ni appele depuis le navigateur.
+      PISTON_URL: http://piston:2000/api/v2
+      # Doit correspondre exactement au paquet installe dans Piston. Piston
+      # refuse en 400 une version qu'il n'a pas. Voir README.
+      PISTON_NODE_VERSION: '20.11.1'
     ports:
       - '127.0.0.1:3001:3001'
     volumes:
@@ -66,6 +72,36 @@ services:
     depends_on:
       mongo:
         condition: service_started
+      piston:
+        condition: service_started
+
+  # Moteur d'execution du code soumis par les utilisateurs.
+  #
+  # Aucun label Traefik, et le port est lie a la boucle locale : seul `backend`
+  # l'appelle, jamais le navigateur. `privileged` est une exigence du moteur et
+  # non un choix -- son bac a sable `isolate` ne demarre pas sans, et il rend ce
+  # conteneur equivalent-root sur l'hote : ne rien partager avec `mongo`.
+  #
+  # L'image n'embarque aucun langage. Apres le premier demarrage, installer le
+  # runtime Node une fois (voir README) ; le volume le conserve ensuite.
+  piston:
+    image: ghcr.io/engineer-man/piston
+    privileged: true
+    environment:
+      # Ces deux plafonds doivent rester alignes avec `RUN_TIMEOUT_MS` dans
+      # `backend/src/services/exercices.service.ts` : Piston refuse en 400 toute
+      # limite demandee au-dela de sa propre configuration, il ne la rabote pas.
+      PISTON_RUN_TIMEOUT: 5000
+      PISTON_RUN_CPU_TIME: 5000
+      # Le defaut est de 1 Kio par flux, qu'un affichage banal depasse -- et
+      # l'execution est alors tuee avec le statut `OL`.
+      PISTON_OUTPUT_MAX_SIZE: 65536
+    ports:
+      - '127.0.0.1:2000:2000'
+    volumes:
+      - piston-packages:/piston/packages
+    tmpfs:
+      - /tmp:exec
 
   mongo:
     image: mongo:8.0.29
@@ -74,3 +110,4 @@ services:
 
 volumes:
   mongo-data:
+  piston-packages:
