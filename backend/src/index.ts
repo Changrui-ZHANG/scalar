@@ -1,7 +1,9 @@
 import 'dotenv/config'
 import express from 'express'
 import mongoose from 'mongoose'
-import { ExercicesController } from "./controller/index.ts"
+import { ExecutionController } from "./controller/index.ts"
+import { logger } from "./logger.ts"
+import { hasJavascriptRuntime } from "./services/execution.service.ts"
 
 const app = express()
 const PORT = Number(process.env.PORT ?? 3001)
@@ -20,21 +22,31 @@ app.get('/api/v1/health', (_req, res) => {
   })
 })
 
-app.use('/api/v1/exercices', new ExercicesController().buildRouter())
+app.use('/api/v1/executions', new ExecutionController().buildRouter())
 
 async function demarrer() {
   try {
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(MONGODB_URI)
-      console.log('Connecté à MongoDB avec succès')
+      logger.info('Connecté à MongoDB avec succès')
     }
-  } catch (err) {
-    console.error('Connexion MongoDB échouée:', err)
+  } catch (err: unknown) {
+    logger.error({ err }, 'Connexion MongoDB échouée')
+  }
+
+  // L'image Piston n'embarque aucun langage : sans amorcage, le moteur demarre
+  // et ne sait rien executer. Sans cet avertissement, l'oubli se manifeste plus
+  // tard par des erreurs sans rapport apparent avec sa cause.
+  if (!(await hasJavascriptRuntime())) {
+    logger.warn(
+      "Le moteur d'exécution n'expose aucun runtime JavaScript : les soumissions " +
+        'échoueront. Voir README, section « Moteur d’exécution ».',
+    )
   }
 
   if (process.env.NODE_ENV === 'production') {
     app.listen(PORT, () => {
-      console.log(`Backend Express en écoute sur http://0.0.0.0:${PORT}`)
+      logger.info({ port: PORT }, 'Backend Express en écoute')
     })
   }
 }

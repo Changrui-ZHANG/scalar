@@ -1,1 +1,1 @@
-export * from "./exercices.controller.ts";
+export * from "./execution.controller.ts";
