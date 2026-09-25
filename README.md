@@ -26,7 +26,7 @@ soumissions, notion d'exercice avec énoncé et cas de test, certification. Le
 test de niveau et les parcours décrits plus haut restent la cible, pas l'état.
 
 Architecture : un monorepo npm workspaces réunissant une API Node/Express sur
-MongoDB, un exécuteur de code conteneurisé et isolé, et un frontend Nuxt,
+PostgreSQL, un exécuteur de code conteneurisé et isolé, et un frontend Nuxt,
 servis sous une origine unique derrière un reverse proxy.
 
 ## Documents
@@ -36,7 +36,7 @@ servis sous une origine unique derrière un reverse proxy.
 ## Démarrage
 
 ```bash
-docker compose up -d      # frontend, backend, mongo, traefik et piston
+docker compose up -d      # frontend, backend, postgres, traefik et piston
 ```
 
 Le produit est accessible sur :
@@ -113,7 +113,7 @@ kernelCommandLine = cgroup_no_v1=all systemd.unified_cgroup_hierarchy=1
 
 `privileged: true` rend ce conteneur équivalent-root sur l'hôte. C'est `isolate`
 qui fait bac à sable, pas Docker : le service ne partage aucun volume avec
-MongoDB et son port n'est lié qu'à la boucle locale. À réexaminer avant toute
+PostgreSQL et son port n'est lié qu'à la boucle locale. À réexaminer avant toute
 mise en ligne.
 
 ## Tests

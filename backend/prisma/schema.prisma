@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Language {
+  javascript
+
+  @@map("language")
+}
+
+model Chapter {
+  id        Int        @id @default(autoincrement())
+  slug      String     @unique
+  language  Language
+  title     String
+  position  Int
+  lesson    String
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  exercises Exercise[]
+
+  @@unique([language, position], name: "chapters_language_position_unique")
+  @@map("chapters")
+}
+
+model Exercise {
+  id           Int      @id @default(autoincrement())
+  slug         String   @unique
+  chapterId    Int      @map("chapter_id")
+  chapter      Chapter  @relation(fields: [chapterId], references: [id], onDelete: Restrict)
+  position     Int
+  title        String
+  statement    String
+  functionName String   @map("function_name")
+  starterCode  String   @map("starter_code")
+  solution     String
+  hints        String[] @default([])
+  tests        Json
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([chapterId, position], name: "exercises_chapter_id_position_unique")
+  @@map("exercises")
+}

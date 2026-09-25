@@ -1,13 +1,12 @@
 import 'dotenv/config'
 import express from 'express'
-import mongoose from 'mongoose'
 import { ExecutionController } from "./controller/index.ts"
+import { isDatabaseUp, migrateDatabase } from "./db/index.ts"
 import { logger } from "./logger.ts"
 import { hasJavascriptRuntime } from "./services/execution.service.ts"
 
 const app = express()
 const PORT = Number(process.env.PORT ?? 3001)
-const MONGODB_URI = process.env.MONGODB_URI ?? 'mongodb://localhost:27017/scalar'
 
 app.use(express.json())
 
@@ -15,10 +14,10 @@ app.get('/api/v1', (_req, res) => {
   res.json({ status: 'ok', message: 'API Scalar (Backend)' })
 })
 
-app.get('/api/v1/health', (_req, res) => {
+app.get('/api/v1/health', async (_req, res) => {
   res.json({
     status: 'ok',
-    mongo: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    database: (await isDatabaseUp()) ? 'connected' : 'disconnected',
   })
 })
 
@@ -26,12 +25,10 @@ app.use('/api/v1/executions', new ExecutionController().buildRouter())
 
 async function demarrer() {
   try {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(MONGODB_URI)
-      logger.info('Connecté à MongoDB avec succès')
-    }
+    await migrateDatabase()
+    logger.info('Base PostgreSQL connectée et migrée')
   } catch (err: unknown) {
-    logger.error({ err }, 'Connexion MongoDB échouée')
+    logger.error({ err }, 'Connexion ou migration PostgreSQL échouée')
   }
 
   // L'image Piston n'embarque aucun langage : sans amorcage, le moteur demarre

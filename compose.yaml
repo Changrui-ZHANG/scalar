@@ -50,7 +50,7 @@ services:
     command: npm run dev --workspace backend
     environment:
       PORT: 3001
-      MONGODB_URI: mongodb://mongo:27017/scalar
+      DATABASE_URL: postgres://scalar:scalar@postgres:5432/scalar
       # Le moteur n'est joignable que par ce reseau interne : il n'est jamais
       # expose par Traefik, ni appele depuis le navigateur.
       PISTON_URL: http://piston:2000/api/v2
@@ -70,8 +70,10 @@ services:
       - traefik.http.routers.backend.priority=10
       - traefik.http.services.backend.loadbalancer.server.port=3001
     depends_on:
-      mongo:
-        condition: service_started
+      # Les migrations tournent au demarrage du backend : la base doit deja
+      # accepter les connexions, pas seulement avoir un conteneur lance.
+      postgres:
+        condition: service_healthy
       piston:
         condition: service_started
 
@@ -80,7 +82,7 @@ services:
   # Aucun label Traefik, et le port est lie a la boucle locale : seul `backend`
   # l'appelle, jamais le navigateur. `privileged` est une exigence du moteur et
   # non un choix -- son bac a sable `isolate` ne demarre pas sans, et il rend ce
-  # conteneur equivalent-root sur l'hote : ne rien partager avec `mongo`.
+  # conteneur equivalent-root sur l'hote : ne rien partager avec `postgres`.
   #
   # L'image n'embarque aucun langage. Apres le premier demarrage, installer le
   # runtime Node une fois (voir README) ; le volume le conserve ensuite.
@@ -103,11 +105,26 @@ services:
     tmpfs:
       - /tmp:exec
 
-  mongo:
-    image: mongo:8.0.29
+  # Identifiants de developpement local uniquement : le port n'est lie qu'a la
+  # boucle locale. A remplacer par des secrets avant toute mise en ligne.
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: scalar
+      POSTGRES_PASSWORD: scalar
+      POSTGRES_DB: scalar
+    ports:
+      # 5433 cote hote : evite le conflit avec un PostgreSQL deja installe.
+      - '127.0.0.1:5433:5432'
     volumes:
-      - mongo-data:/data/db
+      # A partir de la 18, l'image attend le volume sur ce dossier parent.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U scalar -d scalar']
+      interval: 2s
+      timeout: 3s
+      retries: 15
 
 volumes:
-  mongo-data:
+  postgres-data:
   piston-packages:
