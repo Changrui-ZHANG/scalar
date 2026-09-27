@@ -1,9 +1,11 @@
 import 'dotenv/config'
 import express from 'express'
-import { ExecutionController } from "./controller/index.ts"
+import { ExecutionController, ExerciseController } from "./controller/index.ts"
 import { isDatabaseUp, migrateDatabase } from "./db/index.ts"
 import { logger } from "./logger.ts"
+import { InMemoryExerciseRepository } from "./repositories/exercise.repository.ts"
 import { hasJavascriptRuntime } from "./services/execution.service.ts"
+import { ExerciseService } from "./services/exercise.service.ts"
 
 const app = express()
 const PORT = Number(process.env.PORT ?? 3001)
@@ -22,6 +24,10 @@ app.get('/api/v1/health', async (_req, res) => {
 })
 
 app.use('/api/v1/executions', new ExecutionController().buildRouter())
+app.use(
+  '/api/v1',
+  new ExerciseController(new ExerciseService(new InMemoryExerciseRepository())).buildRouter(),
+)
 
 async function demarrer() {
   try {

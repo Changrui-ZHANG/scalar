@@ -11,5 +11,11 @@ useSeoMeta({
     <p class="max-w-prose">
       Apprendre le developpement web, valide par l'execution reelle du code.
     </p>
+    <NuxtLink
+      to="/javascript"
+      class="bg-foreground text-background justify-self-start rounded-md px-4 py-2 font-semibold"
+    >
+      Commencer le parcours JavaScript
+    </NuxtLink>
   </section>
 </template>

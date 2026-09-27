@@ -3,7 +3,10 @@
     <header class="border-b">
       <nav class="max-w-content mx-auto flex items-center justify-between p-4">
         <NuxtLink to="/" class="font-display text-title">Scalar</NuxtLink>
-        <NuxtLink to="/exercices" class="text-title">Exercices</NuxtLink>
+        <div class="flex gap-6">
+          <NuxtLink to="/javascript" class="text-title">Parcours JavaScript</NuxtLink>
+          <NuxtLink to="/exercices" class="text-title">Bac à sable</NuxtLink>
+        </div>
       </nav>
     </header>
 
