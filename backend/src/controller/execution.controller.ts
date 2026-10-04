@@ -1,9 +1,16 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import { logger } from "../logger.ts";
-import { executeCode, parseSubmission } from "../services/execution.service.ts";
+import type { LanguageRepository } from "../repositories/language.repository.ts";
+import { executeCode, parseSubmission, toJavaScript } from "../services/execution.service.ts";
 
 export class ExecutionController {
+  private readonly languages: LanguageRepository;
+
+  constructor(languages: LanguageRepository) {
+    this.languages = languages;
+  }
+
   async executeSubmission(req: Request, res: Response) {
     // Valide avant tout appel sortant : une entree malformee ne doit jamais
     // atteindre le moteur d'execution.
@@ -13,8 +20,21 @@ export class ExecutionController {
       return;
     }
 
+    const language = await this.languages.findLanguageBySlug(parsed.submission.language);
+    if (!language) {
+      res.status(400).json({ success: false, data: null, error: "Langage inconnu." });
+      return;
+    }
+
+    // Le langage decide de la preparation du code, pas un test sur son nom.
+    const converted = toJavaScript(language.runtime, parsed.submission.code);
+    if (!converted.ok) {
+      res.status(400).json({ success: false, data: null, error: converted.error });
+      return;
+    }
+
     try {
-      const result = await executeCode(parsed.submission.code);
+      const result = await executeCode(converted.code);
       res.json({ success: true, data: result, error: null });
     } catch (error: unknown) {
       // Le detail -- URL, statut, corps de la reponse du moteur -- reste cote

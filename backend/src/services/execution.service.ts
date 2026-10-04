@@ -7,8 +7,11 @@
  * indiquant explicitement qu'ils ne sont pas des mecanismes de securite.
  */
 
+import { stripTypeScriptTypes } from 'node:module'
+
 import { z } from 'zod'
 
+import type { LanguageRuntime } from '../db/schema.ts'
 import { logger } from '../logger.ts'
 
 const PISTON_BASE_URL = process.env.PISTON_URL ?? 'http://piston:2000/api/v2'
@@ -74,6 +77,12 @@ const STATUS_LABELS: Readonly<Record<ExecutionStatus, string>> = {
  * malformee ne doit jamais atteindre le moteur d'execution.
  */
 export const submissionSchema = z.object({
+  // Absent pour les clients anterieurs a TypeScript : ils envoyaient du JavaScript.
+  // Slug d'un langage publie, verifie par le controleur contre la source.
+  language: z
+    .string('Le champ « language » doit être une chaîne de caractères.')
+    .min(1, 'Le champ « language » est vide.')
+    .default('javascript'),
   code: z
     .string('Le champ « code » est requis et doit être une chaîne de caractères.')
     .refine((code) => code.trim() !== '', 'Le code soumis est vide.')
@@ -108,6 +117,45 @@ export function parseSubmission(body: unknown): SubmissionParse {
   }
 
   return { ok: true, submission: result.data }
+}
+
+export type Conversion =
+  | { readonly ok: true; readonly code: string }
+  | { readonly ok: false; readonly error: string }
+
+/**
+ * Ramene le code soumis a du JavaScript executable par le moteur.
+ *
+ * TypeScript : les annotations sont remplacees par des espaces, sans rien
+ * deplacer -- les numeros de ligne et de colonne des erreurs restent ceux de
+ * l'ecran. Les types ne sont PAS verifies : une erreur de typage passe.
+ */
+// ponytail: `node_strip_types` retire les types sans les verifier ; ajouter un
+// passage `tsc` cote moteur quand Piston saura le faire dans le plafond de duree.
+export function toJavaScript(runtime: LanguageRuntime, code: string): Conversion {
+  if (runtime === 'node') {
+    return { ok: true, code }
+  }
+
+  try {
+    return { ok: true, code: stripTypeScriptTypes(code, { mode: 'strip' }) }
+  } catch (error: unknown) {
+    // `enum`, `namespace`, proprietes de parametres : syntaxes qui generent
+    // du code, que le simple retrait des types ne sait pas traduire.
+    const { code: kind, message } = error as { code?: string; message?: string }
+    if (kind === 'ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX') {
+      return {
+        ok: false,
+        error: 'Cette syntaxe TypeScript (enum, namespace…) n’est pas encore prise en charge.',
+      }
+    }
+    // Le message du lecteur TypeScript ne porte pas de numero de ligne : on le
+    // restitue tel quel plutot qu'une phrase generique.
+    return {
+      ok: false,
+      error: `Erreur de syntaxe TypeScript : ${message ?? 'code illisible'}.`,
+    }
+  }
 }
 
 /**
