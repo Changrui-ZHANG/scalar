@@ -1,146 +1,173 @@
 /**
- * Lecture du parcours : langages, chapitres, exercices.
+ * Lecture des parcours : langages, chapitres, exercices.
  *
  * Tout ce qui sort d'ici est destine au navigateur : la solution d'un exercice
- * n'y figure jamais. Elle ne sera revelee qu'apres une soumission.
+ * et ses cas de test caches n'y figurent jamais.
  */
 
-import type { Chapter, Exercise, Language, TestCase } from '../db/schema.ts'
+import type { Chapter, Exercise, Language, LanguageRuntime } from '../db/schema.ts'
 import type { ExerciseRepository } from '../repositories/exercise.repository.ts'
+import type { LanguageRepository } from '../repositories/language.repository.ts'
 
-export const LANGUAGES = ['javascript'] as const satisfies readonly Language[]
+export interface LanguageLink {
+  readonly slug: string
+  readonly label: string
+}
 
-export function isLanguage(value: string): value is Language {
-  return (LANGUAGES as readonly string[]).includes(value)
+export interface LanguageSummary extends LanguageLink {
+  readonly summary: string
+  /** Langage a connaitre avant celui-ci, s'il y en a un. */
+  readonly prerequisite: LanguageLink | null
 }
 
 export interface ExerciseSummary {
   readonly slug: string
   readonly title: string
-  readonly position: number
+  /** Rang affiche, a partir de 1 : l'ordre reel, jamais la valeur de `position`. */
+  readonly number: number
 }
 
 export interface ChapterSummary {
   readonly slug: string
   readonly title: string
-  readonly position: number
+  readonly number: number
   readonly exercises: readonly ExerciseSummary[]
 }
 
 export interface ChapterDetail extends ChapterSummary {
-  readonly language: Language
-  readonly lesson: string
+  readonly language: LanguageLink
+  readonly summary: string
 }
 
-export interface ExerciseLink {
-  readonly slug: string
-  readonly chapterSlug: string
+export interface TestCaseView {
+  readonly args: readonly unknown[]
+  readonly expected: unknown
+  readonly label: string | null
 }
 
 export interface PublicExercise {
   readonly slug: string
   readonly title: string
-  readonly position: number
+  /** Rang dans le chapitre : l'exercice 1.2 a le numero 2. */
+  readonly number: number
   readonly statement: string
   readonly functionName: string
   readonly starterCode: string
   readonly hints: readonly string[]
-  readonly tests: readonly TestCase[]
-  readonly chapter: { readonly slug: string; readonly title: string }
+  /** Cas visibles seulement. */
+  readonly testCases: readonly TestCaseView[]
+  /** `runtime` dit au navigateur ce que l'execution verifie : les types, ou non. */
+  readonly language: LanguageLink & { readonly runtime: LanguageRuntime }
+  readonly chapter: { readonly slug: string; readonly title: string; readonly number: number }
   /** Exercice suggere ensuite : suivant du chapitre, sinon premier du chapitre suivant. */
-  readonly next: ExerciseLink | null
+  readonly next: { readonly chapterSlug: string; readonly slug: string } | null
 }
 
-const toSummary = (e: Exercise): ExerciseSummary => ({
-  slug: e.slug,
-  title: e.title,
-  position: e.position,
-})
+const toLink = (l: Language): LanguageLink => ({ slug: l.slug, label: l.label })
+const rank = <T extends { id: number }>(items: readonly T[], item: T): number =>
+  items.findIndex((i) => i.id === item.id) + 1
 
 export class ExerciseService {
+  private readonly languages: LanguageRepository
   private readonly repository: ExerciseRepository
 
-  constructor(repository: ExerciseRepository) {
+  constructor(languages: LanguageRepository, repository: ExerciseRepository) {
+    this.languages = languages
     this.repository = repository
   }
 
-  async listChapters(language: Language): Promise<readonly ChapterSummary[]> {
-    const chapters = await this.repository.listChapters(language)
-    return Promise.all(chapters.map((c) => this.summarize(c)))
+  async listLanguages(): Promise<readonly LanguageSummary[]> {
+    const languages = await this.languages.listLanguages()
+    return languages.map((l) => {
+      const prerequisite = languages.find((p) => p.id === l.prerequisiteLanguageId)
+      return { ...toLink(l), summary: l.summary, prerequisite: prerequisite ? toLink(prerequisite) : null }
+    })
   }
 
-  async getChapter(slug: string): Promise<ChapterDetail | null> {
-    const chapter = await this.repository.findChapterBySlug(slug)
-    if (!chapter) {
+  /** Chapitres d'un langage, ou null si le langage n'est pas propose. */
+  async listChapters(languageSlug: string): Promise<readonly ChapterSummary[] | null> {
+    const language = await this.languages.findLanguageBySlug(languageSlug)
+    if (!language) {
       return null
     }
+    const chapters = await this.repository.listChapters(language.id)
+    return Promise.all(chapters.map((c, i) => this.summarize(c, i + 1)))
+  }
 
+  async getChapter(languageSlug: string, chapterSlug: string): Promise<ChapterDetail | null> {
+    const language = await this.languages.findLanguageBySlug(languageSlug)
+    const chapter = language && (await this.repository.findChapter(language.id, chapterSlug))
+    if (!language || !chapter) {
+      return null
+    }
+    const siblings = await this.repository.listChapters(language.id)
     return {
-      ...(await this.summarize(chapter)),
-      language: chapter.language,
-      lesson: chapter.lesson,
+      ...(await this.summarize(chapter, rank(siblings, chapter))),
+      language: toLink(language),
+      summary: chapter.summary,
     }
   }
 
-  async getExercise(slug: string): Promise<PublicExercise | null> {
-    const exercise = await this.repository.findExerciseBySlug(slug)
-    if (!exercise) {
+  async getExercise(
+    languageSlug: string,
+    chapterSlug: string,
+    exerciseSlug: string,
+  ): Promise<PublicExercise | null> {
+    const language = await this.languages.findLanguageBySlug(languageSlug)
+    const chapter = language && (await this.repository.findChapter(language.id, chapterSlug))
+    const exercise = chapter && (await this.repository.findExercise(chapter.id, exerciseSlug))
+    if (!language || !chapter || !exercise) {
       return null
     }
 
-    // ponytail: parcourt tous les chapitres pour retrouver celui de l'exercice ;
-    // un findChapterById au repository quand Prisma remplacera le mock.
-    const chapters = (await Promise.all(LANGUAGES.map((l) => this.repository.listChapters(l)))).flat()
-    const chapter = chapters.find((c) => c.id === exercise.chapterId)
-    if (!chapter) {
-      throw new Error(`Chapitre ${exercise.chapterId} introuvable pour ${exercise.slug}.`)
-    }
+    const chapters = await this.repository.listChapters(language.id)
+    const siblings = await this.repository.listExercises(chapter.id)
+    const testCases = await this.repository.listTestCases(exercise.id)
 
     return {
       slug: exercise.slug,
       title: exercise.title,
-      position: exercise.position,
+      number: rank(siblings, exercise),
       statement: exercise.statement,
       functionName: exercise.functionName,
       starterCode: exercise.starterCode,
       hints: exercise.hints,
-      // La contrainte SQL `exercises_tests_not_empty` garantit un tableau.
-      tests: exercise.tests as unknown as TestCase[],
-      chapter: { slug: chapter.slug, title: chapter.title },
-      next: await this.findNext(
-        exercise,
-        chapter,
-        chapters.filter((c) => c.language === chapter.language),
-      ),
+      testCases: testCases
+        .filter((t) => !t.isHidden)
+        // La contrainte `exercise_test_cases_args_array` garantit un tableau.
+        .map((t) => ({ args: t.args as unknown[], expected: t.expected, label: t.label })),
+      language: { ...toLink(language), runtime: language.runtime },
+      chapter: { slug: chapter.slug, title: chapter.title, number: rank(chapters, chapter) },
+      next: await this.findNext(exercise, chapter, chapters),
     }
   }
 
-  private async summarize(chapter: Chapter): Promise<ChapterSummary> {
+  private async summarize(chapter: Chapter, number: number): Promise<ChapterSummary> {
     const exercises = await this.repository.listExercises(chapter.id)
     return {
       slug: chapter.slug,
       title: chapter.title,
-      position: chapter.position,
-      exercises: exercises.map(toSummary),
+      number,
+      exercises: exercises.map((e, i) => ({ slug: e.slug, title: e.title, number: i + 1 })),
     }
   }
 
   private async findNext(
     exercise: Exercise,
     chapter: Chapter,
-    languageChapters: readonly Chapter[],
-  ): Promise<ExerciseLink | null> {
+    chapters: readonly Chapter[],
+  ): Promise<PublicExercise['next']> {
     const siblings = await this.repository.listExercises(chapter.id)
-    const nextInChapter = siblings.find((e) => e.position > exercise.position)
+    const nextInChapter = siblings[rank(siblings, exercise)]
     if (nextInChapter) {
-      return { slug: nextInChapter.slug, chapterSlug: chapter.slug }
+      return { chapterSlug: chapter.slug, slug: nextInChapter.slug }
     }
 
     // Un chapitre vide est saute : on suggere le premier exercice qui existe.
-    for (const next of languageChapters.filter((c) => c.position > chapter.position)) {
+    for (const next of chapters.slice(rank(chapters, chapter))) {
       const [first] = await this.repository.listExercises(next.id)
       if (first) {
-        return { slug: first.slug, chapterSlug: next.slug }
+        return { chapterSlug: next.slug, slug: first.slug }
       }
     }
     return null

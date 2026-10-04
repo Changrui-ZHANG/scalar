@@ -1,7 +1,9 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
-import { logger } from "../logger.ts";
-import { ExerciseService, isLanguage } from "../services/exercise.service.ts";
+import { ExerciseService } from "../services/exercise.service.ts";
+import { respond } from "./respond.ts";
+
+type ChapterParams = { language: string; chapter: string };
 
 export class ExerciseController {
   private readonly service: ExerciseService;
@@ -10,59 +12,35 @@ export class ExerciseController {
     this.service = service;
   }
 
+  async listLanguages(_req: Request, res: Response) {
+    await respond(res, "Aucun langage.", () => this.service.listLanguages());
+  }
+
   async listChapters(req: Request<{ language: string }>, res: Response) {
-    const { language } = req.params;
-    if (!isLanguage(language)) {
-      notFound(res, "Langage inconnu.");
-      return;
-    }
-
-    await respond(res, "Langage inconnu.", () => this.service.listChapters(language));
+    await respond(res, "Langage inconnu.", () => this.service.listChapters(req.params.language));
   }
 
-  async getChapter(req: Request<{ slug: string }>, res: Response) {
-    await respond(res, "Chapitre introuvable.", () => this.service.getChapter(req.params.slug));
+  async getChapter(req: Request<ChapterParams>, res: Response) {
+    const { language, chapter } = req.params;
+    await respond(res, "Chapitre introuvable.", () => this.service.getChapter(language, chapter));
   }
 
-  async getExercise(req: Request<{ slug: string }>, res: Response) {
-    await respond(res, "Exercice introuvable.", () => this.service.getExercise(req.params.slug));
+  async getExercise(req: Request<ChapterParams & { exercise: string }>, res: Response) {
+    const { language, chapter, exercise } = req.params;
+    await respond(res, "Exercice introuvable.", () =>
+      this.service.getExercise(language, chapter, exercise),
+    );
   }
 
   buildRouter() {
     const router = Router();
+    router.get("/languages", this.listLanguages.bind(this));
     router.get("/languages/:language/chapters", this.listChapters.bind(this));
-    router.get("/chapters/:slug", this.getChapter.bind(this));
-    router.get("/exercises/:slug", this.getExercise.bind(this));
+    router.get("/languages/:language/chapters/:chapter", this.getChapter.bind(this));
+    router.get(
+      "/languages/:language/chapters/:chapter/exercises/:exercise",
+      this.getExercise.bind(this),
+    );
     return router;
-  }
-}
-
-function notFound(res: Response, error: string): void {
-  res.status(404).json({ success: false, data: null, error });
-}
-
-/**
- * Envoie le resultat dans l'enveloppe commune, ou un 404 s'il est `null`.
- * Le detail d'une panne reste cote serveur.
- */
-async function respond<T>(
-  res: Response,
-  notFoundMessage: string,
-  load: () => Promise<T | null>,
-): Promise<void> {
-  try {
-    const data = await load();
-    if (data === null) {
-      notFound(res, notFoundMessage);
-      return;
-    }
-    res.json({ success: true, data, error: null });
-  } catch (error: unknown) {
-    logger.error({ err: error }, "Lecture du parcours impossible");
-    res.status(500).json({
-      success: false,
-      data: null,
-      error: "Le parcours est momentanément indisponible.",
-    });
   }
 }

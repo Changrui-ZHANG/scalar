@@ -1,125 +1,215 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import type { Chapter, Exercise } from '../db/schema.ts'
+import type { Chapter, Exercise, ExerciseTestCase, Language } from '../db/schema.ts'
 import { InMemoryExerciseRepository } from '../repositories/exercise.repository.ts'
-import { ExerciseService, isLanguage } from './exercise.service.ts'
+import { InMemoryLanguageRepository } from '../repositories/language.repository.ts'
+import { ExerciseService } from './exercise.service.ts'
 
-const DATE = new Date('2026-09-25T00:00:00Z')
+const DATE = new Date('2026-09-28T00:00:00Z')
+const stamps = { createdAt: DATE, updatedAt: DATE }
 
-function chapter(id: number, position: number): Chapter {
+function language(
+  id: number,
+  slug: string,
+  position: number,
+  extra: Partial<Language> = {},
+): Language {
   return {
     id,
-    slug: `chapitre-${id}`,
-    language: 'javascript',
-    title: `Chapitre ${id}`,
+    slug,
+    label: slug.toUpperCase(),
     position,
-    lesson: 'cours',
-    createdAt: DATE,
-    updatedAt: DATE,
+    summary: `Résumé ${slug}`,
+    runtime: 'node',
+    prerequisiteLanguageId: null,
+    status: 'published',
+    ...stamps,
+    ...extra,
   }
 }
 
-function exercise(id: number, chapterId: number, position: number): Exercise {
+function chapter(id: number, languageId: number, slug: string, position: number): Chapter {
   return {
     id,
-    slug: `exercice-${id}`,
-    chapterId,
+    languageId,
+    slug,
     position,
-    title: `Exercice ${id}`,
+    title: `Chapitre ${slug}`,
+    summary: 'résumé',
+    status: 'published',
+    ...stamps,
+  }
+}
+
+function exercise(
+  id: number,
+  chapterId: number,
+  slug: string,
+  position: number,
+  extra: Partial<Exercise> = {},
+): Exercise {
+  return {
+    id,
+    chapterId,
+    slug,
+    position,
+    title: `Exercice ${slug}`,
     statement: 'énoncé',
     functionName: 'f',
     starterCode: 'function f() {}',
-    solution: 'function f() { return 42 }',
+    solutionCode: 'function f() { return 42 }',
     hints: [],
-    tests: [{ args: [], expected: 42 }],
-    createdAt: DATE,
-    updatedAt: DATE,
+    status: 'published',
+    ...stamps,
+    ...extra,
+  }
+}
+
+function testCase(
+  id: number,
+  exerciseId: number,
+  position: number,
+  extra: Partial<ExerciseTestCase> = {},
+): ExerciseTestCase {
+  return {
+    id,
+    exerciseId,
+    position,
+    args: [],
+    expected: 42,
+    isHidden: false,
+    label: null,
+    ...stamps,
+    ...extra,
   }
 }
 
 /**
- * Donnees volontairement en desordre, avec un chapitre vide au milieu : le
- * service doit trier et sauter ce qui n'a pas d'exercice.
+ * Deux langages qui ont chacun un chapitre `boucles` : les slugs ne sont
+ * uniques que dans leur parent. Positions en desordre et non contigues, un
+ * chapitre vide, un exercice en brouillon et un cas cache.
  */
 const service = new ExerciseService(
+  new InMemoryLanguageRepository([
+    language(2, 'beta', 20, { prerequisiteLanguageId: 1 }),
+    language(1, 'alpha', 10),
+    language(3, 'brouillon', 30, { status: 'draft' }),
+  ]),
   new InMemoryExerciseRepository(
-    [chapter(3, 3), chapter(1, 1), chapter(2, 2)],
-    [exercise(12, 1, 2), exercise(11, 1, 1), exercise(31, 3, 1)],
+    [
+      chapter(13, 1, 'fin', 90),
+      chapter(11, 1, 'boucles', 10),
+      chapter(12, 1, 'vide', 40),
+      chapter(21, 2, 'boucles', 5),
+    ],
+    [
+      exercise(102, 11, 'deux', 9),
+      exercise(101, 11, 'un', 5),
+      exercise(103, 11, 'cache', 7, { status: 'draft' }),
+      exercise(131, 13, 'dernier', 1),
+      exercise(211, 21, 'un', 1),
+    ],
+    [
+      testCase(2, 101, 2, { args: [1], expected: 1, label: 'un' }),
+      testCase(1, 101, 1),
+      testCase(3, 101, 3, { isHidden: true }),
+    ],
   ),
 )
 
-describe('isLanguage', () => {
-  it('n’accepte que les langages proposés', () => {
-    assert.equal(isLanguage('javascript'), true)
-    assert.equal(isLanguage('python'), false)
-    assert.equal(isLanguage('JavaScript'), false)
+describe('ExerciseService.listLanguages', () => {
+  it('liste les langages publiés dans l’ordre, avec leur prérequis', async () => {
+    assert.deepEqual(await service.listLanguages(), [
+      { slug: 'alpha', label: 'ALPHA', summary: 'Résumé alpha', prerequisite: null },
+      {
+        slug: 'beta',
+        label: 'BETA',
+        summary: 'Résumé beta',
+        prerequisite: { slug: 'alpha', label: 'ALPHA' },
+      },
+    ])
   })
 })
 
 describe('ExerciseService.listChapters', () => {
-  it('renvoie les chapitres et leurs exercices triés par position', async () => {
-    const chapters = await service.listChapters('javascript')
+  it('numérote chapitres et exercices selon l’ordre réel, sans les brouillons', async () => {
+    const chapters = await service.listChapters('alpha')
 
     assert.deepEqual(
-      chapters.map((c) => c.slug),
-      ['chapitre-1', 'chapitre-2', 'chapitre-3'],
+      chapters?.map((c) => [c.slug, c.number]),
+      [
+        ['boucles', 1],
+        ['vide', 2],
+        ['fin', 3],
+      ],
     )
     assert.deepEqual(
-      chapters[0]?.exercises.map((e) => e.slug),
-      ['exercice-11', 'exercice-12'],
+      chapters?.[0]?.exercises.map((e) => [e.slug, e.number]),
+      [
+        ['un', 1],
+        ['deux', 2],
+      ],
     )
-    assert.deepEqual(chapters[1]?.exercises, [])
+  })
+
+  it('renvoie null pour un langage inconnu ou en brouillon', async () => {
+    assert.equal(await service.listChapters('inconnu'), null)
+    assert.equal(await service.listChapters('brouillon'), null)
   })
 })
 
 describe('ExerciseService.getChapter', () => {
-  it('renvoie le rappel de cours et les exercices du chapitre', async () => {
-    const detail = await service.getChapter('chapitre-1')
+  it('trouve un chapitre par son slug dans son langage', async () => {
+    const alpha = await service.getChapter('alpha', 'boucles')
+    const beta = await service.getChapter('beta', 'boucles')
 
-    assert.equal(detail?.lesson, 'cours')
-    assert.equal(detail?.language, 'javascript')
-    assert.equal(detail?.exercises.length, 2)
+    assert.equal(alpha?.exercises.length, 2)
+    assert.deepEqual(alpha?.language, { slug: 'alpha', label: 'ALPHA' })
+    assert.equal(beta?.exercises.length, 1)
+    assert.equal(beta?.number, 1)
   })
 
-  it('renvoie null pour un chapitre inconnu', async () => {
-    assert.equal(await service.getChapter('inconnu'), null)
+  it('renvoie null pour un chapitre d’un autre langage', async () => {
+    assert.equal(await service.getChapter('beta', 'fin'), null)
   })
 })
 
 describe('ExerciseService.getExercise', () => {
-  it('ne renvoie jamais la solution', async () => {
-    const detail = await service.getExercise('exercice-11')
+  it('ne renvoie ni la solution ni les cas cachés', async () => {
+    const detail = await service.getExercise('alpha', 'boucles', 'un')
 
     assert.ok(detail)
-    assert.equal('solution' in detail, false)
     assert.equal(JSON.stringify(detail).includes('return 42'), false)
+    assert.deepEqual(detail.testCases, [
+      { args: [], expected: 42, label: null },
+      { args: [1], expected: 1, label: 'un' },
+    ])
   })
 
-  it('renvoie les champs utiles à l’apprenant et son chapitre', async () => {
-    const detail = await service.getExercise('exercice-11')
+  it('situe l’exercice dans son chapitre et son langage', async () => {
+    const detail = await service.getExercise('alpha', 'boucles', 'deux')
 
-    assert.equal(detail?.functionName, 'f')
-    assert.deepEqual(detail?.tests, [{ args: [], expected: 42 }])
-    assert.deepEqual(detail?.chapter, { slug: 'chapitre-1', title: 'Chapitre 1' })
+    assert.equal(detail?.number, 2)
+    assert.deepEqual(detail?.chapter, { slug: 'boucles', title: 'Chapitre boucles', number: 1 })
+    assert.deepEqual(detail?.language, { slug: 'alpha', label: 'ALPHA', runtime: 'node' })
   })
 
-  it('suggère l’exercice suivant du même chapitre', async () => {
-    const detail = await service.getExercise('exercice-11')
-    assert.deepEqual(detail?.next, { slug: 'exercice-12', chapterSlug: 'chapitre-1' })
+  it('suggère l’exercice suivant, en sautant le brouillon puis le chapitre vide', async () => {
+    assert.deepEqual((await service.getExercise('alpha', 'boucles', 'un'))?.next, {
+      chapterSlug: 'boucles',
+      slug: 'deux',
+    })
+    assert.deepEqual((await service.getExercise('alpha', 'boucles', 'deux'))?.next, {
+      chapterSlug: 'fin',
+      slug: 'dernier',
+    })
+    assert.equal((await service.getExercise('alpha', 'fin', 'dernier'))?.next, null)
   })
 
-  it('passe au premier exercice du chapitre suivant, en sautant un chapitre vide', async () => {
-    const detail = await service.getExercise('exercice-12')
-    assert.deepEqual(detail?.next, { slug: 'exercice-31', chapterSlug: 'chapitre-3' })
-  })
-
-  it('ne suggère rien après le dernier exercice du parcours', async () => {
-    const detail = await service.getExercise('exercice-31')
-    assert.equal(detail?.next, null)
-  })
-
-  it('renvoie null pour un exercice inconnu', async () => {
-    assert.equal(await service.getExercise('inconnu'), null)
+  it('renvoie null hors de la bonne hiérarchie, ou pour un brouillon', async () => {
+    assert.equal(await service.getExercise('alpha', 'fin', 'un'), null)
+    assert.equal(await service.getExercise('beta', 'boucles', 'deux'), null)
+    assert.equal(await service.getExercise('alpha', 'boucles', 'cache'), null)
   })
 })
