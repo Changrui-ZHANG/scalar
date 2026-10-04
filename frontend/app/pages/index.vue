@@ -12,10 +12,10 @@ useSeoMeta({
       Apprendre le developpement web, valide par l'execution reelle du code.
     </p>
     <NuxtLink
-      to="/javascript"
+      to="/parcours"
       class="bg-foreground text-background justify-self-start rounded-md px-4 py-2 font-semibold"
     >
-      Commencer le parcours JavaScript
+      Choisir un parcours
     </NuxtLink>
   </section>
 </template>

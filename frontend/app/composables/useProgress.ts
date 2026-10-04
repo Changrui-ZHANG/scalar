@@ -16,7 +16,13 @@ interface ExerciseProgress {
 
 type ProgressMap = Readonly<Record<string, ExerciseProgress>>
 
-const STORAGE_KEY = 'scalar:progress:v1'
+// v2 : les entrees sont indexees par chemin, un slug d'exercice n'etant unique
+// que dans son chapitre. Les entrees v1 (indexees par slug) sont ignorees.
+const STORAGE_KEY = 'scalar:progress:v2'
+
+/** Cle de progression d'un exercice : son chemin complet. */
+export const exerciseKey = (language: string, chapter: string, exercise: string): string =>
+  `${language}/${chapter}/${exercise}`
 const STORED: readonly string[] = ['started', 'attempted', 'passed']
 const RANK: Readonly<Record<ExerciseStatus, number>> = {
   todo: 0,

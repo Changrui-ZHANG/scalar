@@ -12,28 +12,34 @@ interface ExecutionResult {
 }
 
 const route = useRoute()
+const languageSlug = computed(() => String(route.params.langage))
 const chapterSlug = computed(() => String(route.params.chapitre))
-const slug = computed(() => String(route.params.exercice))
+const exerciseSlug = computed(() => String(route.params.exercice))
 
 const { data, error } = await useFetch<ApiResponse<PublicExercise>>(
-  () => apiUrl(`/exercises/${encodeURIComponent(slug.value)}`),
-  { key: `exercise-${slug.value}` },
+  () =>
+    apiUrl(
+      `/languages/${seg(languageSlug.value)}/chapters/${seg(chapterSlug.value)}/exercises/${seg(exerciseSlug.value)}`,
+    ),
+  { key: `exercise-${languageSlug.value}-${chapterSlug.value}-${exerciseSlug.value}` },
 )
 
-// Un exercice atteint par le mauvais chapitre est un lien casse, pas une page.
-if (
-  error.value?.statusCode === 404 ||
-  (data.value?.data && data.value.data.chapter.slug !== chapterSlug.value)
-) {
+// Le chemin complet suffit : l'API repond 404 hors de la bonne hierarchie.
+if (error.value?.statusCode === 404) {
   throw createError({ statusCode: 404, statusMessage: 'Exercice introuvable', fatal: true })
 }
 
 const exercise = computed(() => data.value?.data ?? null)
 
 useSeoMeta({
-  title: () => `${exercise.value?.title ?? 'Exercice'} — JavaScript — Scalar`,
+  title: () =>
+    `${exercise.value?.title ?? 'Exercice'} — ${exercise.value?.language.label} — Scalar`,
 })
 
+// Un slug d'exercice n'est unique que dans son chapitre : la cle porte le chemin.
+const progressKey = computed(() =>
+  exerciseKey(languageSlug.value, chapterSlug.value, exerciseSlug.value),
+)
 const { statusOf, savedCode, saveCode, markAttempted } = useProgress()
 const { public: publicConfig } = useRuntimeConfig()
 
@@ -45,12 +51,12 @@ const result = ref<ExecutionResult | null>(null)
 
 // Le code sauvegarde n'est lisible qu'une fois dans le navigateur.
 onMounted(() => {
-  code.value = savedCode(slug.value) ?? code.value
+  code.value = savedCode(progressKey.value) ?? code.value
 })
 
 watch(code, (value) => {
   if (exercise.value && value !== exercise.value.starterCode) {
-    saveCode(slug.value, value)
+    saveCode(progressKey.value, value)
   }
 })
 
@@ -59,7 +65,7 @@ function resetCode() {
 }
 
 async function run() {
-  if (running.value || code.value.trim() === '') {
+  if (running.value || code.value.trim() === '' || !exercise.value) {
     return
   }
   running.value = true
@@ -69,10 +75,12 @@ async function run() {
   try {
     const response = await $fetch<ApiResponse<ExecutionResult>>(
       `${publicConfig.apiBase}/executions`,
-      { method: 'POST', body: { code: code.value } },
+      // Le langage de l'exercice, jamais celui de l'URL : c'est lui qui decide
+      // de la preparation du code avant execution.
+      { method: 'POST', body: { code: code.value, language: exercise.value.language.slug } },
     )
     result.value = response.data
-    markAttempted(slug.value, code.value)
+    markAttempted(progressKey.value, code.value)
   } catch (err: unknown) {
     runError.value = apiErrorMessage(err, 'Le service est injoignable pour l’instant.')
   } finally {
@@ -83,13 +91,17 @@ async function run() {
 
 <template>
   <section class="grid gap-8 py-8">
-    <nav class="text-body-sm text-muted-foreground flex gap-2">
-      <NuxtLink to="/javascript" class="underline">JavaScript</NuxtLink>
-      <span aria-hidden="true">/</span>
-      <NuxtLink v-if="exercise" :to="`/javascript/${exercise.chapter.slug}`" class="underline">
-        {{ exercise.chapter.title }}
-      </NuxtLink>
-    </nav>
+    <BreadcrumbTrail
+      :items="[
+        { label: 'Parcours', to: '/parcours' },
+        { label: exercise?.language.label ?? '', to: `/parcours/${languageSlug}` },
+        {
+          label: exercise ? `${exercise.chapter.number}. ${exercise.chapter.title}` : 'Chapitre',
+          to: `/parcours/${languageSlug}/${chapterSlug}`,
+        },
+        { label: exercise?.title ?? 'Exercice' },
+      ]"
+    />
 
     <p
       v-if="error"
@@ -101,9 +113,14 @@ async function run() {
 
     <template v-if="exercise">
       <header class="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 class="font-display text-3xl">{{ exercise.title }}</h1>
+        <div class="grid gap-1">
+          <p class="text-body-sm text-muted-foreground">
+            Exercice {{ exercise.chapter.number }}.{{ exercise.number }}
+          </p>
+          <h1 class="font-display text-3xl">{{ exercise.title }}</h1>
+        </div>
         <span class="text-body-sm text-muted-foreground">
-          {{ STATUS_LABELS[statusOf(exercise.slug)] }}
+          {{ STATUS_LABELS[statusOf(progressKey)] }}
         </span>
       </header>
 
@@ -114,9 +131,12 @@ async function run() {
           <div class="grid gap-2">
             <h2 class="text-title">Cas de test</h2>
             <ul class="grid gap-1 font-mono text-sm">
-              <li v-for="(test, i) in exercise.tests" :key="i">
+              <li v-for="(test, i) in exercise.testCases" :key="i">
                 {{ formatCall(exercise.functionName, test.args) }} →
                 {{ JSON.stringify(test.expected) }}
+                <span v-if="test.label" class="text-muted-foreground font-sans">
+                  ({{ test.label }})
+                </span>
               </li>
             </ul>
           </div>
@@ -141,6 +161,8 @@ async function run() {
               Voir l’indice {{ revealedHints + 1 }}/{{ exercise.hints.length }}
             </button>
           </div>
+
+          <LessonLinks :language-slug="languageSlug" :chapter-slug="exercise.chapter.slug" />
         </div>
 
         <form class="grid content-start gap-3" @submit.prevent="run">
@@ -154,8 +176,19 @@ async function run() {
           />
           <p class="text-body-sm text-muted-foreground">
             Pour voir un résultat, appelez votre fonction avec
-            <code class="font-mono">console.log({{ formatCall(exercise.functionName, exercise.tests[0]?.args ?? []) }})</code>.
-            La correction automatique arrive bientôt.
+            <code class="font-mono"
+              >console.log({{
+                formatCall(exercise.functionName, exercise.testCases[0]?.args ?? [])
+              }})</code
+            >. La correction automatique arrive bientôt.
+          </p>
+          <!-- Le moteur retire les types sans les verifier (runtime node_strip_types). -->
+          <p
+            v-if="exercise.language.runtime === 'node_strip_types'"
+            class="text-body-sm text-muted-foreground"
+          >
+            Les annotations de type sont retirées avant l’exécution : une erreur de type n’est pas
+            encore signalée.
           </p>
           <div class="flex flex-wrap gap-2">
             <button
@@ -183,11 +216,11 @@ async function run() {
             <pre
               v-if="result.run.stdout"
               class="overflow-x-auto rounded-md border p-3 font-mono text-sm whitespace-pre-wrap"
-            >{{ result.run.stdout }}</pre>
+              >{{ result.run.stdout }}</pre>
             <pre
               v-if="result.run.stderr"
               class="overflow-x-auto rounded-md border border-red-500/50 p-3 font-mono text-sm whitespace-pre-wrap text-red-600 dark:text-red-400"
-            >{{ result.run.stderr }}</pre>
+              >{{ result.run.stderr }}</pre>
             <p
               v-if="!result.run.stdout && !result.run.stderr"
               class="text-body-sm text-muted-foreground"
@@ -200,12 +233,16 @@ async function run() {
 
       <NuxtLink
         v-if="exercise.next"
-        :to="`/javascript/${exercise.next.chapterSlug}/${exercise.next.slug}`"
+        :to="`/parcours/${languageSlug}/${exercise.next.chapterSlug}/${exercise.next.slug}`"
         class="justify-self-end rounded-md border px-4 py-2 font-semibold"
       >
         Exercice suivant →
       </NuxtLink>
-      <NuxtLink v-else to="/javascript" class="justify-self-end rounded-md border px-4 py-2">
+      <NuxtLink
+        v-else
+        :to="`/parcours/${languageSlug}`"
+        class="justify-self-end rounded-md border px-4 py-2"
+      >
         Retour au parcours
       </NuxtLink>
     </template>

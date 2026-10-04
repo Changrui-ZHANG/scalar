@@ -4,7 +4,8 @@
       <nav class="max-w-content mx-auto flex items-center justify-between p-4">
         <NuxtLink to="/" class="font-display text-title">Scalar</NuxtLink>
         <div class="flex gap-6">
-          <NuxtLink to="/javascript" class="text-title">Parcours JavaScript</NuxtLink>
+          <NuxtLink to="/parcours" class="text-title">Parcours</NuxtLink>
+          <NuxtLink to="/connaissance" class="text-title">Connaissance</NuxtLink>
           <NuxtLink to="/exercices" class="text-title">Bac à sable</NuxtLink>
         </div>
       </nav>

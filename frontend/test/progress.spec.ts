@@ -49,6 +49,16 @@ describe('RichText', () => {
     expect(wrapper.find('pre').text()).toBe('const x = 1')
   })
 
+  it('rend les titres et les listes des cours', async () => {
+    const source = '## Les types\n\n- `string` : du texte\n- `number`\n\nFin.'
+    const wrapper = await mountSuspended(RichText, { props: { source } })
+
+    expect(wrapper.find('h3').text()).toBe('Les types')
+    expect(wrapper.findAll('li')).toHaveLength(2)
+    expect(wrapper.find('li code').text()).toBe('string')
+    expect(wrapper.findAll('p')).toHaveLength(1)
+  })
+
   it('n’interprète jamais le HTML du contenu', async () => {
     const wrapper = await mountSuspended(RichText, {
       props: { source: '<img src=x onerror="alert(1)">' },

@@ -1,14 +1,17 @@
 <script setup lang="ts">
 /**
- * Rendu minimal du Markdown des enonces : blocs ```code```, paragraphes et
- * `code` en ligne. Tout passe par l'interpolation Vue, jamais par `v-html`.
+ * Rendu minimal du Markdown des enonces et des cours : blocs ```code```,
+ * titres `## `, listes `- `, paragraphes et `code` en ligne. Tout passe par
+ * l'interpolation Vue, jamais par `v-html`.
  */
 // ponytail: sous-ensemble volontaire du Markdown ; une bibliotheque (markdown-it
-// + DOMPurify) le jour ou les enonces ont besoin de listes, liens ou titres.
+// + DOMPurify) le jour ou les cours ont besoin de liens, d'images ou de tableaux.
 
 type Inline = { readonly code: boolean; readonly text: string }
 type Block =
   | { readonly kind: 'code'; readonly text: string }
+  | { readonly kind: 'heading'; readonly parts: readonly Inline[] }
+  | { readonly kind: 'list'; readonly items: readonly (readonly Inline[])[] }
   | { readonly kind: 'paragraph'; readonly parts: readonly Inline[] }
 
 const props = defineProps<{ source: string }>()
@@ -16,6 +19,17 @@ const props = defineProps<{ source: string }>()
 function inline(text: string): Inline[] {
   // Les segments impairs sont ceux compris entre deux accents graves.
   return text.split('`').map((part, i) => ({ code: i % 2 === 1, text: part }))
+}
+
+function textBlock(text: string): Block {
+  if (text.startsWith('## ')) {
+    return { kind: 'heading', parts: inline(text.slice(3)) }
+  }
+  const lines = text.split('\n')
+  if (lines.every((line) => line.startsWith('- '))) {
+    return { kind: 'list', items: lines.map((line) => inline(line.slice(2))) }
+  }
+  return { kind: 'paragraph', parts: inline(text) }
 }
 
 const blocks = computed<Block[]>(() =>
@@ -26,7 +40,7 @@ const blocks = computed<Block[]>(() =>
           .split(/\n{2,}/)
           .map((p) => p.trim())
           .filter((p) => p !== '')
-          .map((p) => ({ kind: 'paragraph', parts: inline(p) })),
+          .map(textBlock),
   ),
 )
 </script>
@@ -37,14 +51,15 @@ const blocks = computed<Block[]>(() =>
       <pre
         v-if="block.kind === 'code'"
         class="overflow-x-auto rounded-md border p-3 font-mono text-sm"
-      >{{ block.text }}</pre>
+        >{{ block.text }}</pre>
+      <h3 v-else-if="block.kind === 'heading'" class="text-title mt-2">
+        <RichInline :parts="block.parts" />
+      </h3>
+      <ul v-else-if="block.kind === 'list'" class="grid max-w-prose list-disc gap-1 pl-6">
+        <li v-for="(item, j) in block.items" :key="j"><RichInline :parts="item" /></li>
+      </ul>
       <p v-else class="max-w-prose whitespace-pre-line">
-        <template v-for="(part, j) in block.parts" :key="j">
-          <code v-if="part.code" class="rounded border px-1 font-mono text-[0.9em]">{{
-            part.text
-          }}</code>
-          <template v-else>{{ part.text }}</template>
-        </template>
+        <RichInline :parts="block.parts" />
       </p>
     </template>
   </div>
