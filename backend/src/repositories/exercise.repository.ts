@@ -1,49 +1,62 @@
-import type { Chapter, Exercise, Language } from '../db/schema.ts'
-import { MOCK_CHAPTERS, MOCK_EXERCISES } from './exercise.mock.ts'
+import type { Chapter, Exercise, ExerciseTestCase } from '../db/schema.ts'
+import { MOCK_CHAPTERS, MOCK_EXERCISES, MOCK_EXERCISE_TEST_CASES } from './exercise.mock.ts'
 
 /**
- * Acces aux chapitres et exercices. Le service ne depend que de ce contrat :
- * l'implementation en memoire sera remplacee par Prisma sans le toucher.
+ * Acces aux parcours : chapitres, exercices et leurs cas de test.
+ * Seul le contenu publie est servi ; les slugs sont uniques dans leur parent.
  */
 export interface ExerciseRepository {
-  /** Chapitres d'un langage, tries par position. */
-  listChapters(language: Language): Promise<readonly Chapter[]>
-  /** Exercices d'un chapitre, tries par position. */
+  /** Chapitres publies d'un langage, tries par position. */
+  listChapters(languageId: number): Promise<readonly Chapter[]>
+  findChapter(languageId: number, slug: string): Promise<Chapter | null>
+  findChapterById(id: number): Promise<Chapter | null>
+  /** Exercices publies d'un chapitre, tries par position. */
   listExercises(chapterId: number): Promise<readonly Exercise[]>
-  findChapterBySlug(slug: string): Promise<Chapter | null>
-  findExerciseBySlug(slug: string): Promise<Exercise | null>
+  findExercise(chapterId: number, slug: string): Promise<Exercise | null>
+  /** Cas de test d'un exercice, tries par position. */
+  listTestCases(exerciseId: number): Promise<readonly ExerciseTestCase[]>
 }
 
 const byPosition = (a: { position: number }, b: { position: number }): number =>
   a.position - b.position
 
-// ponytail: donnees fictives en memoire tant que la base n'est pas alimentee ;
-// a remplacer par un PrismaExerciseRepository.
+// ponytail: donnees fictives en memoire ; PrismaExerciseRepository pour la base.
 export class InMemoryExerciseRepository implements ExerciseRepository {
   private readonly chapters: readonly Chapter[]
   private readonly exercises: readonly Exercise[]
+  private readonly testCases: readonly ExerciseTestCase[]
 
   constructor(
     chapters: readonly Chapter[] = MOCK_CHAPTERS,
     exercises: readonly Exercise[] = MOCK_EXERCISES,
+    testCases: readonly ExerciseTestCase[] = MOCK_EXERCISE_TEST_CASES,
   ) {
-    this.chapters = chapters
-    this.exercises = exercises
+    this.chapters = chapters.filter((c) => c.status === 'published')
+    this.exercises = exercises.filter((e) => e.status === 'published')
+    this.testCases = testCases
   }
 
-  async listChapters(language: Language): Promise<readonly Chapter[]> {
-    return this.chapters.filter((c) => c.language === language).toSorted(byPosition)
+  async listChapters(languageId: number): Promise<readonly Chapter[]> {
+    return this.chapters.filter((c) => c.languageId === languageId).toSorted(byPosition)
+  }
+
+  async findChapter(languageId: number, slug: string): Promise<Chapter | null> {
+    return this.chapters.find((c) => c.languageId === languageId && c.slug === slug) ?? null
+  }
+
+  async findChapterById(id: number): Promise<Chapter | null> {
+    return this.chapters.find((c) => c.id === id) ?? null
   }
 
   async listExercises(chapterId: number): Promise<readonly Exercise[]> {
     return this.exercises.filter((e) => e.chapterId === chapterId).toSorted(byPosition)
   }
 
-  async findChapterBySlug(slug: string): Promise<Chapter | null> {
-    return this.chapters.find((c) => c.slug === slug) ?? null
+  async findExercise(chapterId: number, slug: string): Promise<Exercise | null> {
+    return this.exercises.find((e) => e.chapterId === chapterId && e.slug === slug) ?? null
   }
 
-  async findExerciseBySlug(slug: string): Promise<Exercise | null> {
-    return this.exercises.find((e) => e.slug === slug) ?? null
+  async listTestCases(exerciseId: number): Promise<readonly ExerciseTestCase[]> {
+    return this.testCases.filter((t) => t.exerciseId === exerciseId).toSorted(byPosition)
   }
 }
