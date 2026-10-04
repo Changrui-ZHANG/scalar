@@ -15,15 +15,21 @@ résultat** — fonctionne de bout en bout.
 
 Ce qui existe aujourd'hui :
 
-- une page `/exercices` où l'on colle un script Node.js et qui affiche la
-  réponse complète du moteur ;
-- `POST /api/v1/executions`, qui valide la soumission puis la délègue au moteur ;
+- **Parcours** (`/parcours`) : JavaScript et TypeScript, en chapitres et
+  exercices numérotés, avec énoncé, cas de test, indices et exécution du code ;
+- **Connaissance** (`/connaissance`) : des cours par langage (Débutant,
+  Intermédiaire, Avancé, Écosystème) et des cours communs (Conception), reliés
+  aux chapitres dans les deux sens ;
+- un bac à sable `/exercices` où l'on colle un script Node.js ;
+- `POST /api/v1/executions`, qui valide la soumission, retire les types d'un
+  code TypeScript, puis la délègue au moteur ;
 - l'exécution isolée par [Piston](https://github.com/engineer-man/piston), avec
   réseau coupé, plafond de durée et plafond de sortie.
 
-Ce qui n'existe pas encore : authentification, comptes, quotas, persistance des
-soumissions, notion d'exercice avec énoncé et cas de test, certification. Le
-test de niveau et les parcours décrits plus haut restent la cible, pas l'état.
+Ce qui n'existe pas encore : authentification, comptes, quotas, correction
+automatique (verdict par cas de test), vérification des types TypeScript,
+persistance des soumissions, certification. La progression de l'apprenant vit
+dans son navigateur.
 
 Architecture : un monorepo npm workspaces réunissant une API Node/Express sur
 PostgreSQL, un exécuteur de code conteneurisé et isolé, et un frontend Nuxt,
@@ -45,7 +51,28 @@ Le produit est accessible sur :
 - Santé : http://localhost:8080/api/v1/health
 
 Au tout premier démarrage, le moteur d'exécution n'a aucun langage installé :
-voir la section suivante avant d'essayer d'exécuter quoi que ce soit.
+voir la section « Moteur d'exécution » avant d'essayer d'exécuter quoi que ce soit.
+
+## Base de données
+
+Le backend applique les migrations au démarrage, puis charge le contenu
+(langages, chapitres, exercices, cours) si la base est vide : `docker compose up`
+suffit sur un dépôt fraîchement cloné.
+
+Le contenu est rédigé dans le dépôt, dans `backend/src/repositories/*.mock.ts`.
+Après l'avoir modifié :
+
+```bash
+npm run db:seed --workspace backend   # remplace tout le contenu de la base
+```
+
+Le seed vérifie d'abord chaque exercice (la solution passe ses cas, le code de
+départ non) et n'écrit rien si l'un d'eux est incohérent.
+
+Pour travailler sans PostgreSQL, `CONTENT_SOURCE=mock` sert les mêmes données
+depuis la mémoire. Le schéma, ses règles de nommage et ses contraintes sont
+décrits dans `backend/prisma/schema.prisma` et
+`backend/prisma/migrations/0_init/migration.sql`.
 
 > **Après l'ajout d'une dépendance npm**, un `npm install` sur la machine ne
 > suffit pas : les conteneurs montent `/app/node_modules` en volume anonyme figé
