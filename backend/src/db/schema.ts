@@ -1,6 +1,12 @@
-export type { Chapter, Exercise, Language } from '@prisma/client'
-
-export interface TestCase {
-  readonly args: readonly unknown[]
-  readonly expected: unknown
-}
+export type {
+  CategoryScope,
+  Chapter,
+  ContentStatus,
+  Exercise,
+  ExerciseTestCase,
+  Language,
+  LanguageRuntime,
+  Lesson,
+  LessonCategory,
+  LessonChapter,
+} from '@prisma/client'

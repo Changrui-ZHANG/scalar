@@ -4,14 +4,14 @@
   "description": "API Scalar",
   "main": "src/index.ts",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "vite",
     "start": "node src/index.ts",
     "test": "node --test \"src/**/*.test.ts\"",
     "typecheck": "tsc --noEmit",
-    "postinstall": "prisma generate",
-    "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
-    "db:migrate:dev": "prisma migrate dev"
+    "db:migrate:dev": "prisma migrate dev",
+    "db:seed": "node src/db/seed.cli.ts"
   },
   "license": "UNLICENSED",
   "type": "module",

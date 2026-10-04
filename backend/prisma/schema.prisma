@@ -7,43 +7,161 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Language {
-  javascript
+// Contraintes que Prisma ne sait pas exprimer, ecrites a la main dans
+// `migrations/0_init/migration.sql` : unicite des positions a controle differe,
+// unicite NULLS NOT DISTINCT des lecons, cle composee lecon -> categorie,
+// et controles CHECK.
 
-  @@map("language")
+/// Cycle de vie d'un contenu : seul `published` est servi.
+enum ContentStatus {
+  draft
+  published
+  archived
+
+  @@map("content_status")
+}
+
+/// Ce que le moteur fait du code soumis avant de l'executer.
+enum LanguageRuntime {
+  node
+  node_strip_types
+
+  @@map("language_runtime")
+}
+
+/// Une categorie de lecons est propre a un langage, ou vaut pour tous.
+enum CategoryScope {
+  per_language
+  all_languages
+
+  @@map("category_scope")
+}
+
+model Language {
+  id                     Int             @id @default(autoincrement())
+  slug                   String          @unique
+  label                  String
+  position               Int
+  /// Une phrase affichee sur la page Parcours.
+  summary                String
+  runtime                LanguageRuntime
+  prerequisiteLanguageId Int?            @map("prerequisite_language_id")
+  prerequisiteLanguage   Language?       @relation("LanguagePrerequisite", fields: [prerequisiteLanguageId], references: [id], onDelete: SetNull)
+  dependentLanguages     Language[]      @relation("LanguagePrerequisite")
+  status                 ContentStatus   @default(draft)
+  createdAt              DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  chapters               Chapter[]
+  lessons                Lesson[]
+
+  @@map("languages")
 }
 
 model Chapter {
-  id        Int        @id @default(autoincrement())
-  slug      String     @unique
-  language  Language
-  title     String
-  position  Int
-  lesson    String
-  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
-  exercises Exercise[]
+  id         Int             @id @default(autoincrement())
+  languageId Int             @map("language_id")
+  language   Language        @relation(fields: [languageId], references: [id], onDelete: Restrict)
+  slug       String
+  position   Int
+  title      String
+  /// Quelques lignes : la lecon liee reste la reference du sujet.
+  summary    String
+  status     ContentStatus   @default(draft)
+  createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  exercises  Exercise[]
+  lessons    LessonChapter[]
 
-  @@unique([language, position], name: "chapters_language_position_unique")
+  @@unique([languageId, slug], name: "chapters_language_slug_key")
   @@map("chapters")
 }
 
 model Exercise {
-  id           Int      @id @default(autoincrement())
-  slug         String   @unique
-  chapterId    Int      @map("chapter_id")
-  chapter      Chapter  @relation(fields: [chapterId], references: [id], onDelete: Restrict)
+  id           Int                @id @default(autoincrement())
+  chapterId    Int                @map("chapter_id")
+  chapter      Chapter            @relation(fields: [chapterId], references: [id], onDelete: Restrict)
+  slug         String
   position     Int
   title        String
   statement    String
-  functionName String   @map("function_name")
-  starterCode  String   @map("starter_code")
-  solution     String
-  hints        String[] @default([])
-  tests        Json
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  /// Fonction que le harnais de test appelle dans le code soumis.
+  functionName String             @map("function_name")
+  starterCode  String             @map("starter_code")
+  /// Jamais renvoyee au navigateur avant une premiere soumission.
+  solutionCode String             @map("solution_code")
+  hints        String[]           @default([])
+  status       ContentStatus      @default(draft)
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  testCases    ExerciseTestCase[]
 
-  @@unique([chapterId, position], name: "exercises_chapter_id_position_unique")
+  @@unique([chapterId, slug], name: "exercises_chapter_slug_key")
   @@map("exercises")
+}
+
+model ExerciseTestCase {
+  id         Int      @id @default(autoincrement())
+  exerciseId Int      @map("exercise_id")
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  position   Int
+  /// Arguments passes a la fonction : toujours un tableau JSON.
+  args       Json
+  expected   Json
+  isHidden   Boolean  @default(false) @map("is_hidden")
+  /// Facultatif : « tableau vide », « nombres negatifs ».
+  label      String?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("exercise_test_cases")
+}
+
+model LessonCategory {
+  id        Int           @id @default(autoincrement())
+  slug      String        @unique
+  label     String
+  position  Int
+  scope     CategoryScope
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  lessons   Lesson[]
+
+  @@map("lesson_categories")
+}
+
+model Lesson {
+  id            Int             @id @default(autoincrement())
+  /// Nul pour une lecon d'une categorie `all_languages`.
+  languageId    Int?            @map("language_id")
+  language      Language?       @relation(fields: [languageId], references: [id], onDelete: Restrict)
+  categoryId    Int             @map("category_id")
+  category      LessonCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  /// Copie de `lesson_categories.scope`, tenue par une cle composee : permet
+  /// a la base de verifier « tous langages <=> sans langage ».
+  categoryScope CategoryScope   @map("category_scope")
+  slug          String
+  position      Int
+  title         String
+  /// Une phrase, affichee dans les listes.
+  summary       String
+  content       String
+  /// Derniere relecture : une fiche de bibliotheque vieillit vite.
+  reviewedAt    DateTime?       @map("reviewed_at") @db.Timestamptz(6)
+  status        ContentStatus   @default(draft)
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  chapters      LessonChapter[]
+
+  @@map("lessons")
+}
+
+/// Lien facultatif lecon <-> chapitre : « S'exercer » et « Revoir le cours ».
+model LessonChapter {
+  lessonId  Int     @map("lesson_id")
+  chapterId Int     @map("chapter_id")
+  lesson    Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  chapter   Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@id([lessonId, chapterId])
+  @@map("lesson_chapters")
 }
