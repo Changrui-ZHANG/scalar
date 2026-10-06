@@ -30,12 +30,17 @@ export class LessonController {
     );
   }
 
+  async getTrack(req: Request<{ language: string }>, res: Response) {
+    await respond(res, "Langage inconnu.", () => this.service.getTrack(req.params.language));
+  }
+
   buildRouter() {
     const router = Router();
     // Avant `/lessons/:section` : « transverse » n'est pas un slug de section.
     router.get("/lessons/transverse", this.listTransverseSections.bind(this));
     router.get("/lessons/:section", this.getSection.bind(this));
     router.get("/lessons/:section/:lesson", this.getLesson.bind(this));
+    router.get("/languages/:language/track", this.getTrack.bind(this));
     router.get(
       "/languages/:language/chapters/:chapter/lessons",
       this.listLessonsForChapter.bind(this),

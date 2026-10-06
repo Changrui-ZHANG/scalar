@@ -8,6 +8,7 @@
 import type { Chapter, Exercise, Language, LanguageRuntime } from '../db/schema.ts'
 import type { ExerciseRepository } from '../repositories/exercise.repository.ts'
 import type { LanguageRepository } from '../repositories/language.repository.ts'
+import type { VerificationCase } from './verification.service.ts'
 
 export interface LanguageLink {
   readonly slug: string
@@ -61,6 +62,12 @@ export interface PublicExercise {
   readonly chapter: { readonly slug: string; readonly title: string; readonly number: number }
   /** Exercice suggere ensuite : suivant du chapitre, sinon premier du chapitre suivant. */
   readonly next: { readonly chapterSlug: string; readonly slug: string } | null
+}
+
+export interface ExerciseToVerify {
+  readonly functionName: string
+  readonly runtime: LanguageRuntime
+  readonly cases: readonly VerificationCase[]
 }
 
 const toLink = (l: Language): LanguageLink => ({ slug: l.slug, label: l.label })
@@ -139,6 +146,34 @@ export class ExerciseService {
       language: { ...toLink(language), runtime: language.runtime },
       chapter: { slug: chapter.slug, title: chapter.title, number: rank(chapters, chapter) },
       next: await this.findNext(exercise, chapter, chapters),
+    }
+  }
+
+  /**
+   * Ce que la correction doit connaitre d'un exercice, cas caches compris.
+   * Reste cote serveur : n'est jamais renvoye tel quel au navigateur.
+   */
+  async findForVerification(
+    languageSlug: string,
+    chapterSlug: string,
+    exerciseSlug: string,
+  ): Promise<ExerciseToVerify | null> {
+    const language = await this.languages.findLanguageBySlug(languageSlug)
+    const chapter = language && (await this.repository.findChapter(language.id, chapterSlug))
+    const exercise = chapter && (await this.repository.findExercise(chapter.id, exerciseSlug))
+    if (!language || !chapter || !exercise) {
+      return null
+    }
+    const testCases = await this.repository.listTestCases(exercise.id)
+    return {
+      functionName: exercise.functionName,
+      runtime: language.runtime,
+      cases: testCases.map((t) => ({
+        args: t.args as unknown[],
+        expected: t.expected,
+        label: t.label,
+        isHidden: t.isHidden,
+      })),
     }
   }
 

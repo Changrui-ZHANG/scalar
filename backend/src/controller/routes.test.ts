@@ -136,6 +136,38 @@ describe('API du contenu (données fictives)', () => {
     assert.equal((await get('/lessons/javascript/modules')).status, 404)
   })
 
+  it('GET /languages/:language/track sert le fil, sans répéter une leçon', async () => {
+    const { status, body } = await get('/languages/javascript/track')
+    assert.equal(status, 200)
+    assert.deepEqual(
+      body.data.chapters.map((c: { slug: string; lessons: { slug: string }[] }) => [
+        c.slug,
+        c.lessons.map((l) => l.slug),
+      ]),
+      [
+        ['variables', ['variables-et-types-primitifs', 'fonctions']],
+        ['conditions', ['conditions']],
+        ['boucles', ['boucles']],
+      ],
+    )
+    assert.equal((await get('/languages/python/track')).status, 404)
+  })
+
+  it('POST une vérification : 404 hors hiérarchie, 400 sans code', async () => {
+    const post = (path: string, body: unknown) =>
+      fetch(`${base}${path}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    const path = '/languages/javascript/chapters/conditions/exercises/est-pair/verifications'
+    assert.equal((await post(path, {})).status, 400)
+    assert.equal(
+      (await post(path.replace('conditions', 'boucles'), { code: 'function isEven() {}' })).status,
+      404,
+    )
+  })
+
   it('GET les leçons à relire pour un chapitre', async () => {
     const { status, body } = await get('/languages/javascript/chapters/variables/lessons')
 

@@ -58,6 +58,23 @@ export interface LessonDetail extends LessonSummary {
   readonly next: { readonly slug: string; readonly title: string } | null
 }
 
+export interface TrackChapter {
+  readonly slug: string
+  readonly title: string
+  readonly number: number
+  readonly lessons: readonly { readonly slug: string; readonly title: string; readonly summary: string }[]
+  readonly exercises: readonly {
+    readonly slug: string
+    readonly title: string
+    readonly statement: string
+  }[]
+}
+
+export interface TrackView {
+  readonly language: { readonly slug: string; readonly label: string }
+  readonly chapters: readonly TrackChapter[]
+}
+
 type Section =
   | { readonly kind: 'language'; readonly language: Language }
   | { readonly kind: 'category'; readonly category: LessonCategory }
@@ -136,6 +153,45 @@ export class LessonService {
       chapters: await this.chaptersOf(lesson),
       previous: toNeighbour(programme[index - 1]),
       next: toNeighbour(programme[index + 1]),
+    }
+  }
+
+  /**
+   * Fil d'un parcours : chaque chapitre avec ses lecons puis ses exercices,
+   * dans l'ordre. De quoi numeroter les episodes et chercher dedans en un appel.
+   *
+   * Une lecon liee a plusieurs chapitres n'apparait qu'au premier : le fil ne
+   * repete rien. Seules les lecons propres au langage en font partie.
+   */
+  async getTrack(languageSlug: string): Promise<TrackView | null> {
+    const language = await this.languages.findLanguageBySlug(languageSlug)
+    if (!language) {
+      return null
+    }
+    const chapters = await this.exercises.listChapters(language.id)
+    const loaded = await Promise.all(
+      chapters.map(async (chapter) => ({
+        chapter,
+        lessons: (await this.lessons.listLessonsForChapter(chapter.id)).filter(
+          (l) => l.languageId === language.id,
+        ),
+        exercises: await this.exercises.listExercises(chapter.id),
+      })),
+    )
+    return {
+      language: { slug: language.slug, label: language.label },
+      chapters: loaded.map(({ chapter, lessons, exercises }, i) => {
+        const earlier = new Set(loaded.slice(0, i).flatMap((c) => c.lessons.map((l) => l.id)))
+        return {
+          slug: chapter.slug,
+          title: chapter.title,
+          number: i + 1,
+          lessons: lessons
+            .filter((l) => !earlier.has(l.id))
+            .map((l) => ({ slug: l.slug, title: l.title, summary: l.summary })),
+          exercises: exercises.map((e) => ({ slug: e.slug, title: e.title, statement: e.statement })),
+        }
+      }),
     }
   }
 
