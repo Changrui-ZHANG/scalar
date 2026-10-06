@@ -53,6 +53,15 @@ export const TRACK_STATUS_LABELS: Readonly<Record<TrackStatus, string>> = {
   completed: 'Terminé',
 }
 
+export type TrackFilter = 'all' | TrackStatus
+
+export const TRACK_FILTERS: readonly { readonly value: TrackFilter; readonly label: string }[] = [
+  { value: 'all', label: 'Tous' },
+  { value: 'active', label: 'En cours' },
+  { value: 'todo', label: 'Non commencés' },
+  { value: 'completed', label: 'Terminés' },
+]
+
 /** Numero affiche sur deux chiffres : 04. */
 export const padNumber = (n: number): string => String(n).padStart(2, '0')
 
