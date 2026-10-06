@@ -60,9 +60,60 @@ export interface PublicExercise {
   readonly next: { readonly chapterSlug: string; readonly slug: string } | null
 }
 
-// --- Connaissance --------------------------------------------------------------
+/** Fil d'un parcours, miroir de `TrackView` dans `lesson.service.ts`. */
+export interface TrackChapter {
+  readonly slug: string
+  readonly title: string
+  readonly number: number
+  readonly lessons: readonly {
+    readonly slug: string
+    readonly title: string
+    readonly summary: string
+  }[]
+  readonly exercises: readonly {
+    readonly slug: string
+    readonly title: string
+    readonly statement: string
+  }[]
+}
 
-/** Ce qui suit /connaissance/ : un langage, ou une categorie valable pour tous. */
+export interface TrackView {
+  readonly language: LanguageLink
+  readonly chapters: readonly TrackChapter[]
+}
+
+// --- Execution et correction ---------------------------------------------------
+
+/** Miroir de `ExecutionResult` dans `execution.service.ts`. */
+export interface ExecutionResult {
+  readonly status: 'OK' | 'TO' | 'OL' | 'EL' | 'RE' | 'SG' | 'XX'
+  readonly label: string
+  readonly run: {
+    readonly stdout: string
+    readonly stderr: string
+    readonly code: number | null
+    readonly signal: string | null
+    readonly cpu_time?: number
+    readonly wall_time?: number
+  }
+}
+
+/** Miroir de `VerificationResult` dans `verification.service.ts`. */
+export interface VerificationResult {
+  readonly passed: boolean
+  readonly passedCount: number
+  readonly total: number
+  readonly checks: readonly {
+    readonly label: string
+    readonly passed: boolean
+    readonly detail: string | null
+  }[]
+  readonly execution: ExecutionResult
+}
+
+// --- Lecons --------------------------------------------------------------------
+
+/** Section d'une lecon : un langage, ou une categorie valable pour tous. */
 export interface SectionLink {
   readonly kind: 'language' | 'category'
   readonly slug: string
@@ -74,20 +125,6 @@ export interface LessonSummary {
   readonly title: string
   readonly summary: string
   readonly number: number
-}
-
-export interface CategoryGroup {
-  readonly slug: string
-  readonly label: string
-  readonly lessons: readonly LessonSummary[]
-}
-
-export interface SectionView extends SectionLink {
-  readonly groups: readonly CategoryGroup[]
-}
-
-export interface LessonLink extends LessonSummary {
-  readonly section: SectionLink
 }
 
 export interface LessonDetail extends LessonSummary {

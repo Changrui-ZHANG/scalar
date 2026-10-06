@@ -1,101 +1,135 @@
 <script setup lang="ts">
+/** Le fil complet d'un parcours, groupe par chapitre ; rien n'est verrouille. */
 const route = useRoute()
 const languageSlug = computed(() => String(route.params.langage))
 
-const { find } = await useLanguages()
+const { find, error: languagesError } = await useLanguages()
 const language = computed(() => find(languageSlug.value))
-if (!language.value) {
-  throw createError({ statusCode: 404, statusMessage: 'Langage inconnu', fatal: true })
+if (!language.value && !languagesError.value) {
+  throw createError({ statusCode: 404, statusMessage: 'Parcours inconnu', fatal: true })
 }
 
+const { track, episodes, error, status } = await useTrackEpisodes(() => languageSlug.value)
+
 useSeoMeta({
-  title: () => `Parcours ${language.value?.label} — Scalar`,
-  description: () =>
-    `Apprendre ${language.value?.label} chapitre par chapitre, en écrivant du vrai code.`,
+  title: () => `Parcours ${language.value?.label ?? ''} — Scalar`,
+  description: () => language.value?.summary ?? '',
 })
 
-const { data, error } = await useFetch<ApiResponse<ChapterSummary[]>>(
-  () => apiUrl(`/languages/${seg(languageSlug.value)}/chapters`),
-  { key: `chapters-${languageSlug.value}` },
+const progress = computed(() => progressOf(episodes.value))
+const next = computed(() => firstIncomplete(episodes.value))
+
+const chapters = computed(() =>
+  (track.value?.chapters ?? []).map((chapter) => {
+    const own = episodes.value.filter((e) => e.chapterSlug === chapter.slug)
+    return { ...chapter, episodes: own, status: trackStatus(own, false) }
+  }),
 )
 
-const chapters = computed(() => data.value?.data ?? [])
-const { statusOf } = useProgress()
+const CHAPTER_LABELS: Readonly<Record<TrackStatus, string>> = {
+  todo: 'À faire',
+  active: 'En cours',
+  completed: 'Terminé',
+}
 
-// ponytail: « tente » compte comme fait tant qu'il n'y a pas de verdict
-// automatique ; ne garder que « reussi » quand la correction existera.
-const isDone = (chapter: string, exercise: string) =>
-  ['attempted', 'passed'].includes(statusOf(exerciseKey(languageSlug.value, chapter, exercise)))
-
-/** Premier exercice pas encore fait, dans l'ordre du parcours. */
-const nextUp = computed(() => {
-  for (const chapter of chapters.value) {
-    const exercise = chapter.exercises.find((e) => !isDone(chapter.slug, e.slug))
-    if (exercise) {
-      return { chapter, exercise }
-    }
-  }
-  return null
-})
+const NEXT_DESCRIPTIONS: Readonly<Record<EpisodeType, string>> = {
+  lesson:
+    'Découvrez la notion, observez un exemple, puis passez directement à sa mise en pratique.',
+  exercise: 'Écrivez votre code, exécutez-le, puis vérifiez votre solution.',
+}
 </script>
 
 <template>
-  <section class="grid gap-8 py-8">
+  <div class="grid gap-10 py-10">
     <BreadcrumbTrail
-      :items="[{ label: 'Parcours', to: '/parcours' }, { label: language?.label ?? '' }]"
+      :items="[{ label: 'Parcours', to: '/parcours' }, { label: language?.label ?? 'Parcours' }]"
     />
 
-    <header class="grid gap-2">
-      <h1 class="font-display text-3xl md:text-4xl">{{ language?.label }}</h1>
-      <p class="max-w-prose">
-        Chaque chapitre commence par un court résumé, puis des exercices à résoudre dans l’ordre.
-        Rien n’est verrouillé : sautez ce que vous savez déjà.
-      </p>
-      <p v-if="language?.prerequisite" class="text-body-sm text-muted-foreground max-w-prose">
-        Ce parcours suppose les bases de {{ language.prerequisite.label }}.
-        <NuxtLink :to="`/parcours/${language.prerequisite.slug}`" class="underline">
-          Commencer par {{ language.prerequisite.label }}
-        </NuxtLink>
-      </p>
-    </header>
-
-    <p
-      v-if="error"
-      role="alert"
-      class="rounded-md border border-red-500/50 p-3 text-red-600 dark:text-red-400"
-    >
-      {{ apiErrorMessage(error, 'Le parcours est injoignable pour l’instant.') }}
+    <p v-if="languagesError || error" role="alert" class="alert-error">
+      {{ apiErrorMessage(languagesError ?? error, 'Le parcours est injoignable pour l’instant.') }}
     </p>
 
-    <NuxtLink
-      v-if="nextUp"
-      :to="`/parcours/${languageSlug}/${nextUp.chapter.slug}/${nextUp.exercise.slug}`"
-      class="bg-foreground text-background justify-self-start rounded-md px-4 py-2 font-semibold"
-    >
-      Continuer : {{ nextUp.chapter.number }}.{{ nextUp.exercise.number }}
-      {{ nextUp.exercise.title }}
-    </NuxtLink>
-    <p v-else-if="chapters.length" class="font-semibold">Parcours terminé. Bravo !</p>
+    <header class="grid gap-6 border-b pb-8 sm:grid-cols-[1fr_auto] sm:items-start">
+      <div class="grid max-w-2xl gap-3">
+        <p class="eyebrow">Parcours</p>
+        <h1 class="text-4xl font-semibold sm:text-5xl">{{ language?.label }}</h1>
+        <p class="text-muted-foreground text-lg">{{ language?.summary }}</p>
+        <p v-if="language?.prerequisite" class="text-body-sm text-muted-foreground">
+          <strong class="text-foreground">Prérequis recommandé :</strong> les bases de
+          <NuxtLink :to="`/parcours/${language.prerequisite.slug}`" class="underline">
+            {{ language.prerequisite.label }}</NuxtLink
+          >. Ce parcours reste accessible librement.
+        </p>
+        <ProgressBar v-if="episodes.length" :progress="progress" class="mt-2" />
+      </div>
+      <NuxtLink to="/parcours" class="btn-secondary justify-self-start">Tous les parcours</NuxtLink>
+    </header>
 
-    <ol class="grid gap-3">
-      <li v-for="chapter in chapters" :key="chapter.slug">
-        <NuxtLink
-          :to="`/parcours/${languageSlug}/${chapter.slug}`"
-          class="hover:bg-foreground/5 flex items-center justify-between gap-4 rounded-md border p-4"
+    <p v-if="status === 'pending' && !track" class="text-muted-foreground">
+      Chargement du parcours…
+    </p>
+
+    <template v-else-if="track">
+      <NextEpisodeCard
+        v-if="next"
+        eyebrow="À suivre"
+        :episode="next"
+        :action-label="progress.done === 0 ? 'Commencer le parcours' : 'Continuer le parcours'"
+        :description="NEXT_DESCRIPTIONS[next.type]"
+      />
+      <section
+        v-else-if="episodes.length"
+        class="bg-success-soft text-success grid gap-2 rounded-2xl p-6 sm:p-8"
+      >
+        <h2 class="text-2xl font-semibold">Parcours terminé</h2>
+        <p class="text-foreground">
+          Bravo : tous les épisodes de {{ language?.label }} sont terminés. Revoyez librement
+          n’importe quel épisode ci-dessous.
+        </p>
+      </section>
+
+      <EmptyState
+        v-if="!episodes.length"
+        title="Ce parcours n’a pas encore d’épisode"
+        description="Les premières leçons arrivent bientôt."
+      />
+
+      <section v-else class="grid gap-8" aria-labelledby="fil-titre">
+        <div class="grid gap-1">
+          <h2 id="fil-titre" class="text-3xl font-semibold">Le fil du parcours</h2>
+          <p class="text-body-sm text-muted-foreground">
+            Les leçons et les exercices se suivent dans un seul ordre.
+          </p>
+        </div>
+
+        <section
+          v-for="chapter in chapters"
+          :id="chapter.slug"
+          :key="chapter.slug"
+          class="grid scroll-mt-24 gap-3"
+          :aria-labelledby="`chapitre-${chapter.slug}`"
         >
-          <span class="text-title">{{ chapter.number }}. {{ chapter.title }}</span>
-          <span class="text-body-sm text-muted-foreground flex items-center gap-3">
-            <span aria-hidden="true" class="tracking-widest">
-              <template v-for="e in chapter.exercises" :key="e.slug">{{
-                isDone(chapter.slug, e.slug) ? '●' : '○'
-              }}</template>
-            </span>
-            {{ chapter.exercises.filter((e) => isDone(chapter.slug, e.slug)).length }}/{{
-              chapter.exercises.length
-            }}
-          </span>
-        </NuxtLink>
-      </li>
-    </ol>
-  </section>
+          <div class="flex items-end justify-between gap-4">
+            <div>
+              <p class="text-body-sm text-muted-foreground">Chapitre {{ chapter.number }}</p>
+              <h3 :id="`chapitre-${chapter.slug}`" class="font-display text-2xl font-semibold">
+                {{ chapter.title }}
+              </h3>
+            </div>
+            <StatusBadge
+              v-if="chapter.episodes.length"
+              :status="chapter.status"
+              :label="CHAPTER_LABELS[chapter.status]"
+            />
+          </div>
+          <ol v-if="chapter.episodes.length" class="card divide-y overflow-hidden">
+            <li v-for="episode in chapter.episodes" :key="episode.key">
+              <EpisodeRow :episode="episode" />
+            </li>
+          </ol>
+          <p v-else class="text-body-sm text-muted-foreground">Ce chapitre arrive bientôt.</p>
+        </section>
+      </section>
+    </template>
+  </div>
 </template>

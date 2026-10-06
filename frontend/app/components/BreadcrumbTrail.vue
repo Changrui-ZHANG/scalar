@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * Fil d'Ariane commun aux sections Parcours et Connaissance. Le dernier element
- * est la page courante : jamais un lien, et annonce comme tel.
+ * Fil d'Ariane commun aux pages profondes. Le dernier element est la page
+ * courante : jamais un lien, et annonce comme tel.
  */
 interface Crumb {
   readonly label: string

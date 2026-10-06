@@ -50,9 +50,9 @@ const blocks = computed<Block[]>(() =>
     <template v-for="(block, i) in blocks" :key="i">
       <pre
         v-if="block.kind === 'code'"
-        class="overflow-x-auto rounded-md border p-3 font-mono text-sm"
+        class="bg-code-surface text-code-foreground overflow-x-auto rounded-xl p-4 font-mono text-sm leading-6"
         >{{ block.text }}</pre>
-      <h3 v-else-if="block.kind === 'heading'" class="text-title mt-2">
+      <h3 v-else-if="block.kind === 'heading'" class="font-display mt-3 text-xl font-semibold">
         <RichInline :parts="block.parts" />
       </h3>
       <ul v-else-if="block.kind === 'list'" class="grid max-w-prose list-disc gap-1 pl-6">

@@ -1,98 +1,124 @@
 /**
- * Progression de l'apprenant, sans compte : elle vit dans le navigateur.
+ * Progression de l'apprenant, sans compte : elle vit dans le navigateur, et
+ * c'est la seule source de verite des parcours commences et des episodes
+ * termines. Chaque langage a la sienne : commencer TypeScript ne touche pas
+ * a JavaScript.
  *
- * Etats d'un exercice : a faire -> commence (code modifie) -> tente (au moins
- * une execution) -> reussi. Un exercice reussi le reste.
+ * Une lecon n'est terminee que sur action explicite, un exercice que si tous
+ * ses criteres de verification passent : ouvrir ou executer ne suffit pas.
  */
 
-export type ExerciseStatus = 'todo' | 'started' | 'attempted' | 'passed'
-
-type StoredStatus = Exclude<ExerciseStatus, 'todo'>
-
-interface ExerciseProgress {
-  readonly status: StoredStatus
-  readonly code: string
+export interface ProgressState {
+  /** Slugs des langages commences. */
+  readonly started: readonly string[]
+  /** Cles des episodes termines, par langage (voir `lessonKey`, `exerciseKey`). */
+  readonly completed: Readonly<Record<string, readonly string[]>>
 }
 
-type ProgressMap = Readonly<Record<string, ExerciseProgress>>
+type Drafts = Readonly<Record<string, string>>
 
-// v2 : les entrees sont indexees par chemin, un slug d'exercice n'etant unique
-// que dans son chapitre. Les entrees v1 (indexees par slug) sont ignorees.
-const STORAGE_KEY = 'scalar:progress:v2'
+// v3 : progression par episode. Les v2 (statuts « tente » sans correction)
+// sont ignorees : elles ne disent pas si un exercice a ete reussi.
+const STORAGE_KEY = 'scalar:progress:v3'
+const DRAFTS_KEY = 'scalar:drafts:v1'
 
-/** Cle de progression d'un exercice : son chemin complet. */
-export const exerciseKey = (language: string, chapter: string, exercise: string): string =>
-  `${language}/${chapter}/${exercise}`
-const STORED: readonly string[] = ['started', 'attempted', 'passed']
-const RANK: Readonly<Record<ExerciseStatus, number>> = {
-  todo: 0,
-  started: 1,
-  attempted: 2,
-  passed: 3,
-}
+export const EMPTY_PROGRESS: ProgressState = { started: [], completed: {} }
 
-export const STATUS_LABELS: Readonly<Record<ExerciseStatus, string>> = {
-  todo: 'À faire',
-  started: 'Commencé',
-  attempted: 'Tenté',
-  passed: 'Réussi',
-}
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((v) => typeof v === 'string')
 
-/** Le stockage est modifiable a la main : on ne garde que les entrees bien formees. */
-export function parseProgress(raw: string | null): ProgressMap {
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+/** Le stockage est modifiable a la main : on ne garde que ce qui est bien forme. */
+export function parseProgress(raw: string | null): ProgressState {
   try {
-    const value: unknown = JSON.parse(raw ?? '{}')
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-      return {}
+    const value: unknown = JSON.parse(raw ?? 'null')
+    if (!isRecord(value)) {
+      return EMPTY_PROGRESS
     }
-    return Object.fromEntries(
-      Object.entries(value).filter(([, p]) => {
-        const entry = p as Partial<ExerciseProgress> | null
-        return typeof entry?.code === 'string' && STORED.includes(String(entry.status))
-      }),
-    ) as ProgressMap
+    const completed = isRecord(value.completed)
+      ? Object.fromEntries(
+          Object.entries(value.completed).filter((entry): entry is [string, string[]] =>
+            isStringArray(entry[1]),
+          ),
+        )
+      : {}
+    return { started: isStringArray(value.started) ? value.started : [], completed }
+  } catch {
+    return EMPTY_PROGRESS
+  }
+}
+
+function parseDrafts(raw: string | null): Drafts {
+  try {
+    const value: unknown = JSON.parse(raw ?? 'null')
+    return isRecord(value)
+      ? Object.fromEntries(
+          Object.entries(value).filter(
+            (entry): entry is [string, string] => typeof entry[1] === 'string',
+          ),
+        )
+      : {}
   } catch {
     return {}
   }
 }
 
-/** Ne jamais retrograder : un exercice reussi puis rate reste reussi. */
-export function mergeStatus(current: ExerciseStatus, next: StoredStatus): StoredStatus {
-  return RANK[current] > RANK[next] ? (current as StoredStatus) : next
+/** Commence un langage ; idempotent. */
+export const startTrack = (state: ProgressState, language: string): ProgressState =>
+  state.started.includes(language) ? state : { ...state, started: [...state.started, language] }
+
+/** Termine un episode, et commence son langage au passage ; idempotent. */
+export function completeEpisode(
+  state: ProgressState,
+  language: string,
+  key: string,
+): ProgressState {
+  const done = state.completed[language] ?? []
+  const started = startTrack(state, language)
+  return done.includes(key)
+    ? started
+    : { ...started, completed: { ...started.completed, [language]: [...done, key] } }
+}
+
+function store(key: string, value: unknown): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // Stockage plein ou bloque : la progression reste valable pour la session.
+  }
 }
 
 export function useProgress() {
-  const progress = useState<ProgressMap>('progress', () => ({}))
+  const state = useState<ProgressState>('progress', () => EMPTY_PROGRESS)
+  const drafts = useState<Drafts>('drafts', () => ({}))
 
   // Le stockage n'existe que dans le navigateur, et peut y etre bloque.
   onMounted(() => {
     try {
-      progress.value = parseProgress(localStorage.getItem(STORAGE_KEY))
+      state.value = parseProgress(localStorage.getItem(STORAGE_KEY))
+      drafts.value = parseDrafts(localStorage.getItem(DRAFTS_KEY))
     } catch {
-      progress.value = {}
+      // Lecture refusee : on garde l'etat de la session.
     }
   })
 
-  function statusOf(slug: string): ExerciseStatus {
-    return progress.value[slug]?.status ?? 'todo'
-  }
-
-  function write(slug: string, status: StoredStatus, code: string): void {
-    progress.value = {
-      ...progress.value,
-      [slug]: { status: mergeStatus(statusOf(slug), status), code },
-    }
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(progress.value))
-    } catch {
-      // Stockage plein ou bloque : la progression reste valable pour la session.
-    }
+  function update(next: ProgressState): void {
+    state.value = next
+    store(STORAGE_KEY, next)
   }
 
   return {
-    statusOf,
-    savedCode: (slug: string): string | undefined => progress.value[slug]?.code,
-    saveCode: (slug: string, code: string) => write(slug, 'started', code),
-    markAttempted: (slug: string, code: string) => write(slug, 'attempted', code),
+    completedIn: (language: string): readonly string[] => state.value.completed[language] ?? [],
+    isStarted: (language: string): boolean => state.value.started.includes(language),
+    start: (language: string) => update(startTrack(state.value, language)),
+    complete: (language: string, key: string) =>
+      update(completeEpisode(state.value, language, key)),
+    draft: (key: string): string | undefined => drafts.value[key],
+    saveDraft(key: string, code: string): void {
+      drafts.value = { ...drafts.value, [key]: code }
+      store(DRAFTS_KEY, drafts.value)
+    },
   }
 }

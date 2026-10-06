@@ -1,41 +1,56 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { mergeStatus, parseProgress } from '../app/composables/useProgress'
+import {
+  EMPTY_PROGRESS,
+  completeEpisode,
+  parseProgress,
+  startTrack,
+} from '../app/composables/useProgress'
 import RichText from '../app/components/RichText.vue'
 
 describe('parseProgress', () => {
   it('relit une progression bien formée', () => {
-    const raw = JSON.stringify({ swap: { status: 'attempted', code: 'x' } })
-    expect(parseProgress(raw)).toEqual({ swap: { status: 'attempted', code: 'x' } })
+    const raw = JSON.stringify({
+      started: ['javascript'],
+      completed: { javascript: ['lesson:conditions'] },
+    })
+    expect(parseProgress(raw)).toEqual({
+      started: ['javascript'],
+      completed: { javascript: ['lesson:conditions'] },
+    })
   })
 
   it('ignore un stockage absent, corrompu ou d’une autre forme', () => {
-    expect(parseProgress(null)).toEqual({})
-    expect(parseProgress('{pas du json')).toEqual({})
-    expect(parseProgress('[1,2]')).toEqual({})
-    expect(parseProgress('"texte"')).toEqual({})
+    expect(parseProgress(null)).toEqual(EMPTY_PROGRESS)
+    expect(parseProgress('{pas du json')).toEqual(EMPTY_PROGRESS)
+    expect(parseProgress('[1,2]')).toEqual(EMPTY_PROGRESS)
+    expect(parseProgress('"texte"')).toEqual(EMPTY_PROGRESS)
   })
 
   it('écarte les entrées mal formées sans perdre les autres', () => {
     const raw = JSON.stringify({
-      ok: { status: 'passed', code: 'x' },
-      statutInconnu: { status: 'hacked', code: 'x' },
-      sansCode: { status: 'started' },
-      nul: null,
+      started: 'javascript',
+      completed: { javascript: ['lesson:x'], typescript: 'oops', python: [1] },
     })
-    expect(Object.keys(parseProgress(raw))).toEqual(['ok'])
+    expect(parseProgress(raw)).toEqual({ started: [], completed: { javascript: ['lesson:x'] } })
   })
 })
 
-describe('mergeStatus', () => {
-  it('fait progresser un exercice', () => {
-    expect(mergeStatus('todo', 'started')).toBe('started')
-    expect(mergeStatus('started', 'attempted')).toBe('attempted')
+describe('progression par parcours', () => {
+  it('commencer TypeScript ne touche pas à JavaScript', () => {
+    const js = completeEpisode(EMPTY_PROGRESS, 'javascript', 'lesson:conditions')
+    const both = startTrack(js, 'typescript')
+
+    expect(both.started).toEqual(['javascript', 'typescript'])
+    expect(both.completed).toEqual({ javascript: ['lesson:conditions'] })
   })
 
-  it('ne rétrograde jamais un exercice', () => {
-    expect(mergeStatus('passed', 'started')).toBe('passed')
-    expect(mergeStatus('attempted', 'started')).toBe('attempted')
+  it('terminer un épisode est idempotent et ne modifie pas l’état d’origine', () => {
+    const once = completeEpisode(EMPTY_PROGRESS, 'javascript', 'exercise:conditions:est-pair')
+    const twice = completeEpisode(once, 'javascript', 'exercise:conditions:est-pair')
+
+    expect(twice).toEqual(once)
+    expect(EMPTY_PROGRESS).toEqual({ started: [], completed: {} })
   })
 })
 

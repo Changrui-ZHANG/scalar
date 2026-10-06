@@ -1,8 +1,9 @@
 /** Langages proposes par Scalar, avec leur resume et leur prerequis. */
 export async function useLanguages() {
-  const { data } = await useFetch<ApiResponse<LanguageSummary[]>>(() => apiUrl('/languages'), {
-    key: 'languages',
-  })
+  const { data, error, status } = await useFetch<ApiResponse<LanguageSummary[]>>(
+    () => apiUrl('/languages'),
+    { key: 'languages' },
+  )
 
   const languages = computed(() => data.value?.data ?? [])
 
@@ -10,5 +11,5 @@ export async function useLanguages() {
   const find = (slug: string): LanguageSummary | null =>
     languages.value.find((l) => l.slug === slug) ?? null
 
-  return { languages, find }
+  return { languages, find, error, status }
 }

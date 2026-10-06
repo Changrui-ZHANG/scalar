@@ -18,6 +18,7 @@ logs
 .DS_Store
 .fleet
 .idea
+.playwright-mcp/
 
 # Variables d'environnement locales
 .env

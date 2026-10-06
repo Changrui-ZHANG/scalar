@@ -12,6 +12,13 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ['@nuxt/eslint'],
   css: ['~/assets/css/main.css'],
+  app: {
+    head: {
+      htmlAttrs: { lang: 'fr' },
+      // Le logo SVG suit le theme du systeme ; il passe devant le favicon.ico par defaut.
+      link: [{ rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
+    },
+  },
   runtimeConfig: {
     // Base absolue utilisee par le rendu serveur seul : Nitro appelle le
     // backend directement, sans traverser le proxy. Surchargee par
