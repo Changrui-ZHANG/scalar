@@ -3,7 +3,7 @@
  * Zone de saisie du code. Une simple zone de texte : Tab garde son role de
  * navigation au clavier, et le code defile horizontalement sans deborder.
  */
-// ponytail: textarea ; un editeur (CodeMirror) le jour ou la coloration ou
+// Textarea ; un editeur (CodeMirror) le jour ou la coloration ou
 // l'autocompletion deviennent un besoin.
 const code = defineModel<string>({ required: true })
 

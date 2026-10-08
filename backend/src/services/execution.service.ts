@@ -130,7 +130,7 @@ export type Conversion =
  * deplacer -- les numeros de ligne et de colonne des erreurs restent ceux de
  * l'ecran. Les types ne sont PAS verifies : une erreur de typage passe.
  */
-// ponytail: `node_strip_types` retire les types sans les verifier ; ajouter un
+// `node_strip_types` retire les types sans les verifier ; ajouter un
 // passage `tsc` cote moteur quand Piston saura le faire dans le plafond de duree.
 export function toJavaScript(runtime: LanguageRuntime, code: string): Conversion {
   if (runtime === 'node') {

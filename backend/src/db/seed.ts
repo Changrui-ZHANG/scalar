@@ -5,7 +5,7 @@
  * d'edition : le seed remplace donc tout le contenu, ids compris, pour que la
  * base et les fichiers disent exactement la meme chose.
  */
-// ponytail: remplacement complet du contenu ; passer a des upserts par slug le
+// Remplacement complet du contenu ; passer a des upserts par slug le
 // jour ou du contenu sera saisi dans l'application.
 
 import type { Prisma, PrismaClient } from '@prisma/client'

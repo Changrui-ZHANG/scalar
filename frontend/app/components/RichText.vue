@@ -4,7 +4,7 @@
  * titres `## `, listes `- `, paragraphes et `code` en ligne. Tout passe par
  * l'interpolation Vue, jamais par `v-html`.
  */
-// ponytail: sous-ensemble volontaire du Markdown ; une bibliotheque (markdown-it
+// Sous-ensemble volontaire du Markdown ; une bibliotheque (markdown-it
 // + DOMPurify) le jour ou les cours ont besoin de liens, d'images ou de tableaux.
 
 type Inline = { readonly code: boolean; readonly text: string }

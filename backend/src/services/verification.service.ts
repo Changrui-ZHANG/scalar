@@ -52,7 +52,7 @@ const call = (functionName: string, args: readonly unknown[]): string =>
  * `marker` est tire au hasard a chaque verification : le code soumis ne peut
  * pas imprimer un faux resultat.
  */
-// ponytail: un apprenant determine peut toujours tricher (il execute du code) ;
+// Un apprenant determine peut toujours tricher (il execute du code) ;
 // la correction sert l'apprentissage, pas un examen.
 export function buildHarness(
   code: string,

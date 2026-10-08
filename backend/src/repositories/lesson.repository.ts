@@ -21,7 +21,7 @@ export interface LessonRepository {
 const byPosition = (a: { position: number }, b: { position: number }): number =>
   a.position - b.position
 
-// ponytail: donnees fictives en memoire ; PrismaLessonRepository pour la base.
+// Donnees fictives en memoire ; PrismaLessonRepository pour la base.
 export class InMemoryLessonRepository implements LessonRepository {
   private readonly categories: readonly LessonCategory[]
   private readonly lessons: readonly Lesson[]

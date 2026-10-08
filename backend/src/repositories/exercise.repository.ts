@@ -20,7 +20,7 @@ export interface ExerciseRepository {
 const byPosition = (a: { position: number }, b: { position: number }): number =>
   a.position - b.position
 
-// ponytail: donnees fictives en memoire ; PrismaExerciseRepository pour la base.
+// Donnees fictives en memoire ; PrismaExerciseRepository pour la base.
 export class InMemoryExerciseRepository implements ExerciseRepository {
   private readonly chapters: readonly Chapter[]
   private readonly exercises: readonly Exercise[]
