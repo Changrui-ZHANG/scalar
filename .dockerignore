@@ -1,8 +1,16 @@
+# Contexte de build : uniquement ce que les images utilisent.
+*
+!package.json
+!package-lock.json
+!frontend
+!admin
+!backend
+
+# Produits localement, reconstruits dans l'image.
 **/node_modules
 **/.nuxt
 **/.output
-**/.git
 **/*.log
-_bmad
-_bmad-output
-docs
+
+# Secrets locaux : les conteneurs recoivent leur configuration de compose.yaml.
+**/.env
