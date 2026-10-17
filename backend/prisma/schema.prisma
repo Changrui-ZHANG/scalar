@@ -155,6 +155,35 @@ model Lesson {
   @@map("lessons")
 }
 
+model Questionnaire {
+  id          Int             @id @default(autoincrement())
+  title       String
+  description String
+  status      ContentStatus   @default(draft)
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  questions   QuestionnaireQuestion[]
+
+  @@map("questionnaires")
+}
+
+model QuestionnaireQuestion {
+  id              Int             @id @default(autoincrement())
+  questionnaireId Int             @map("questionnaire_id")
+  questionnaire   Questionnaire   @relation(fields: [questionnaireId], references: [id], onDelete: Restrict)
+  position        Int
+  type            String          // théorique, test-facile, test-moyen, test-difficile, sélection-de-langues
+  title           String
+  description     String?
+  options         String[]        @default([])       // Pour les questions à choix multiples
+  correctAnswer   String?         // Pour les questions de test
+  difficulty      String?         // facile, moyen, difficile (pour les questions de test)
+  theoreticalContent String?     // Pour les questions théoriques
+
+  @@unique([questionnaireId, position], name: "questionnaire_questions_questionnaire_id_position_key")
+  @@map("questionnaire_questions")
+}
+
 /// Lien facultatif lecon <-> chapitre : « S'exercer » et « Revoir le cours ».
 model LessonChapter {
   lessonId  Int     @map("lesson_id")

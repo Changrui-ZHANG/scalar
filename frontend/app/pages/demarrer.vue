@@ -1,78 +1,29 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useSeoMeta } from '#imports'
 import { useExecution } from '@/composables/useExecution'
 import BreadcrumbTrail from '@/components/BreadcrumbTrail.vue'
 import CodeEditor from '@/components/CodeEditor.vue'
 import ExecutionOutput from '@/components/ExecutionOutput.vue'
 import ProgressBar from '@/components/ProgressBar.vue'
+import { useToast } from '@/composables/useToast'
 
 useSeoMeta({
   title: 'Démarrer — Scalar',
   description: 'Questionnaire d\'évaluation pour déterminer votre niveau de départ',
 })
 
-// Questionnaire data
-const questions = ref([
-  {
-    id: 1,
-    type: 'multiple-choice',
-    title: 'Évaluez votre expérience avec la programmation',
-    description: 'Quel est votre niveau actuel en programmation ?',
-    options: [
-      { label: 'Débutant absolu (aucune expérience)', value: 'beginner' },
-      { label: 'Débutant (quelques bases)', value: 'novice' },
-      { label: 'Intermédiaire (expérience pratique)', value: 'intermediate' },
-      { label: 'Avancé (expérience professionnelle)', value: 'advanced' },
-      { label: 'Expert (maîtrise plusieurs langages)', value: 'expert' }
-    ]
-  },
-  {
-    id: 2,
-    type: 'multiple-choice',
-    title: 'Quels langages de programmation connaissez-vous ?',
-    description: 'Sélectionnez tous ceux que vous avez utilisés',
-    options: [
-      { label: 'JavaScript / TypeScript', value: 'js' },
-      { label: 'Python', value: 'python' },
-      { label: 'Java', value: 'java' },
-      { label: 'C / C++', value: 'cpp' },
-      { label: 'Go', value: 'go' },
-      { label: 'Rust', value: 'rust' },
-      { label: 'Autre', value: 'other' }
-    ],
-    multiple: true
-  },
-  {
-    id: 3,
-    type: 'text',
-    title: 'Pourquoi voulez-vous apprendre le développement web ?',
-    description: 'Décrivez brièvement vos motivations et objectifs',
-    placeholder: 'Ex: Je veux créer des sites web pour mon entreprise, devenir développeur freelance, etc.'
-  },
-  {
-    id: 4,
-    type: 'code',
-    title: 'Premier exercice de code',
-    description: 'Écrivez une fonction qui retourne la somme de deux nombres',
-    placeholder: '// Écrivez votre code ici\nfunction somme(a, b) {\n  return a + b\n}\n\nconsole.log(somme(2, 3))',
-    example: '// Le résultat affiché est ce que le script écrit sur la sortie standard.\nfunction addition(a, b) {\n  return a + b\n}\n\nconsole.log(addition(2, 3))'
-  },
-  {
-    id: 5,
-    type: 'code',
-    title: 'Exercice de manipulation de chaînes',
-    description: 'Écrivez une fonction qui retourne la longueur d\'une chaîne de caractères',
-    placeholder: '// Écrivez votre code ici\nfunction longueurChaine(str) {\n  return str.length\n}\n\nconsole.log(longueurChaine("Bonjour"))',
-    example: '// Compter les caractères d\'une chaîne\nfunction strlen(str) {\n  let count = 0\n  for (let i = 0; i < str.length; i++) {\n    count++\n  }\n  return count\n}\n\nconsole.log(strlen("Hello World"))'
-  }
-])
+// Données du questionnaire
+const questions = ref([])
+const questionnaireId = ref(null)
 
-// State
+// État
 const currentStep = ref(0)
 const answers = ref({})
 const { result, error, running, run } = useExecution()
 const localCode = ref('')
+const isSubmitting = ref(false)
+const toast = useToast()
 
 // Simple update methods
 function updateAnswer(questionId, value) {
@@ -95,7 +46,51 @@ function toggleOption(questionId, optionValue) {
   }
 }
 
-// Computed properties
+function dismiss(id: string) {
+  toast.dismiss(id)
+}
+
+// Récupérer un questionnaire aléatoire depuis l'API
+async function fetchQuestionnaire() {
+  try {
+    const response = await fetch('/api/v1/questionnaires/random')
+    if (!response.ok) {
+      throw new Error('Failed to fetch questionnaire')
+    }
+    const responseData = await response.json()
+    const questionnaire = responseData.data
+
+    // Set the questionnaire ID for submission
+    questionnaireId.value = questionnaire.id
+
+    // Transformer les données du questionnaire pour qu'elles correspondent au format attendu par notre composant
+    questions.value = questionnaire.questions.map(q => ({
+      id: q.id,
+      type: q.type === 'text' || q.type === 'code' ? q.type : 'multiple-choice', // Map all other types to multiple-choice for UI compatibility
+      title: q.title,
+      description: q.description || '',
+      options: q.options ? q.options.map(option => ({
+        label: option,
+        value: option.toLowerCase().replace(/\s+/g, '-')
+      })) : undefined,
+      multiple: q.type === 'language-selection', // Special case for language selection
+      placeholder: q.type === 'text' ? 'Entrez votre réponse ici' : undefined,
+      example: q.type === 'code' ? '// Exemple de code' : undefined,
+      correctAnswer: q.correctAnswer,
+      difficulty: q.difficulty,
+      theoreticalContent: q.theoreticalContent
+    }))
+  } catch (err) {
+    toast.show({
+      variant: 'destructive',
+      title: 'Erreur',
+      description: 'Impossible de charger le questionnaire. Veuillez réessayer plus tard.'
+    })
+    console.error('Failed to fetch questionnaire:', err)
+  }
+}
+
+// Propriétés calculées
 const currentQuestion = computed(() => questions.value ? questions.value[currentStep.value] : null)
 const isLastStep = computed(() => questions.value ? currentStep.value === questions.value.length - 1 : false)
 const isFirstStep = computed(() => currentStep.value === 0)
@@ -111,7 +106,7 @@ const progress = computed(() => {
   }
 })
 
-// Navigation functions
+// Fonctions de navigation
 function goToNextStep() {
   if (questions.value && currentStep.value < questions.value.length - 1) {
     currentStep.value++
@@ -124,22 +119,156 @@ function goToPreviousStep() {
   }
 }
 
-// Code execution handler
+// Gestionnaire d'exécution de code
 async function handleCodeExecution() {
   if (!localCode.value.trim()) return
   await run(localCode.value)
 }
 
-// Reset form
+// Gérer la soumission du formulaire
+async function handleSubmit() {
+  if (isSubmitting.value) return
+
+  isSubmitting.value = true
+
+  try {
+    // Préparer les données de soumission
+    const submissionData = {
+      questionnaireId: questionnaireId.value,
+      questionsCount: questions.value.length,
+      answers: answers.value,
+      completedAt: new Date().toISOString()
+    }
+
+    // Envoyer les résultats au backend
+    const response = await fetch('/api/v1/questionnaire-results', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(submissionData)
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to submit questionnaire')
+    }
+
+    // Afficher le message de succès
+    toast.show({
+      variant: 'success',
+      title: 'Questionnaire terminé',
+      description: 'Votre questionnaire a été soumis avec succès.'
+    })
+
+    // Réinitialiser le formulaire pour une prochaine utilisation
+    resetForm()
+  } catch (err) {
+    toast.show({
+      variant: 'destructive',
+      title: 'Erreur',
+      description: 'Une erreur est survenue lors de la soumission.'
+    })
+    console.error('Failed to submit questionnaire:', err)
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+// Réinitialiser le formulaire
 function resetForm() {
   currentStep.value = 0
   answers.value = {}
   localCode.value = ''
+  isSubmitting.value = false
 }
+
+// Récupérer le questionnaire lorsque le composant est monté
+onMounted(() => {
+  fetchQuestionnaire()
+})
 </script>
 
 <template>
   <div class="grid gap-8 py-10">
+    <!-- Notifications toast -->
+    <div class="fixed top-4 right-4 z-50 flex flex-col-reverse gap-4 p-4 pointer-events-none">
+      <div
+        v-for="toast in toasts"
+        :key="toast.id"
+        class="w-80 relative flex items-start gap-4 rounded-border p-6"
+        :class="[
+          toast.variant === 'destructive' ? 'border-border-600 bg-border-50' :
+          toast.variant === 'success' ? 'border-success-600 bg-success-50' :
+          'border-muted-200 bg-muted-50'
+        ]"
+      >
+        <div class="flex-shrink-0 flex h-10 w-10 items-center justify-center"
+             :class="{
+               'text-border-600': toast.variant === 'destructive',
+               'text-success-600': toast.variant === 'success',
+               'text-muted-400': toast.variant === 'default'
+             }">
+          <!-- Simple toast icon -->
+          <div class="flex h-4 w-4 items-center justify-center"
+               :class="{
+                 'rotate-45': toast.variant === 'destructive'
+               }">
+            <div class="flex h-4 w-4"
+                 :class="{
+                   'bg-border-600': toast.variant === 'destructive',
+                   'bg-success-600': toast.variant === 'success',
+                   'bg-muted-400': toast.variant === 'default'
+                 }">
+              <!-- X for destructive, check for success, info for default -->
+              <div v-if="toast.variant === 'destructive'" class="flex h-2 w-2 items-center justify-center bg-white">
+                <div class="h-0.5 w-2 bg-white"></div>
+              </div>
+              <div v-else-if="toast.variant === 'success'" class="flex h-2 w-2 items-center justify-center bg-white">
+                <div class="h-1.5 w-0.5 bg-white"></div>
+                <div class="h-0.5 w-1 bg-white mt-[-2px] rotate-45"></div>
+              </div>
+              <div v-else class="flex h-2 w-2 items-center justify-center bg-muted-600">
+                <div class="h-2 w-2 bg-white rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1 space-y-2">
+          <div class="text-sm font-medium"
+               :class="{
+                 'text-border-600': toast.variant === 'destructive',
+                 'text-success-600': toast.variant === 'success',
+                 'text-muted-800': toast.variant === 'default'
+               }">
+            {{ toast.title }}
+          </div>
+          <div v-if="toast.description" class="text-sm"
+               :class="{
+                 'text-border-500': toast.variant === 'destructive',
+                 'text-success-500': toast.variant === 'success',
+                 'text-muted-600': toast.variant === 'default'
+               }">
+            {{ toast.description }}
+          </div>
+        </div>
+        <button
+          @click="dismiss(toast.id)"
+          class="absolute top-2 right-2 rounded-box p-1 text-sm hover:bg-accent/20"
+          :class="{
+            'text-border-600 hover:bg-border-50': toast.variant === 'destructive',
+            'text-success-600 hover:bg-success-50': toast.variant === 'success',
+            'text-muted-400 hover:bg-muted-100': toast.variant === 'default'
+          }"
+          aria-label="Close toast"
+        >
+          <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
     <BreadcrumbTrail :items="[{ label: 'Accueil', to: '/' }, { label: 'Démarrer' }]" />
 
     <header class="grid gap-2">
@@ -265,6 +394,16 @@ function resetForm() {
               >
                 Effacer
               </button>
+
+              <!-- Button to continue even if exercise not validated -->
+              <button
+                v-if="result === false || error !== ''"
+                type="button"
+                class="btn-outline"
+                @click="goToNextStep"
+              >
+                Continuer malgré l'échec
+              </button>
             </div>
           </div>
         </div>
@@ -297,9 +436,9 @@ function resetForm() {
             v-else
             type="button"
             class="btn-primary"
-            @click="resetForm"
+            @click="handleSubmit"
           >
-            Terminer le questionnaire
+            {{ isSubmitting ? 'Soumission en cours…' : 'Terminer le questionnaire' }}
           </button>
         </div>
       </div>

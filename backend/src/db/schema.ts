@@ -9,4 +9,6 @@ export type {
   Lesson,
   LessonCategory,
   LessonChapter,
+  Questionnaire,
+  QuestionnaireQuestion,
 } from '@prisma/client'

@@ -19,6 +19,8 @@ import type {
   Lesson,
   LessonCategory,
   LessonChapter,
+  Questionnaire,
+  QuestionnaireQuestion,
 } from './schema.ts'
 import {
   MOCK_CHAPTERS,
@@ -31,6 +33,10 @@ import {
   MOCK_LESSON_CHAPTERS,
   MOCK_LESSONS,
 } from '../repositories/lesson.mock.ts'
+import {
+  MOCK_QUESTIONNAIRES,
+  MOCK_QUESTIONNAIRE_QUESTIONS
+} from '../repositories/questionnaire.mock.ts'
 import { toJavaScript } from '../services/execution.service.ts'
 
 export interface Content {
@@ -41,6 +47,8 @@ export interface Content {
   readonly categories: readonly LessonCategory[]
   readonly lessons: readonly Lesson[]
   readonly lessonChapters: readonly LessonChapter[]
+  readonly questionnaires: readonly Questionnaire[]
+  readonly questionnaireQuestions: readonly QuestionnaireQuestion[]
 }
 
 export const MOCK_CONTENT: Content = {
@@ -51,6 +59,8 @@ export const MOCK_CONTENT: Content = {
   categories: MOCK_LESSON_CATEGORIES,
   lessons: MOCK_LESSONS,
   lessonChapters: MOCK_LESSON_CHAPTERS,
+  questionnaires: MOCK_QUESTIONNAIRES,
+  questionnaireQuestions: MOCK_QUESTIONNAIRE_QUESTIONS
 }
 
 type Loaded = ((...args: unknown[]) => unknown) | { readonly error: string }
@@ -116,6 +126,40 @@ export function validateExercises(content: Content): readonly string[] {
       problems.push(`${exercise.slug} : le code de départ résout déjà l'exercice`)
     }
   }
+
+  // Valider les questionnaires de base
+  for (const questionnaire of content.questionnaires) {
+    // Vérifier que chaque questionnaire a exactement 10 questions
+    const questionnaireQuestions = content.questionnaireQuestions.filter(
+      q => q.questionnaireId === questionnaire.id
+    )
+    if (questionnaireQuestions.length !== 10) {
+      problems.push(`${questionnaire.title} : nombre de questions incorrect (${questionnaireQuestions.length}/10)`)
+    }
+
+    // Vérifier que la question 2 est toujours la même (sélection de langues)
+    const question2 = questionnaireQuestions.find(q => q.position === 2)
+    if (!question2 || question2.type !== 'language-selection') {
+      problems.push(`${questionnaire.title} : la question 2 doit être la sélection de langues`)
+    }
+
+    // Vérifier que les questions 1 à 7 sont des questions non-code (théoriques ou sélection de langues)
+    const nonCodeQuestions = questionnaireQuestions.filter(
+      q => q.position >= 1 && q.position <= 7 && q.type !== 'code'
+    ).length
+    if (nonCodeQuestions !== 7) {
+      problems.push(`${questionnaire.title} : nombre incorrect de questions non-code en positions 1-7 (${nonCodeQuestions}/7)`)
+    }
+
+    // Vérifier que les questions 8 à 10 sont des questions de code
+    const codeQuestions = questionnaireQuestions.filter(
+      q => q.position >= 8 && q.position <= 10 && q.type === 'code'
+    ).length
+    if (codeQuestions !== 3) {
+      problems.push(`${questionnaire.title} : nombre incorrect de questions de code en positions 8-10 (${codeQuestions}/3)`)
+    }
+  }
+
   return problems
 }
 
@@ -126,6 +170,8 @@ const TABLES = [
   'lesson_categories',
   'exercise_test_cases',
   'exercises',
+  'questionnaire_questions',
+  'questionnaires',
   'chapters',
   'languages',
 ] as const
@@ -171,6 +217,24 @@ export async function seedDatabase(
     await tx.lessonCategory.createMany({ data: [...content.categories] })
     await tx.lesson.createMany({ data: [...content.lessons] })
     await tx.lessonChapter.createMany({ data: [...content.lessonChapters] })
+
+    // Créer les questionnaires
+    await tx.questionnaire.createMany({
+      data: [...content.questionnaires]
+    })
+
+    // Créer les questions en utilisant les questions déjà associées aux questionnaires
+    const allQuestions = []
+    for (const questionnaireMock of content.questionnaires) {
+      for (const questionMock of questionnaireMock.questions) {
+        const { id, ...questionData } = questionMock
+        allQuestions.push({
+          ...questionData,
+          questionnaireId: questionnaireMock.id
+        })
+      }
+    }
+    await tx.questionnaireQuestion.createMany({ data: allQuestions })
 
     // Ids fournis explicitement : chaque sequence doit repartir apres le plus grand.
     for (const table of TABLES.filter((t) => t !== 'lesson_chapters')) {

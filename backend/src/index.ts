@@ -5,12 +5,14 @@ import {
   ExerciseController,
   LessonController,
 } from "./controller/index.ts"
+import { QuestionnaireController } from "./controller/questionnaire.controller.ts"
 import { isDatabaseUp, migrateDatabase, prisma } from "./db/index.ts"
 import { isContentEmpty, seedDatabase } from "./db/seed.ts"
 import { logger } from "./logger.ts"
 import { InMemoryExerciseRepository } from "./repositories/exercise.repository.ts"
 import { InMemoryLanguageRepository } from "./repositories/language.repository.ts"
 import { InMemoryLessonRepository } from "./repositories/lesson.repository.ts"
+import { InMemoryQuestionnaireRepository } from "./repositories/questionnaire.repository.ts"
 import {
   PrismaExerciseRepository,
   PrismaLanguageRepository,
@@ -19,6 +21,7 @@ import {
 import { hasJavascriptRuntime } from "./services/execution.service.ts"
 import { ExerciseService } from "./services/exercise.service.ts"
 import { LessonService } from "./services/lesson.service.ts"
+import { QuestionnaireService } from "./services/questionnaire.service.ts"
 
 const app = express()
 const PORT = Number(process.env.PORT ?? 3001)
@@ -35,11 +38,13 @@ const repositories =
         languages: new InMemoryLanguageRepository(),
         exercises: new InMemoryExerciseRepository(),
         lessons: new InMemoryLessonRepository(),
+        questionnaires: new InMemoryQuestionnaireRepository()
       }
     : {
         languages: new PrismaLanguageRepository(prisma),
         exercises: new PrismaExerciseRepository(prisma),
         lessons: new PrismaLessonRepository(prisma),
+        questionnaires: new QuestionnaireService(prisma)
       }
 
 app.use(express.json())
@@ -69,11 +74,17 @@ app.use(
     new LessonService(repositories.languages, repositories.lessons, repositories.exercises),
   ).buildRouter(),
 )
+app.use(
+  '/api/v1',
+  new QuestionnaireController(repositories.questionnaires).buildRouter(),
+)
 
 async function demarrer() {
   try {
-    await migrateDatabase()
-    logger.info('Base PostgreSQL connectée et migrée')
+    if (CONTENT_SOURCE === 'database') {
+      await migrateDatabase()
+      logger.info('Base PostgreSQL connectée et migrée')
+    }
 
     // Depot fraichement clone : `docker compose up` doit suffire a obtenir un
     // site rempli, sans commande de seed a connaitre.
