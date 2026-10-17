@@ -1,8 +1,9 @@
 <script setup lang="ts">
-/** Deux entrees seulement : tout l'apprentissage vit dans Parcours. */
+/** Liens de navigation principale. */
 const LINKS = [
   { to: '/parcours', label: 'Parcours' },
   { to: '/exercices', label: 'Bac à sable' },
+  { to: '/demarrer', label: 'Démarrer' },
 ] as const
 
 const route = useRoute()

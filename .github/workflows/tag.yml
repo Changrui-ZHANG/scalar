@@ -1,0 +1,111 @@
+name: Déployer via Docker Swarm
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  STACK_NAME: myapp
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest # a modifier
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Setup environnement (à adapter : node, python, etc.)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Lancer les tests
+        run: npm test
+  
+  build:
+    name: Build & Push Image
+    runs-on: ubuntu-latest
+    needs: tests
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.vars.outputs.tag }}
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Extraire le tag de version
+        id: vars
+        run: echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Login au registre GitHub (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build et push de l'image Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+  
+  eploy:
+    name: Deploy on Swarm
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Connexion SSH au manager Swarm et déploiement du stack
+        id: deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SWARM_MANAGER_HOST }}
+          username: ${{ secrets.SWARM_MANAGER_USER }}
+          key: ${{ secrets.SWARM_MANAGER_SSH_KEY }}
+          script: |
+            set -e
+            IMAGE_TAG=${{ needs.build.outputs.image_tag }}
+            IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}
+
+            # Sauvegarde de l'image précédente en cas de rollback
+            docker service inspect ${{ env.STACK_NAME }}_app \
+              --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}' \
+              > /tmp/previous_image.txt || echo "aucune version précédente"
+
+            # Mise à jour du service (Stack Deploy)
+            export IMAGE_TAG
+            docker stack deploy -c docker-compose.yml ${{ env.STACK_NAME }} \
+              --with-registry-auth
+
+            # Vérification de l'état du déploiement (Update: OK / KO)
+            sleep 15
+            docker service ps ${{ env.STACK_NAME }}_app \
+              --filter "desired-state=running" --format '{{.CurrentState}}' \
+            grep -q "Running" && echo "OK" || echo "KO"
+
+      - name: Rollback en cas d'échec (KO)
+        if: failure()
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SWARM_MANAGER_HOST }}
+          username: ${{ secrets.SWARM_MANAGER_USER }}
+          key: ${{ secrets.SWARM_MANAGER_SSH_KEY }}
+          script: |
+            echo "Déploiement échoué, rollback en cours..."
+            docker service update --rollback ${{ env.STACK_NAME }}_app
+
+      - name: Déploiement réussi (OK)
+        if: success()
+        run: echo "✅ Déploiement ${{ needs.build.outputs.image_tag }} réussi"
