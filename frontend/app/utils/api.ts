@@ -111,6 +111,48 @@ export interface VerificationResult {
   readonly execution: ExecutionResult
 }
 
+// --- Questionnaire de positionnement -----------------------------------------
+
+/** Miroir de `QuestionnaireEvaluation` dans `questionnaire-evaluation.service.ts`. */
+export interface QuestionnaireEvaluation {
+  readonly score: number
+  readonly level: {
+    readonly slug: 'debutant' | 'intermediaire' | 'avance'
+    readonly label: string
+    readonly description: string
+  }
+  readonly declared: {
+    readonly score: number
+    readonly answers: readonly { readonly question: string; readonly answer: string }[]
+  }
+  readonly practical: {
+    readonly score: number
+    readonly exercises: readonly {
+      readonly questionId: string
+      readonly title: string
+      readonly functionName: string
+      readonly difficulty: string
+      readonly passedCases: number
+      readonly totalCases: number
+      readonly passed: boolean
+      readonly failures: readonly { readonly label: string; readonly detail: string | null }[]
+    }[]
+  }
+  readonly feedback: readonly string[]
+  readonly recommendations: {
+    readonly language: LanguageLink
+    readonly start: { readonly label: string; readonly url: string }
+    readonly lessons: readonly {
+      readonly slug: string
+      readonly title: string
+      readonly summary: string
+      readonly category: string
+      readonly url: string
+      readonly reason: string
+    }[]
+  }
+}
+
 // --- Lecons --------------------------------------------------------------------
 
 /** Section d'une lecon : un langage, ou une categorie valable pour tous. */

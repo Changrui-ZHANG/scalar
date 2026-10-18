@@ -1,4 +1,4 @@
-import type { Questionnaire } from '../db.schema.ts'
+import type { Questionnaire } from '../db/schema.ts'
 import { MOCK_QUESTIONNAIRES } from './questionnaire.mock.ts'
 
 /** Acces aux questionnaires de positionnement. Seuls les questionnaires publies sont servis. */

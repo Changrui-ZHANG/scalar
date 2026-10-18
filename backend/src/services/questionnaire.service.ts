@@ -37,7 +37,7 @@ export class QuestionnaireService {
     }).then(questionnaires => questionnaires[0] || null);
   }
 
-  async getQuestionnaire(id: number): Promise<Questionnaire | null> {
+  async findQuestionnaireById(id: number): Promise<Questionnaire | null> {
     return this.prisma.questionnaire.findUnique({
       where: { id },
       include: { questions: true }

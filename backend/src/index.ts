@@ -68,15 +68,15 @@ app.use(
     new ExerciseService(repositories.languages, repositories.exercises),
   ).buildRouter(),
 )
-app.use(
-  '/api/v1',
-  new LessonController(
-    new LessonService(repositories.languages, repositories.lessons, repositories.exercises),
-  ).buildRouter(),
+const lessonService = new LessonService(
+  repositories.languages,
+  repositories.lessons,
+  repositories.exercises,
 )
+app.use('/api/v1', new LessonController(lessonService).buildRouter())
 app.use(
   '/api/v1',
-  new QuestionnaireController(repositories.questionnaires).buildRouter(),
+  new QuestionnaireController(repositories.questionnaires, lessonService).buildRouter(),
 )
 
 async function demarrer() {

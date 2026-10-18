@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 import { useSeoMeta } from '#imports'
-import { useExecution } from '@/composables/useExecution'
 import BreadcrumbTrail from '@/components/BreadcrumbTrail.vue'
 import CodeEditor from '@/components/CodeEditor.vue'
 import ExecutionOutput from '@/components/ExecutionOutput.vue'
-import ProgressBar from '@/components/ProgressBar.vue'
+import QuestionnaireResults from '@/components/QuestionnaireResults.vue'
+import TestResults from '@/components/TestResults.vue'
 import { useToast } from '@/composables/useToast'
 
 useSeoMeta({
@@ -13,28 +13,58 @@ useSeoMeta({
   description: 'Questionnaire d\'évaluation pour déterminer votre niveau de départ',
 })
 
+interface QuestionOption {
+  label: string
+  value: string
+}
+
+interface Question {
+  id: number | string
+  type: 'multiple-choice' | 'text' | 'code'
+  title: string
+  description: string
+  options: QuestionOption[]
+  multiple: boolean
+  placeholder?: string
+  example?: string
+  /** Fonction que les tests unitaires appellent ; exercices de code seulement. */
+  functionName?: string
+}
+
+type Answer = string | string[]
+
+const UNREACHABLE = 'Le service d’exécution n’a pas répondu. Vérifiez votre connexion puis réessayez.'
+
 // Données du questionnaire
-const questions = ref([])
-const questionnaireId = ref(null)
+const questions = ref<Question[]>([])
+const questionnaireId = ref<number | string | null>(null)
 
 // État
 const currentStep = ref(0)
-const answers = ref({})
-const { result, error, running, run } = useExecution()
-const localCode = ref('')
+const answers = ref<Record<string, Answer>>({})
+/** Code de chaque exercice : passer d'une question à l'autre ne le perd pas. */
+const codes = ref<Record<string, string>>({})
+const verifications = ref<Record<string, VerificationResult>>({})
+const verifyError = ref('')
+const verifying = ref(false)
 const isSubmitting = ref(false)
+const isLoading = ref(false)
 const toast = useToast()
+// Ref de premier niveau : le template ne déballe pas `toast.toasts`
+const { toasts } = toast
+/** Évaluation renvoyée à la fin : elle remplace les questions sur la même page. */
+const evaluation = ref<QuestionnaireEvaluation | null>(null)
 
 // Simple update methods
-function updateAnswer(questionId, value) {
+function updateAnswer(questionId: Question['id'], value: Answer) {
   answers.value = {
     ...answers.value,
     [questionId]: value
   }
 }
 
-function toggleOption(questionId, optionValue) {
-  const current = (answers.value || {})[questionId] || []
+function toggleOption(questionId: Question['id'], optionValue: string) {
+  const current = answers.value[questionId] || []
   const currentArray = Array.isArray(current) ? current : []
 
   if (currentArray.includes(optionValue)) {
@@ -50,8 +80,14 @@ function dismiss(id: string) {
   toast.dismiss(id)
 }
 
+/** Nom de la fonction à tester : donné par l'API, sinon lu dans le code de départ. */
+function functionNameOf(q: { functionName?: string, placeholder?: string }): string | undefined {
+  return q.functionName ?? q.placeholder?.match(/function\s+([A-Za-z_$][\w$]*)/)?.[1]
+}
+
 // Récupérer un questionnaire aléatoire depuis l'API
 async function fetchQuestionnaire() {
+  isLoading.value = true
   try {
     const response = await fetch('/api/v1/questionnaires/random')
     if (!response.ok) {
@@ -64,22 +100,26 @@ async function fetchQuestionnaire() {
     questionnaireId.value = questionnaire.id
 
     // Transformer les données du questionnaire pour qu'elles correspondent au format attendu par notre composant
-    questions.value = questionnaire.questions.map(q => ({
-      id: q.id,
-      type: q.type === 'text' || q.type === 'code' ? q.type : 'multiple-choice', // Map all other types to multiple-choice for UI compatibility
-      title: q.title,
-      description: q.description || '',
-      options: q.options ? q.options.map(option => ({
-        label: option,
-        value: option.toLowerCase().replace(/\s+/g, '-')
-      })) : undefined,
-      multiple: q.type === 'language-selection', // Special case for language selection
-      placeholder: q.type === 'text' ? 'Entrez votre réponse ici' : undefined,
-      example: q.type === 'code' ? '// Exemple de code' : undefined,
-      correctAnswer: q.correctAnswer,
-      difficulty: q.difficulty,
-      theoreticalContent: q.theoreticalContent
-    }))
+    questions.value = questionnaire.questions.map((q: any): Question => {
+      // Une question sans options attend une réponse rédigée.
+      const type = q.type === 'code' ? 'code' : q.type === 'text' || !q.options?.length ? 'text' : 'multiple-choice'
+      return {
+        id: q.id,
+        type,
+        title: q.title,
+        description: q.description || '',
+        // La valeur est le libellé : l'évaluation lit la réponse telle qu'affichée.
+        options: (q.options ?? []).map((option: string) => ({ label: option, value: option })),
+        multiple: q.type === 'language-selection', // Special case for language selection
+        placeholder: q.placeholder ?? (type === 'text' ? 'Entrez votre réponse ici' : undefined),
+        example: q.example,
+        functionName: type === 'code' ? functionNameOf(q) : undefined,
+      }
+    })
+    // Chaque exercice démarre sur son code de départ.
+    codes.value = Object.fromEntries(
+      questions.value.filter(q => q.type === 'code').map(q => [q.id, q.placeholder ?? ''])
+    )
   } catch (err) {
     toast.show({
       variant: 'destructive',
@@ -87,16 +127,25 @@ async function fetchQuestionnaire() {
       description: 'Impossible de charger le questionnaire. Veuillez réessayer plus tard.'
     })
     console.error('Failed to fetch questionnaire:', err)
+    // Réinitialiser les questions en cas d'erreur pour éviter de tenter de rendre un état vide
+    questions.value = []
+  } finally {
+    isLoading.value = false
   }
 }
 
 // Propriétés calculées
-const currentQuestion = computed(() => questions.value ? questions.value[currentStep.value] : null)
+const currentQuestion = computed(() => {
+  if (!questions.value || questions.value.length === 0) {
+    return null
+  }
+  return questions.value[currentStep.value]
+})
 const isLastStep = computed(() => questions.value ? currentStep.value === questions.value.length - 1 : false)
 const isFirstStep = computed(() => currentStep.value === 0)
 const questionCount = computed(() => questions.value?.length ?? 0)
 const progress = computed(() => {
-  if (!questions.value) {
+  if (!questions.value || questionCount.value === 0) {
     return { done: 0, total: 0, percent: 0 }
   }
   return {
@@ -105,24 +154,75 @@ const progress = computed(() => {
     percent: Math.round(((currentStep.value + 1) / questionCount.value) * 100)
   }
 })
+const currentCode = computed({
+  get: () => (currentQuestion.value ? codes.value[currentQuestion.value.id] ?? '' : ''),
+  set: (value: string) => {
+    if (currentQuestion.value) {
+      codes.value = { ...codes.value, [currentQuestion.value.id]: value }
+    }
+  },
+})
+const currentVerification = computed(() =>
+  currentQuestion.value ? verifications.value[currentQuestion.value.id] ?? null : null
+)
+/** La sortie brute n'apparaît que si le code a lui-même écrit quelque chose. */
+const showOutput = computed(() => {
+  const run = currentVerification.value?.execution.run
+  return Boolean(run && (run.stdout || run.stderr))
+})
 
 // Fonctions de navigation
 function goToNextStep() {
   if (questions.value && currentStep.value < questions.value.length - 1) {
     currentStep.value++
+    verifyError.value = ''
   }
 }
 
 function goToPreviousStep() {
   if (currentStep.value > 0) {
     currentStep.value--
+    verifyError.value = ''
   }
 }
 
-// Gestionnaire d'exécution de code
-async function handleCodeExecution() {
-  if (!localCode.value.trim()) return
-  await run(localCode.value)
+/**
+ * Lance les tests unitaires de l'exercice : le moteur appelle la fonction sur
+ * chaque cas et compare ce qu'elle renvoie. Aucun `console.log` n'est requis.
+ */
+async function runTests() {
+  const question = currentQuestion.value
+  const code = currentCode.value
+  if (!question || verifying.value || !code.trim()) return
+
+  verifying.value = true
+  verifyError.value = ''
+  try {
+    const response = await fetch('/api/v1/questionnaire-verifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ functionName: question.functionName, code }),
+    })
+    const body = await response.json().catch(() => null) as ApiResponse<VerificationResult> | null
+    if (!response.ok || !body?.data) {
+      verifyError.value = body?.error ?? UNREACHABLE
+      return
+    }
+    verifications.value = { ...verifications.value, [question.id]: body.data }
+  } catch {
+    verifyError.value = UNREACHABLE
+  } finally {
+    verifying.value = false
+  }
+}
+
+function resetCode() {
+  const question = currentQuestion.value
+  if (!question) return
+  currentCode.value = question.placeholder ?? ''
+  const { [question.id]: _removed, ...rest } = verifications.value
+  verifications.value = rest
+  verifyError.value = ''
 }
 
 // Gérer la soumission du formulaire
@@ -132,15 +232,15 @@ async function handleSubmit() {
   isSubmitting.value = true
 
   try {
-    // Préparer les données de soumission
+    // Le serveur recorrige chaque exercice : le niveau ne dépend pas d'un verdict local.
     const submissionData = {
       questionnaireId: questionnaireId.value,
-      questionsCount: questions.value.length,
       answers: answers.value,
-      completedAt: new Date().toISOString()
+      submissions: questions.value
+        .filter(q => q.type === 'code' && q.functionName)
+        .map(q => ({ questionId: q.id, functionName: q.functionName, code: codes.value[q.id] ?? '' })),
     }
 
-    // Envoyer les résultats au backend
     const response = await fetch('/api/v1/questionnaire-results', {
       method: 'POST',
       headers: {
@@ -148,20 +248,16 @@ async function handleSubmit() {
       },
       body: JSON.stringify(submissionData)
     })
+    const body = await response.json().catch(() => null) as ApiResponse<QuestionnaireEvaluation> | null
 
-    if (!response.ok) {
-      throw new Error('Failed to submit questionnaire')
+    if (!response.ok || !body?.data) {
+      throw new Error(body?.error ?? 'Failed to submit questionnaire')
     }
 
-    // Afficher le message de succès
-    toast.show({
-      variant: 'success',
-      title: 'Questionnaire terminé',
-      description: 'Votre questionnaire a été soumis avec succès.'
-    })
-
-    // Réinitialiser le formulaire pour une prochaine utilisation
-    resetForm()
+    evaluation.value = body.data
+    await nextTick()
+    // Les résultats prennent la place des questions : on remonte en haut de page.
+    if (import.meta.client) window.scrollTo?.({ top: 0, behavior: 'smooth' })
   } catch (err) {
     toast.show({
       variant: 'destructive',
@@ -174,12 +270,14 @@ async function handleSubmit() {
   }
 }
 
-// Réinitialiser le formulaire
-function resetForm() {
+// Repartir de zéro, sur un nouveau questionnaire tiré au hasard
+function restart() {
+  evaluation.value = null
   currentStep.value = 0
   answers.value = {}
-  localCode.value = ''
-  isSubmitting.value = false
+  verifications.value = {}
+  verifyError.value = ''
+  fetchQuestionnaire()
 }
 
 // Récupérer le questionnaire lorsque le composant est monté
@@ -191,79 +289,31 @@ onMounted(() => {
 <template>
   <div class="grid gap-8 py-10">
     <!-- Notifications toast -->
-    <div class="fixed top-4 right-4 z-50 flex flex-col-reverse gap-4 p-4 pointer-events-none">
+    <div
+      class="pointer-events-none fixed top-4 right-4 z-50 flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-3"
+      aria-live="polite"
+    >
       <div
-        v-for="toast in toasts"
-        :key="toast.id"
-        class="w-80 relative flex items-start gap-4 rounded-border p-6"
-        :class="[
-          toast.variant === 'destructive' ? 'border-border-600 bg-border-50' :
-          toast.variant === 'success' ? 'border-success-600 bg-success-50' :
-          'border-muted-200 bg-muted-50'
-        ]"
+        v-for="t in toasts"
+        :key="t.id"
+        role="status"
+        class="pointer-events-auto relative grid gap-1 rounded-lg border p-4 pr-10 shadow-sm"
+        :class="{
+          'border-danger/40 bg-danger-soft text-danger': t.variant === 'destructive',
+          'border-success/40 bg-success-soft text-success': t.variant === 'success',
+          'bg-surface text-foreground': t.variant === 'default',
+        }"
       >
-        <div class="flex-shrink-0 flex h-10 w-10 items-center justify-center"
-             :class="{
-               'text-border-600': toast.variant === 'destructive',
-               'text-success-600': toast.variant === 'success',
-               'text-muted-400': toast.variant === 'default'
-             }">
-          <!-- Simple toast icon -->
-          <div class="flex h-4 w-4 items-center justify-center"
-               :class="{
-                 'rotate-45': toast.variant === 'destructive'
-               }">
-            <div class="flex h-4 w-4"
-                 :class="{
-                   'bg-border-600': toast.variant === 'destructive',
-                   'bg-success-600': toast.variant === 'success',
-                   'bg-muted-400': toast.variant === 'default'
-                 }">
-              <!-- X for destructive, check for success, info for default -->
-              <div v-if="toast.variant === 'destructive'" class="flex h-2 w-2 items-center justify-center bg-white">
-                <div class="h-0.5 w-2 bg-white"></div>
-              </div>
-              <div v-else-if="toast.variant === 'success'" class="flex h-2 w-2 items-center justify-center bg-white">
-                <div class="h-1.5 w-0.5 bg-white"></div>
-                <div class="h-0.5 w-1 bg-white mt-[-2px] rotate-45"></div>
-              </div>
-              <div v-else class="flex h-2 w-2 items-center justify-center bg-muted-600">
-                <div class="h-2 w-2 bg-white rounded-full"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="flex-1 space-y-2">
-          <div class="text-sm font-medium"
-               :class="{
-                 'text-border-600': toast.variant === 'destructive',
-                 'text-success-600': toast.variant === 'success',
-                 'text-muted-800': toast.variant === 'default'
-               }">
-            {{ toast.title }}
-          </div>
-          <div v-if="toast.description" class="text-sm"
-               :class="{
-                 'text-border-500': toast.variant === 'destructive',
-                 'text-success-500': toast.variant === 'success',
-                 'text-muted-600': toast.variant === 'default'
-               }">
-            {{ toast.description }}
-          </div>
-        </div>
+        <p class="text-sm font-semibold">{{ t.title }}</p>
+        <p v-if="t.description" class="text-sm opacity-90">{{ t.description }}</p>
         <button
-          @click="dismiss(toast.id)"
-          class="absolute top-2 right-2 rounded-box p-1 text-sm hover:bg-accent/20"
-          :class="{
-            'text-border-600 hover:bg-border-50': toast.variant === 'destructive',
-            'text-success-600 hover:bg-success-50': toast.variant === 'success',
-            'text-muted-400 hover:bg-muted-100': toast.variant === 'default'
-          }"
-          aria-label="Close toast"
+          type="button"
+          class="absolute top-2 right-2 rounded-md p-1 hover:bg-foreground/10"
+          aria-label="Fermer la notification"
+          @click="dismiss(t.id)"
         >
-          <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"/>
+          <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
@@ -275,173 +325,201 @@ onMounted(() => {
       <p class="eyebrow">Évaluation initiale</p>
       <h1 class="text-4xl font-semibold sm:text-5xl">Questionnaire de démarrage</h1>
       <p class="text-muted-foreground max-w-prose">
-        Ce questionnaire nous permettra de évaluer votre niveau actuel et de vous proposer un parcours d'apprentissage adapté.
+        Ce questionnaire nous permettra d'évaluer votre niveau actuel et de vous proposer un parcours d'apprentissage adapté.
         Certaines questions nécessitent d'écrire du code qui sera exécuté dans un environnement sécurisé.
       </p>
     </header>
 
-    <!-- Progress Indicator -->
-    <div class="grid gap-4">
-      <ProgressBar :progress="progress" />
-      <div class="text-sm text-muted-foreground">
-        Étape {{ currentStep + 1 }} sur {{ questionCount }}
+    <QuestionnaireResults v-if="evaluation" :evaluation="evaluation" @restart="restart" />
+
+    <!-- Progression -->
+    <div v-if="!evaluation" class="grid gap-2">
+      <div class="text-body-sm flex justify-between gap-4">
+        <span class="text-muted-foreground">
+          Étape {{ questionCount ? currentStep + 1 : 0 }} sur {{ questionCount }}
+        </span>
+        <span class="font-semibold tabular-nums">{{ progress.percent }} %</span>
+      </div>
+      <div
+        role="progressbar"
+        :aria-valuenow="progress.percent"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        :aria-label="`Progression : ${progress.percent} %`"
+        class="bg-foreground/10 h-2 overflow-hidden rounded-full"
+      >
+        <div
+          class="bg-brand h-full rounded-full transition-[width] duration-500"
+          :style="{ width: `${progress.percent}%` }"
+        />
       </div>
     </div>
 
-    <!-- Question Container -->
-    <div class="grid gap-6">
-      <!-- Question Header -->
-      <div class="grid gap-3">
-        <h2 class="text-2xl font-semibold">
-          Question {{ currentQuestion?.id ?? '?' }}
-        </h2>
-        <p class="text-muted-foreground">
-          {{ currentQuestion?.description ?? '' }}
-        </p>
-      </div>
+    <!-- Question -->
+    <section v-if="!evaluation" class="card grid gap-6 p-5 sm:p-6" aria-live="polite">
+      <p v-if="isLoading" class="text-muted-foreground py-8 text-center">
+        Chargement du questionnaire…
+      </p>
 
-      <!-- Question Content -->
-      <div class="grid gap-4">
-        <!-- Multiple Choice (Single) -->
-        <div v-if="currentQuestion && currentQuestion.type === 'multiple-choice' && !currentQuestion.multiple">
-          <div class="grid gap-3">
-            <label v-for="(option, index) in (currentQuestion.options || [])" :key="option.value" class="cursor-pointer select-none">
-              <div class="flex items-start gap-3 rounded-border p-4 hover:bg-accent/50 transition-colors"
-                   :class="(answers || {})[currentQuestion.id] === option.value ? 'bg-accent/20' : ''">
-                <input type="radio"
-                       :id="'q' + currentQuestion.id + '-option-' + option.value"
-                       :name="`q${currentQuestion.id}`"
-                       :value="option.value"
-                       :checked="(answers || {})[currentQuestion.id] === option.value"
-                       @change="updateAnswer(currentQuestion.id, option.value)"
-                       class="h-4 w-4 text-brand">
-                <div>
-                  <div class="font-medium">{{ option.label }}</div>
-                </div>
-              </div>
-            </label>
-          </div>
+      <p v-else-if="!currentQuestion" class="text-muted-foreground py-8 text-center">
+        Aucune question disponible. Veuillez réessayer.
+      </p>
+
+      <template v-else>
+        <div class="grid gap-2">
+          <p class="eyebrow">Question {{ currentStep + 1 }}</p>
+          <h2 class="text-title">{{ currentQuestion.title }}</h2>
+          <p v-if="currentQuestion.description" class="text-muted-foreground">
+            {{ currentQuestion.description }}
+          </p>
         </div>
 
-        <!-- Multiple Choice (Multiple) -->
-        <div v-else-if="currentQuestion && currentQuestion.type === 'multiple-choice' && currentQuestion.multiple">
-          <div class="grid gap-2">
-            <label v-for="option in (currentQuestion.options || [])" :key="option.value" class="cursor-pointer select-none">
-              <div class="flex items-start gap-3 rounded-border p-4 hover:bg-accent/50 transition-colors"
-                   :class="((answers || {})[currentQuestion.id] || []).includes(option.value) ? 'bg-accent/20' : ''">
-                <input type="checkbox"
-                       :id="'q' + currentQuestion.id + '-option-' + option.value"
-                       :name="`q${currentQuestion.id}[]`"
-                       :value="option.value"
-                       :checked="((answers || {})[currentQuestion.id] || []).includes(option.value)"
-                       @change="toggleOption(currentQuestion.id, option.value)"
-                       class="h-4 w-4 text-brand">
-                <div>
-                  <div class="font-medium">{{ option.label }}</div>
-                </div>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        <!-- Text Input -->
-        <div v-else-if="currentQuestion && currentQuestion.type === 'text'">
-          <textarea
-            :id="'question-' + currentQuestion.id"
-            :value="((answers || {})[currentQuestion.id] ?? '')"
-            :placeholder="currentQuestion?.placeholder || ''"
-            rows="4"
-            class="textarea w-full"
-            @input="e => updateAnswer(currentQuestion.id, e.target.value)"
-          />
-        </div>
-
-        <!-- Code Exercise -->
-        <div v-else-if="currentQuestion && currentQuestion.type === 'code'">
-          <div class="grid gap-4">
-            <CodeEditor
-              :id="'code-editor-' + (currentQuestion?.id ?? '')"
-              v-model="localCode"
-              :placeholder="currentQuestion?.placeholder"
-              :example="currentQuestion?.example"
-              filename="main.js"
-              :rows="12"
-              class="w-full"
-            />
-
-            <div class="grid gap-3" v-if="result || error">
-              <div v-if="error" role="alert" class="alert-error">
-                {{ error }}
-              </div>
-              <ExecutionOutput v-if="result" :result="result" />
-            </div>
-
-            <div class="flex justify-end gap-3">
-              <button
-                type="button"
-                :disabled="running || !localCode.trim()"
-                class="btn-secondary"
-                @click="handleCodeExecution"
-              >
-                {{ running ? 'Exécution en cours…' : 'Exécuter' }}
-              </button>
-
-              <button
-                type="button"
-                :disabled="running"
-                class="btn-outline"
-                @click="localCode.value = ''; result.value = null; error.value = ''"
-              >
-                Effacer
-              </button>
-
-              <!-- Button to continue even if exercise not validated -->
-              <button
-                v-if="result === false || error !== ''"
-                type="button"
-                class="btn-outline"
-                @click="goToNextStep"
-              >
-                Continuer malgré l'échec
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Navigation Buttons -->
-    <div class="grid gap-4 mt-8">
-      <div class="flex justify-between">
-        <button
-          v-if="!isFirstStep"
-          type="button"
-          class="btn-outline"
-          @click="goToPreviousStep"
+        <!-- Choix unique -->
+        <div
+          v-if="currentQuestion.type === 'multiple-choice' && !currentQuestion.multiple"
+          class="grid gap-3"
+          role="radiogroup"
         >
-          Étape précédente
-        </button>
-
-        <div class="flex justify-end gap-3">
-          <button
-            v-if="!isLastStep"
-            type="button"
-            class="btn-primary"
-            @click="goToNextStep"
+          <label
+            v-for="option in currentQuestion.options"
+            :key="option.value"
+            class="flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors select-none"
+            :class="answers[currentQuestion.id] === option.value
+              ? 'border-brand bg-brand/10'
+              : 'hover:bg-foreground/5'"
           >
-            Étape suivante
-          </button>
-
-          <button
-            v-else
-            type="button"
-            class="btn-primary"
-            @click="handleSubmit"
-          >
-            {{ isSubmitting ? 'Soumission en cours…' : 'Terminer le questionnaire' }}
-          </button>
+            <input
+              :id="`q${currentQuestion.id}-option-${option.value}`"
+              type="radio"
+              :name="`q${currentQuestion.id}`"
+              :value="option.value"
+              :checked="answers[currentQuestion.id] === option.value"
+              class="accent-brand h-4 w-4 shrink-0"
+              @change="updateAnswer(currentQuestion.id, option.value)"
+            >
+            <span class="font-medium">{{ option.label }}</span>
+          </label>
         </div>
-      </div>
+
+        <!-- Choix multiple -->
+        <div
+          v-else-if="currentQuestion.type === 'multiple-choice'"
+          class="grid gap-3 sm:grid-cols-2"
+        >
+          <label
+            v-for="option in currentQuestion.options"
+            :key="option.value"
+            class="flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors select-none"
+            :class="(answers[currentQuestion.id] || []).includes(option.value)
+              ? 'border-brand bg-brand/10'
+              : 'hover:bg-foreground/5'"
+          >
+            <input
+              :id="`q${currentQuestion.id}-option-${option.value}`"
+              type="checkbox"
+              :name="`q${currentQuestion.id}[]`"
+              :value="option.value"
+              :checked="(answers[currentQuestion.id] || []).includes(option.value)"
+              class="accent-brand h-4 w-4 shrink-0"
+              @change="toggleOption(currentQuestion.id, option.value)"
+            >
+            <span class="font-medium">{{ option.label }}</span>
+          </label>
+        </div>
+
+        <!-- Réponse libre -->
+        <textarea
+          v-else-if="currentQuestion.type === 'text'"
+          :id="`question-${currentQuestion.id}`"
+          :value="answers[currentQuestion.id] ?? ''"
+          :placeholder="currentQuestion.placeholder || ''"
+          rows="4"
+          class="bg-background w-full rounded-lg border p-3"
+          @input="updateAnswer(currentQuestion.id, ($event.target as HTMLTextAreaElement).value)"
+        />
+
+        <!-- Exercice de code -->
+        <div v-else-if="currentQuestion.type === 'code'" class="grid gap-4">
+          <pre
+            v-if="currentQuestion.example"
+            class="bg-foreground/5 text-body-sm overflow-x-auto rounded-lg p-4 font-mono whitespace-pre-wrap"
+          >{{ currentQuestion.example }}</pre>
+
+          <p class="text-body-sm text-muted-foreground">
+            Gardez le nom <code class="font-mono">{{ currentQuestion.functionName }}</code> et
+            renvoyez le résultat avec <code class="font-mono">return</code> : les tests appellent
+            votre fonction et comparent ce qu'elle renvoie, sans besoin de <code class="font-mono">console.log</code>.
+          </p>
+
+          <CodeEditor
+            :id="`code-editor-${currentQuestion.id}`"
+            v-model="currentCode"
+            label="Votre code"
+            filename="main.js"
+            :rows="12"
+            class="w-full"
+          />
+
+          <div class="flex flex-wrap justify-end gap-3">
+            <button
+              type="button"
+              :disabled="verifying"
+              class="btn-secondary"
+              @click="resetCode"
+            >
+              Réinitialiser
+            </button>
+
+            <button
+              type="button"
+              :disabled="verifying || !currentCode.trim()"
+              class="btn-primary"
+              @click="runTests"
+            >
+              {{ verifying ? 'Tests en cours…' : 'Lancer les tests' }}
+            </button>
+          </div>
+
+          <div v-if="verifyError" role="alert" class="alert-error">
+            {{ verifyError }}
+          </div>
+          <template v-if="currentVerification">
+            <TestResults :verification="currentVerification" />
+            <ExecutionOutput v-if="showOutput" :result="currentVerification.execution" />
+          </template>
+        </div>
+      </template>
+    </section>
+
+    <!-- Navigation -->
+    <div v-if="currentQuestion && !evaluation" class="flex flex-wrap items-center justify-between gap-3">
+      <button
+        v-if="!isFirstStep"
+        type="button"
+        class="btn-secondary"
+        @click="goToPreviousStep"
+      >
+        Étape précédente
+      </button>
+      <span v-else />
+
+      <button
+        v-if="!isLastStep"
+        type="button"
+        class="btn-primary"
+        @click="goToNextStep"
+      >
+        Étape suivante
+      </button>
+      <button
+        v-else
+        type="button"
+        class="btn-primary"
+        :disabled="isSubmitting"
+        @click="handleSubmit"
+      >
+        {{ isSubmitting ? 'Évaluation en cours…' : 'Terminer le questionnaire' }}
+      </button>
     </div>
   </div>
 </template>
