@@ -5,14 +5,25 @@ import { after, before, describe, it } from 'node:test'
 
 import express from 'express'
 
-import type { ExerciseRepository } from '../repositories/exercise.repository.ts'
 import { InMemoryExerciseRepository } from '../repositories/exercise.repository.ts'
-import type { LanguageRepository } from '../repositories/language.repository.ts'
-import { InMemoryLanguageRepository } from '../repositories/language.repository.ts'
 import { InMemoryLessonRepository } from '../repositories/lesson.repository.ts'
+import type { TrackRepository } from '../repositories/track.repository.ts'
+import { InMemoryTrackRepository } from '../repositories/track.repository.ts'
 import { ExerciseService } from '../services/exercise.service.ts'
 import { LessonService } from '../services/lesson.service.ts'
-import { ExecutionController, ExerciseController, LessonController } from './index.ts'
+import { TrackService } from '../services/track.service.ts'
+import {
+  ExecutionController,
+  ExerciseController,
+  LessonController,
+  TrackController,
+} from './index.ts'
+
+interface TrackRow {
+  readonly slug: string
+  readonly programmingLanguage: string | null
+  readonly prerequisite: { readonly slug: string } | null
+}
 
 interface Envelope {
   readonly success: boolean
@@ -23,22 +34,16 @@ interface Envelope {
 
 /** Monte l'API comme `index.ts`, sur un port ephemere. */
 async function start(
-  languages: LanguageRepository = new InMemoryLanguageRepository(),
-  exercises: ExerciseRepository = new InMemoryExerciseRepository(),
+  tracks: TrackRepository = new InMemoryTrackRepository(),
 ): Promise<{ server: Server; base: string }> {
+  const lessons = new InMemoryLessonRepository()
+  const exercises = new InMemoryExerciseRepository()
   const app = express()
   app.use(express.json())
-  app.use('/api/v1/executions', new ExecutionController(languages).buildRouter())
-  app.use(
-    '/api/v1',
-    new ExerciseController(new ExerciseService(languages, exercises)).buildRouter(),
-  )
-  app.use(
-    '/api/v1',
-    new LessonController(
-      new LessonService(languages, new InMemoryLessonRepository(), exercises),
-    ).buildRouter(),
-  )
+  app.use('/api/v1/executions', new ExecutionController().buildRouter())
+  app.use('/api/v1', new TrackController(new TrackService(tracks, lessons, exercises)).buildRouter())
+  app.use('/api/v1', new LessonController(new LessonService(tracks, lessons)).buildRouter())
+  app.use('/api/v1', new ExerciseController(new ExerciseService(tracks, exercises)).buildRouter())
   const server = await new Promise<Server>((resolve) => {
     const s = app.listen(0, () => resolve(s))
   })
@@ -59,98 +64,102 @@ describe('API du contenu (données fictives)', () => {
   })
   after(() => server.close())
 
-  it('GET /languages liste les langages et leur prérequis', async () => {
-    const { status, body } = await get('/languages')
+  it('GET /tracks liste les parcours, leur langage et leur prérequis', async () => {
+    const { status, body } = await get('/tracks')
 
     assert.equal(status, 200)
     assert.deepEqual(
-      body.data.map((l: { slug: string; prerequisite: { slug: string } | null }) => [
-        l.slug,
-        l.prerequisite?.slug ?? null,
-      ]),
+      body.data.map((t: TrackRow) => [t.slug, t.programmingLanguage, t.prerequisite?.slug ?? null]),
       [
-        ['javascript', null],
-        ['typescript', 'javascript'],
+        ['javascript', 'javascript', null],
+        ['typescript', 'typescript', 'javascript'],
+        ['conception', null, null],
       ],
     )
   })
 
-  it('GET /languages/:language/chapters sert le parcours, ou 404', async () => {
-    const ok = await get('/languages/typescript/chapters')
-    assert.equal(ok.status, 200)
+  it('GET /tracks/:track sert le fil, numéroté de 1 à n, ou 404', async () => {
+    const { status, body } = await get('/tracks/typescript')
+
+    assert.equal(status, 200)
+    assert.deepEqual(body.data.track, {
+      slug: 'typescript',
+      name: 'TypeScript',
+      programmingLanguage: 'typescript',
+    })
     assert.deepEqual(
-      ok.body.data.map((c: { slug: string }) => c.slug),
-      ['types-de-base', 'generiques'],
+      body.data.chapters.map((c: { number: number; slug: string; level: string }) => [
+        c.number,
+        c.level,
+        c.slug,
+      ]),
+      [
+        [1, 'beginner', 'pourquoi-typer'],
+        [2, 'beginner', 'types-de-base'],
+        [3, 'intermediate', 'generiques'],
+        [4, 'intermediate', 'unions-et-affinage'],
+        [5, 'ecosystem', 'tsc-et-tsconfig'],
+      ],
     )
-    assert.deepEqual((await get('/languages/python/chapters')).body, {
+    assert.deepEqual((await get('/tracks/python')).body, {
       success: false,
       data: null,
-      error: 'Langage inconnu.',
+      error: 'Parcours introuvable.',
     })
+  })
+
+  it('GET une leçon par son chemin complet, et masque les brouillons', async () => {
+    const lesson = await get('/tracks/javascript/chapters/dotenv/lessons/dotenv')
+    assert.equal(lesson.status, 200)
+    assert.equal(lesson.body.data.lastReviewedAt, '2026-09-01T00:00:00.000Z')
+    assert.equal(lesson.body.data.chapter.number, 12)
+
+    assert.equal((await get('/tracks/javascript/chapters/modules/lessons/modules')).status, 404)
+    assert.equal((await get('/tracks/typescript/chapters/dotenv/lessons/dotenv')).status, 404)
   })
 
   it('GET un exercice par son chemin complet, sans solution', async () => {
     const { status, text, body } = await get(
-      '/languages/typescript/chapters/generiques/exercises/dernier-ou-defaut',
+      '/tracks/typescript/chapters/generiques/exercises/dernier-ou-defaut',
     )
 
     assert.equal(status, 200)
     assert.equal(body.data.functionName, 'lastOr')
-    assert.equal(body.data.testCases.length, 3)
+    assert.equal(body.data.track.programmingLanguage, 'typescript')
+    assert.deepEqual(Object.keys(body.data.testCases[0]).toSorted(), [
+      'arguments',
+      'description',
+      'expectedResult',
+    ])
     assert.deepEqual(body.data.next, { chapterSlug: 'generiques', slug: 'envelopper' })
     assert.equal(text.includes('solution'), false)
     assert.equal(text.includes('return items[items.length - 1]'), false)
   })
 
-  it('répond 404 pour un exercice sous le mauvais chapitre ou le mauvais langage', async () => {
+  it('répond 404 pour un exercice sous le mauvais chapitre ou le mauvais parcours', async () => {
     assert.equal(
-      (await get('/languages/typescript/chapters/types-de-base/exercises/dernier-ou-defaut'))
-        .status,
+      (await get('/tracks/typescript/chapters/types-de-base/exercises/dernier-ou-defaut')).status,
       404,
     )
     assert.equal(
-      (await get('/languages/javascript/chapters/generiques/exercises/dernier-ou-defaut')).status,
+      (await get('/tracks/javascript/chapters/generiques/exercises/dernier-ou-defaut')).status,
       404,
     )
   })
 
-  it('GET /lessons/transverse puis /lessons/:section servent Connaissance', async () => {
-    const transverse = await get('/lessons/transverse')
-    assert.deepEqual(
-      transverse.body.data.map((s: { slug: string }) => s.slug),
-      ['conception'],
-    )
-
-    const js = await get('/lessons/javascript')
-    assert.equal(js.body.data.kind, 'language')
-    assert.equal(js.body.data.groups[0].slug, 'debutant')
-
-    assert.equal((await get('/lessons/debutant')).status, 404)
-  })
-
-  it('GET /lessons/:section/:lesson sert une leçon, et masque les brouillons', async () => {
-    const lesson = await get('/lessons/conception/architecture-mvc')
-    assert.equal(lesson.status, 200)
-    assert.equal(lesson.body.data.section.kind, 'category')
-
-    assert.equal((await get('/lessons/javascript/modules')).status, 404)
-  })
-
-  it('GET /languages/:language/track sert le fil, sans répéter une leçon', async () => {
-    const { status, body } = await get('/languages/javascript/track')
-    assert.equal(status, 200)
-    assert.deepEqual(
-      body.data.chapters.map((c: { slug: string; lessons: { slug: string }[] }) => [
-        c.slug,
-        c.lessons.map((l) => l.slug),
-      ]),
-      [
-        ['variables', ['variables-et-types-primitifs', 'fonctions']],
-        ['conditions', ['conditions']],
-        ['boucles', ['boucles']],
-      ],
-    )
-    assert.equal((await get('/languages/python/track')).status, 404)
+  it('ne sert plus les anciennes routes', async () => {
+    for (const path of [
+      '/languages',
+      '/languages/javascript/chapters',
+      '/lessons/transverse',
+      '/lessons/javascript',
+      '/tracks/javascript/chapters',
+      '/tracks/javascript/chapters/boucles',
+      '/tracks/javascript/chapters/boucles/lessons',
+    ]) {
+      const res = await fetch(`${base}${path}`)
+      assert.equal(res.status, 404, path)
+    }
   })
 
   it('POST une vérification : 404 hors hiérarchie, 400 sans code', async () => {
@@ -160,21 +169,11 @@ describe('API du contenu (données fictives)', () => {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(body),
       })
-    const path = '/languages/javascript/chapters/conditions/exercises/est-pair/verifications'
+    const path = '/tracks/javascript/chapters/conditions/exercises/est-pair/verifications'
     assert.equal((await post(path, {})).status, 400)
     assert.equal(
       (await post(path.replace('conditions', 'boucles'), { code: 'function isEven() {}' })).status,
       404,
-    )
-  })
-
-  it('GET les leçons à relire pour un chapitre', async () => {
-    const { status, body } = await get('/languages/javascript/chapters/variables/lessons')
-
-    assert.equal(status, 200)
-    assert.deepEqual(
-      body.data.map((l: { slug: string }) => l.slug),
-      ['variables-et-types-primitifs', 'fonctions'],
     )
   })
 })
@@ -196,15 +195,15 @@ describe('API d’exécution, avant tout appel au moteur', () => {
   })
   after(() => server.close())
 
-  it('refuse un langage qui n’est pas proposé', async () => {
-    const { status, body } = await post({ language: 'python', code: 'print(1)' })
+  it('refuse un langage hors de l’enum', async () => {
+    const { status, body } = await post({ programmingLanguage: 'python', code: 'print(1)' })
 
     assert.equal(status, 400)
-    assert.equal(body.error, 'Langage inconnu.')
+    assert.match(body.error ?? '', /programmingLanguage/)
   })
 
   it('applique la préparation du langage : un enum TypeScript est refusé', async () => {
-    const { status, body } = await post({ language: 'typescript', code: 'enum A { X }' })
+    const { status, body } = await post({ programmingLanguage: 'typescript', code: 'enum A { X }' })
 
     assert.equal(status, 400)
     assert.match(body.error ?? '', /enum/)
@@ -215,10 +214,12 @@ describe('API du contenu (panne de la source)', () => {
   let server: Server
   let base: string
 
-  const failing: LanguageRepository = {
-    listLanguages: () => Promise.reject(new Error('connexion perdue a postgres:5432')),
-    findLanguageBySlug: () => Promise.reject(new Error('connexion perdue a postgres:5432')),
-    findLanguageById: () => Promise.reject(new Error('connexion perdue a postgres:5432')),
+  const down = () => Promise.reject(new Error('connexion perdue a postgres:5432'))
+  const failing: TrackRepository = {
+    listTracks: down,
+    findTrackBySlug: down,
+    listChapters: down,
+    findChapter: down,
   }
 
   before(async () => {
@@ -227,11 +228,13 @@ describe('API du contenu (panne de la source)', () => {
   after(() => server.close())
 
   it('répond 500 avec un message générique, sans détail interne', async () => {
-    const res = await fetch(`${base}/languages/javascript/chapters`)
-    const text = await res.text()
+    for (const path of ['/tracks', '/tracks/javascript']) {
+      const res = await fetch(`${base}${path}`)
+      const text = await res.text()
 
-    assert.equal(res.status, 500)
-    assert.equal(JSON.parse(text).success, false)
-    assert.equal(text.includes('postgres'), false)
+      assert.equal(res.status, 500)
+      assert.equal(JSON.parse(text).success, false)
+      assert.equal(text.includes('postgres'), false)
+    }
   })
 })

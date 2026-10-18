@@ -13,9 +13,9 @@ import { isDeepStrictEqual } from 'node:util'
 import type { ExecutionResult } from './execution.service.ts'
 
 export interface VerificationCase {
-  readonly args: readonly unknown[]
-  readonly expected: unknown
-  readonly label: string | null
+  readonly arguments: readonly unknown[]
+  readonly expectedResult: unknown
+  readonly description: string | null
   readonly isHidden: boolean
 }
 
@@ -63,7 +63,7 @@ export function buildHarness(
   if (!IDENTIFIER.test(functionName)) {
     throw new Error(`Nom de fonction invalide : ${functionName}`)
   }
-  const args = JSON.stringify(JSON.stringify(cases.map((c) => c.args)))
+  const args = JSON.stringify(JSON.stringify(cases.map((c) => c.arguments)))
   return `const __scalarWrite = process.stdout.write.bind(process.stdout);${code}
 ;(() => {
   const fn = typeof ${functionName} === 'function' ? ${functionName} : null
@@ -106,10 +106,11 @@ function checkCase(
   rank: number,
   functionName: string,
 ): VerificationCheck {
-  const expected = JSON.stringify(c.expected)
+  const expected = JSON.stringify(c.expectedResult)
+  const description = c.description ? ` (${c.description})` : ''
   const label = c.isHidden
     ? `Cas supplémentaire ${rank}`
-    : `${call(functionName, c.args)} renvoie ${expected}${c.label ? ` (${c.label})` : ''}`
+    : `${call(functionName, c.arguments)} renvoie ${expected}${description}`
 
   if (outcome === undefined) {
     return { label, passed: false, detail: 'Cas non évalué.' }
@@ -128,7 +129,7 @@ function checkCase(
   } catch {
     actual = undefined
   }
-  if (isDeepStrictEqual(actual, c.expected ?? null)) {
+  if (isDeepStrictEqual(actual, c.expectedResult ?? null)) {
     return { label, passed: true, detail: null }
   }
   return {

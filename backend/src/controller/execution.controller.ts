@@ -1,33 +1,21 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import { logger } from "../logger.ts";
-import type { LanguageRepository } from "../repositories/language.repository.ts";
 import { executeCode, parseSubmission, toJavaScript } from "../services/execution.service.ts";
 
 export class ExecutionController {
-  private readonly languages: LanguageRepository;
-
-  constructor(languages: LanguageRepository) {
-    this.languages = languages;
-  }
-
   async executeSubmission(req: Request, res: Response) {
     // Valide avant tout appel sortant : une entree malformee ne doit jamais
-    // atteindre le moteur d'execution.
+    // atteindre le moteur d'execution. Un langage hors enum est refuse ici.
     const parsed = parseSubmission(req.body);
     if (!parsed.ok) {
       res.status(400).json({ success: false, data: null, error: parsed.error });
       return;
     }
 
-    const language = await this.languages.findLanguageBySlug(parsed.submission.language);
-    if (!language) {
-      res.status(400).json({ success: false, data: null, error: "Langage inconnu." });
-      return;
-    }
-
     // Le langage decide de la preparation du code, pas un test sur son nom.
-    const converted = toJavaScript(language.runtime, parsed.submission.code);
+    const { programmingLanguage, code } = parsed.submission;
+    const converted = toJavaScript(programmingLanguage, code);
     if (!converted.ok) {
       res.status(400).json({ success: false, data: null, error: converted.error });
       return;

@@ -11,7 +11,7 @@ import { stripTypeScriptTypes } from 'node:module'
 
 import { z } from 'zod'
 
-import type { LanguageRuntime } from '../db/schema.ts'
+import type { ProgrammingLanguage } from '../db/schema.ts'
 import { logger } from '../logger.ts'
 
 const PISTON_BASE_URL = process.env.PISTON_URL ?? 'http://piston:2000/api/v2'
@@ -70,6 +70,12 @@ const STATUS_LABELS: Readonly<Record<ExecutionStatus, string>> = {
   XX: 'Erreur interne du moteur',
 }
 
+/** Langages que le backend sait executer : les valeurs de l'enum en base. */
+const PROGRAMMING_LANGUAGES = [
+  'javascript',
+  'typescript',
+] as const satisfies readonly ProgrammingLanguage[]
+
 /**
  * Corps accepte par `POST /api/v1/executions`.
  *
@@ -78,10 +84,11 @@ const STATUS_LABELS: Readonly<Record<ExecutionStatus, string>> = {
  */
 export const submissionSchema = z.object({
   // Absent pour les clients anterieurs a TypeScript : ils envoyaient du JavaScript.
-  // Slug d'un langage publie, verifie par le controleur contre la source.
-  language: z
-    .string('Le champ « language » doit être une chaîne de caractères.')
-    .min(1, 'Le champ « language » est vide.')
+  programmingLanguage: z
+    .enum(
+      PROGRAMMING_LANGUAGES,
+      'Le champ « programmingLanguage » doit valoir « javascript » ou « typescript ».',
+    )
     .default('javascript'),
   code: z
     .string('Le champ « code » est requis et doit être une chaîne de caractères.')
@@ -130,10 +137,10 @@ export type Conversion =
  * deplacer -- les numeros de ligne et de colonne des erreurs restent ceux de
  * l'ecran. Les types ne sont PAS verifies : une erreur de typage passe.
  */
-// `node_strip_types` retire les types sans les verifier ; ajouter un
+// TypeScript : les types sont retires sans etre verifies ; ajouter un
 // passage `tsc` cote moteur quand Piston saura le faire dans le plafond de duree.
-export function toJavaScript(runtime: LanguageRuntime, code: string): Conversion {
-  if (runtime === 'node') {
+export function toJavaScript(language: ProgrammingLanguage, code: string): Conversion {
+  if (language === 'javascript') {
     return { ok: true, code }
   }
 

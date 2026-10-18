@@ -1,12 +1,11 @@
 export type {
-  CategoryScope,
   Chapter,
-  ContentStatus,
+  ChapterLevel,
   Exercise,
   ExerciseTestCase,
-  Language,
-  LanguageRuntime,
   Lesson,
-  LessonCategory,
-  LessonChapter,
+  ProgrammingLanguage,
+  PublicationStatus,
+  SolutionCheckStatus,
+  Track,
 } from '@prisma/client'

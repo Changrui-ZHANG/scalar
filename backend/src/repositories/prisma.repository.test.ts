@@ -12,56 +12,67 @@ import { prisma } from '../db/index.ts'
 import { seedDatabase } from '../db/seed.ts'
 import { ExerciseService } from '../services/exercise.service.ts'
 import { LessonService } from '../services/lesson.service.ts'
+import { TrackService } from '../services/track.service.ts'
+import type { ExerciseRepository } from './exercise.repository.ts'
 import { InMemoryExerciseRepository } from './exercise.repository.ts'
-import { InMemoryLanguageRepository } from './language.repository.ts'
+import type { LessonRepository } from './lesson.repository.ts'
 import { InMemoryLessonRepository } from './lesson.repository.ts'
 import {
   PrismaExerciseRepository,
-  PrismaLanguageRepository,
   PrismaLessonRepository,
+  PrismaTrackRepository,
 } from './prisma.repository.ts'
+import type { TrackRepository } from './track.repository.ts'
+import { InMemoryTrackRepository } from './track.repository.ts'
 
 const enabled = process.env.DATABASE_TESTS === '1'
 
-const memory = {
-  exercises: new ExerciseService(
-    new InMemoryLanguageRepository(),
-    new InMemoryExerciseRepository(),
-  ),
-  lessons: new LessonService(
-    new InMemoryLanguageRepository(),
-    new InMemoryLessonRepository(),
-    new InMemoryExerciseRepository(),
-  ),
-}
-const database = {
-  exercises: new ExerciseService(
-    new PrismaLanguageRepository(prisma),
-    new PrismaExerciseRepository(prisma),
-  ),
-  lessons: new LessonService(
-    new PrismaLanguageRepository(prisma),
-    new PrismaLessonRepository(prisma),
-    new PrismaExerciseRepository(prisma),
-  ),
+interface Services {
+  readonly tracks: TrackService
+  readonly lessons: LessonService
+  readonly exercises: ExerciseService
 }
 
+function services(
+  tracks: TrackRepository,
+  lessons: LessonRepository,
+  exercises: ExerciseRepository,
+): Services {
+  return {
+    tracks: new TrackService(tracks, lessons, exercises),
+    lessons: new LessonService(tracks, lessons),
+    exercises: new ExerciseService(tracks, exercises),
+  }
+}
+
+const memory = services(
+  new InMemoryTrackRepository(),
+  new InMemoryLessonRepository(),
+  new InMemoryExerciseRepository(),
+)
+const database = services(
+  new PrismaTrackRepository(prisma),
+  new PrismaLessonRepository(prisma),
+  new PrismaExerciseRepository(prisma),
+)
+
 /** Chaque question posee aux deux sources ; les reponses doivent etre identiques. */
-const QUESTIONS: ReadonlyArray<readonly [string, (s: typeof memory) => Promise<unknown>]> = [
-  ['langages', (s) => s.exercises.listLanguages()],
-  ['parcours javascript', (s) => s.exercises.listChapters('javascript')],
-  ['parcours typescript', (s) => s.exercises.listChapters('typescript')],
-  ['langage inconnu', (s) => s.exercises.listChapters('python')],
-  ['chapitre', (s) => s.exercises.getChapter('javascript', 'boucles')],
+const QUESTIONS: ReadonlyArray<readonly [string, (s: Services) => Promise<unknown>]> = [
+  ['parcours', (s) => s.tracks.listTracks()],
+  ['fil javascript', (s) => s.tracks.getTrack('javascript')],
+  ['fil typescript', (s) => s.tracks.getTrack('typescript')],
+  ['fil sans langage', (s) => s.tracks.getTrack('conception')],
+  ['parcours inconnu', (s) => s.tracks.getTrack('python')],
+  ['lecon', (s) => s.lessons.getLesson('javascript', 'fonctions', 'fonctions')],
+  ['lecon relue', (s) => s.lessons.getLesson('javascript', 'dotenv', 'dotenv')],
+  [
+    'lecon sans langage',
+    (s) => s.lessons.getLesson('conception', 'bases-de-la-conception', 'architecture-mvc'),
+  ],
+  ['brouillon', (s) => s.lessons.getLesson('javascript', 'modules', 'modules')],
   ['exercice', (s) => s.exercises.getExercise('javascript', 'boucles', 'fizzbuzz')],
   ['exercice typescript', (s) => s.exercises.getExercise('typescript', 'generiques', 'envelopper')],
-  ['section langage', (s) => s.lessons.getSection('javascript')],
-  ['section transverse', (s) => s.lessons.getSection('conception')],
-  ['sections transverses', (s) => s.lessons.listTransverseSections()],
-  ['lecon', (s) => s.lessons.getLesson('javascript', 'fonctions')],
-  ['lecon transverse', (s) => s.lessons.getLesson('conception', 'architecture-mvc')],
-  ['brouillon', (s) => s.lessons.getLesson('javascript', 'modules')],
-  ['lecons d’un chapitre', (s) => s.lessons.listLessonsForChapter('typescript', 'types-de-base')],
+  ['a corriger', (s) => s.exercises.findForVerification('javascript', 'conditions', 'est-pair')],
 ]
 
 describe(
@@ -81,49 +92,26 @@ describe(
       })
     }
 
-    it('la base refuse une leçon transverse rattachée à un langage', async () => {
-      const category = await prisma.lessonCategory.findUniqueOrThrow({
-        where: { slug: 'conception' },
-      })
+    it('la base refuse un parcours qui est son propre prérequis', async () => {
+      const track = await prisma.track.findUniqueOrThrow({ where: { slug: 'javascript' } })
       await assert.rejects(
-        prisma.lesson.create({
-          data: {
-            languageId: 1,
-            categoryId: category.id,
-            categoryScope: 'all_languages',
-            slug: 'incoherente',
-            position: 99,
-            title: 't',
-            summary: 's',
-            content: 'c',
-          },
-        }),
+        prisma.track.update({ where: { id: track.id }, data: { prerequisiteTrackId: track.id } }),
       )
     })
 
-    it('la base refuse une portée recopiée de travers', async () => {
-      const category = await prisma.lessonCategory.findUniqueOrThrow({
-        where: { slug: 'conception' },
-      })
+    it('la base refuse des arguments qui ne forment pas un tableau', async () => {
+      const exercise = await prisma.exercise.findFirstOrThrow({ where: { slug: 'fizzbuzz' } })
       await assert.rejects(
-        prisma.lesson.create({
-          data: {
-            languageId: 1,
-            categoryId: category.id,
-            categoryScope: 'per_language',
-            slug: 'mal-recopiee',
-            position: 98,
-            title: 't',
-            summary: 's',
-            content: 'c',
-          },
+        prisma.exerciseTestCase.create({
+          data: { exerciseId: exercise.id, position: 99, arguments: 1, expectedResult: 1 },
         }),
       )
     })
 
     it('la base accepte d’échanger deux positions dans une transaction', async () => {
+      const track = await prisma.track.findUniqueOrThrow({ where: { slug: 'javascript' } })
       const [a, b] = await prisma.chapter.findMany({
-        where: { languageId: 1 },
+        where: { trackId: track.id, level: 'beginner' },
         orderBy: { position: 'asc' },
         take: 2,
       })

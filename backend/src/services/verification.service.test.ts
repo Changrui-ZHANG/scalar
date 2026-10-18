@@ -9,9 +9,9 @@ import { buildHarness, readVerdict } from './verification.service.ts'
 const MARKER = '__scalar_test__'
 
 const CASES: readonly VerificationCase[] = [
-  { args: [4], expected: true, label: null, isHidden: false },
-  { args: [7], expected: false, label: 'impair', isHidden: false },
-  { args: [0], expected: true, label: null, isHidden: true },
+  { arguments: [4], expectedResult: true, description: null, isHidden: false },
+  { arguments: [7], expectedResult: false, description: 'impair', isHidden: false },
+  { arguments: [0], expectedResult: true, description: null, isHidden: true },
 ]
 
 /** Fait tourner le harnais dans un vrai Node, comme le ferait Piston. */

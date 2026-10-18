@@ -160,29 +160,31 @@ describe('executeCode', () => {
   })
 })
 
-describe('language des soumissions', () => {
+describe('programmingLanguage des soumissions', () => {
   it('suppose JavaScript quand le champ est absent, pour les anciens clients', () => {
     const resultat = parseSubmission({ code: 'console.log(1)' })
-    assert.equal(resultat.ok && resultat.submission.language, 'javascript')
+    assert.equal(resultat.ok && resultat.submission.programmingLanguage, 'javascript')
   })
 
-  it('garde le slug du langage, et refuse un slug vide ou d’un autre type', () => {
-    // L'existence du langage est verifiee par le controleur, contre la source.
-    const ts = parseSubmission({ code: 'let x: number = 1', language: 'typescript' })
-    assert.equal(ts.ok && ts.submission.language, 'typescript')
-    assert.equal(parseSubmission({ code: 'print(1)', language: '' }).ok, false)
-    assert.equal(parseSubmission({ code: 'print(1)', language: 42 }).ok, false)
+  it('garde un langage de l’enum, et refuse toute autre valeur', () => {
+    const ts = parseSubmission({ code: 'let x: number = 1', programmingLanguage: 'typescript' })
+    assert.equal(ts.ok && ts.submission.programmingLanguage, 'typescript')
+    for (const programmingLanguage of ['python', '', 42, null]) {
+      const refus = parseSubmission({ code: 'print(1)', programmingLanguage })
+      assert.equal(refus.ok, false)
+      assert.match(refus.ok ? '' : refus.error, /programmingLanguage/)
+    }
   })
 })
 
 describe('toJavaScript', () => {
   it('laisse le JavaScript intact', () => {
-    assert.deepEqual(toJavaScript('node', 'let x: 1'), { ok: true, code: 'let x: 1' })
+    assert.deepEqual(toJavaScript('javascript', 'let x: 1'), { ok: true, code: 'let x: 1' })
   })
 
   it('retire les types sans déplacer une seule ligne ni colonne', () => {
     const source = 'function f(a: number): number {\n  return a *\n    2\n}\nundefinedCall()'
-    const converted = toJavaScript('node_strip_types', source)
+    const converted = toJavaScript('typescript', source)
 
     assert.ok(converted.ok)
     const lines = converted.code.split('\n')
@@ -195,14 +197,14 @@ describe('toJavaScript', () => {
   })
 
   it('refuse les syntaxes qui génèrent du code, avec un message clair', () => {
-    const converted = toJavaScript('node_strip_types', 'enum Couleur { Rouge }')
+    const converted = toJavaScript('typescript', 'enum Couleur { Rouge }')
 
     assert.equal(converted.ok, false)
     assert.match(converted.ok ? '' : converted.error, /enum/)
   })
 
   it('restitue le message d’une erreur de syntaxe TypeScript', () => {
-    const converted = toJavaScript('node_strip_types', 'function f(a: number) {\n  return a +\n}')
+    const converted = toJavaScript('typescript', 'function f(a: number) {\n  return a +\n}')
 
     assert.equal(converted.ok, false)
     assert.match(converted.ok ? '' : converted.error, /^Erreur de syntaxe TypeScript : .+\.$/)
