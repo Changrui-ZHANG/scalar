@@ -5,7 +5,7 @@
  */
 const route = useRoute()
 await navigateTo(
-  `/parcours/${seg(String(route.params.langage))}#${seg(String(route.params.chapitre))}`,
+  `/parcours/${seg(String(route.params.parcours))}#${seg(String(route.params.chapitre))}`,
   { redirectCode: 301, replace: true },
 )
 </script>

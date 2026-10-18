@@ -1,6 +1,6 @@
 /**
- * Contrats de l'API, miroirs de `backend/src/services/exercise.service.ts`
- * (Parcours) et `lesson.service.ts` (Connaissance).
+ * Contrats de l'API, miroirs des services du backend : parcours, lecons,
+ * exercices, execution et verification.
  */
 
 export interface ApiResponse<T> {
@@ -11,59 +11,28 @@ export interface ApiResponse<T> {
 
 // --- Parcours ------------------------------------------------------------------
 
-export interface LanguageLink {
+/** Langage d'execution d'un parcours ; absent pour un parcours sans code. */
+export type ProgrammingLanguage = 'javascript' | 'typescript'
+
+export type ChapterLevel = 'beginner' | 'intermediate' | 'advanced' | 'ecosystem'
+
+export interface TrackLink {
   readonly slug: string
-  readonly label: string
+  readonly name: string
 }
 
-export interface LanguageSummary extends LanguageLink {
+export interface TrackSummary extends TrackLink {
   readonly summary: string
-  readonly prerequisite: LanguageLink | null
+  readonly programmingLanguage: ProgrammingLanguage | null
+  readonly prerequisite: TrackLink | null
 }
 
-export interface ExerciseSummary {
-  readonly slug: string
-  readonly title: string
-  /** Rang affiche, a partir de 1. */
-  readonly number: number
-}
-
-export interface ChapterSummary {
-  readonly slug: string
-  readonly title: string
-  readonly number: number
-  readonly exercises: readonly ExerciseSummary[]
-}
-
-export interface ChapterDetail extends ChapterSummary {
-  readonly language: LanguageLink
-  readonly summary: string
-}
-
-export interface TestCaseView {
-  readonly args: readonly unknown[]
-  readonly expected: unknown
-  readonly label: string | null
-}
-
-export interface PublicExercise {
-  readonly slug: string
-  readonly title: string
-  readonly number: number
-  readonly statement: string
-  readonly functionName: string
-  readonly starterCode: string
-  readonly hints: readonly string[]
-  readonly testCases: readonly TestCaseView[]
-  readonly language: LanguageLink & { readonly runtime: 'node' | 'node_strip_types' }
-  readonly chapter: { readonly slug: string; readonly title: string; readonly number: number }
-  readonly next: { readonly chapterSlug: string; readonly slug: string } | null
-}
-
-/** Fil d'un parcours, miroir de `TrackView` dans `lesson.service.ts`. */
+/** Un chapitre du fil : ses lecons, puis ses exercices. */
 export interface TrackChapter {
   readonly slug: string
   readonly title: string
+  readonly level: ChapterLevel
+  /** Rang dans tout le parcours, a partir de 1. */
   readonly number: number
   readonly lessons: readonly {
     readonly slug: string
@@ -73,13 +42,53 @@ export interface TrackChapter {
   readonly exercises: readonly {
     readonly slug: string
     readonly title: string
-    readonly statement: string
+    readonly instructions: string
   }[]
 }
 
+/** Fil d'un parcours, chapitres deja dans l'ordre. */
 export interface TrackView {
-  readonly language: LanguageLink
+  readonly track: TrackLink & { readonly programmingLanguage: ProgrammingLanguage | null }
   readonly chapters: readonly TrackChapter[]
+}
+
+export interface ChapterLink {
+  readonly slug: string
+  readonly title: string
+  readonly number: number
+}
+
+// --- Lecons et exercices -------------------------------------------------------
+
+export interface LessonDetail {
+  readonly slug: string
+  readonly title: string
+  readonly summary: string
+  readonly body: string
+  readonly lastReviewedAt: string | null
+  readonly number: number
+  readonly track: TrackLink
+  readonly chapter: ChapterLink
+}
+
+export interface TestCaseView {
+  readonly arguments: readonly unknown[]
+  readonly expectedResult: unknown
+  readonly description: string | null
+}
+
+export interface PublicExercise {
+  readonly slug: string
+  readonly title: string
+  readonly number: number
+  readonly instructions: string
+  readonly functionName: string
+  readonly starterCode: string
+  readonly hints: readonly string[]
+  readonly testCases: readonly TestCaseView[]
+  readonly track: TrackLink & { readonly programmingLanguage: ProgrammingLanguage }
+  readonly chapter: ChapterLink
+  readonly next: { readonly chapterSlug: string; readonly slug: string } | null
 }
 
 // --- Execution et correction ---------------------------------------------------
@@ -109,37 +118,6 @@ export interface VerificationResult {
     readonly detail: string | null
   }[]
   readonly execution: ExecutionResult
-}
-
-// --- Lecons --------------------------------------------------------------------
-
-/** Section d'une lecon : un langage, ou une categorie valable pour tous. */
-export interface SectionLink {
-  readonly kind: 'language' | 'category'
-  readonly slug: string
-  readonly label: string
-}
-
-export interface LessonSummary {
-  readonly slug: string
-  readonly title: string
-  readonly summary: string
-  readonly number: number
-}
-
-export interface LessonDetail extends LessonSummary {
-  readonly content: string
-  readonly reviewedAt: string | null
-  readonly section: SectionLink
-  readonly category: { readonly slug: string; readonly label: string; readonly size: number }
-  readonly chapters: readonly {
-    readonly languageSlug: string
-    readonly slug: string
-    readonly title: string
-    readonly number: number
-  }[]
-  readonly previous: { readonly slug: string; readonly title: string } | null
-  readonly next: { readonly slug: string; readonly title: string } | null
 }
 
 // --- Outils --------------------------------------------------------------------

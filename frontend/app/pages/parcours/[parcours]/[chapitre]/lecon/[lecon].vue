@@ -4,47 +4,52 @@
  * action explicite : l'ouvrir ne suffit pas.
  */
 const route = useRoute()
-const languageSlug = computed(() => String(route.params.langage))
+const trackSlug = computed(() => String(route.params.parcours))
+const chapterSlug = computed(() => String(route.params.chapitre))
 const lessonSlug = computed(() => String(route.params.lecon))
 
 const { data, error } = await useFetch<ApiResponse<LessonDetail>>(
-  () => apiUrl(`/lessons/${seg(languageSlug.value)}/${seg(lessonSlug.value)}`),
-  { key: () => `lesson-${languageSlug.value}-${lessonSlug.value}` },
+  () =>
+    apiUrl(
+      `/tracks/${seg(trackSlug.value)}/chapters/${seg(chapterSlug.value)}/lessons/${seg(lessonSlug.value)}`,
+    ),
+  { key: () => `lesson-${trackSlug.value}-${chapterSlug.value}-${lessonSlug.value}` },
 )
+// Le chemin complet suffit : l'API repond 404 hors de la bonne hierarchie.
 if (error.value?.statusCode === 404) {
   throw createError({ statusCode: 404, statusMessage: 'Leçon introuvable', fatal: true })
 }
 
 const lesson = computed(() => data.value?.data ?? null)
-const { episodes, progress } = await useTrackEpisodes(() => languageSlug.value)
+const { episodes, progress } = await useTrackEpisodes(() => trackSlug.value)
 
-const key = computed(() => lessonKey(lessonSlug.value))
-/** Nul pour une lecon hors du fil (ancien lien de Connaissance) : elle reste lisible. */
+const key = computed(() => lessonKey(chapterSlug.value, lessonSlug.value))
+/** Nul tant que le fil n'est pas charge : la lecon reste lisible. */
 const episode = computed(() => episodes.value.find((e) => e.key === key.value) ?? null)
 const next = computed(() => nextEpisode(episodes.value, key.value))
 const completed = computed(() => episode.value?.status === 'completed')
-const trackRoute = computed(() => `/parcours/${languageSlug.value}`)
+const trackRoute = computed(() => `/parcours/${trackSlug.value}`)
 
-onMounted(() => progress.start(languageSlug.value))
+onMounted(() => progress.start(trackSlug.value))
 
 /** Ce que la lecon aborde : ses intertitres, tires du contenu lui-meme. */
 const objectives = computed(() =>
-  (lesson.value?.content ?? '')
+  (lesson.value?.body ?? '')
     .split('\n')
     .filter((line) => line.startsWith('## '))
     .map((line) => line.slice(3).trim()),
 )
 
 const reviewedOn = computed(() =>
-  lesson.value?.reviewedAt
-    ? new Date(lesson.value.reviewedAt).toLocaleDateString('fr-FR', { dateStyle: 'long' })
+  lesson.value?.lastReviewedAt
+    ? new Date(lesson.value.lastReviewedAt).toLocaleDateString('fr-FR', { dateStyle: 'long' })
     : null,
 )
 
 const crumbs = computed(() => {
   const head = [
     { label: 'Parcours', to: '/parcours' },
-    { label: lesson.value?.section.label ?? 'Parcours', to: trackRoute.value },
+    { label: lesson.value?.track.name ?? 'Parcours', to: trackRoute.value },
   ]
   const e = episode.value
   if (!e) {
@@ -77,12 +82,12 @@ const actionLabel = computed(() => {
 })
 
 async function finish() {
-  progress.complete(languageSlug.value, key.value)
+  progress.complete(trackSlug.value, key.value)
   await navigateTo(next.value?.route ?? trackRoute.value)
 }
 
 useSeoMeta({
-  title: () => `${lesson.value?.title ?? 'Leçon'} — ${lesson.value?.section.label ?? ''} — Scalar`,
+  title: () => `${lesson.value?.title ?? 'Leçon'} — ${lesson.value?.track.name ?? ''} — Scalar`,
   description: () => lesson.value?.summary.replaceAll('`', '') ?? '',
 })
 </script>
@@ -125,7 +130,7 @@ useSeoMeta({
 
       <section class="grid gap-4" aria-labelledby="principe-titre">
         <h2 id="principe-titre" class="text-2xl font-semibold">Comprendre le principe</h2>
-        <RichText :source="lesson.content" />
+        <RichText :source="lesson.body" />
       </section>
 
       <section
@@ -157,7 +162,7 @@ useSeoMeta({
 
       <div class="border-t pt-6">
         <NuxtLink :to="trackRoute" class="btn-secondary">
-          <span aria-hidden="true">←</span> Retour au fil {{ lesson.section.label }}
+          <span aria-hidden="true">←</span> Retour au fil {{ lesson.track.name }}
         </NuxtLink>
       </div>
     </template>

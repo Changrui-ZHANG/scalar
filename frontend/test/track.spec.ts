@@ -12,26 +12,28 @@ import {
 } from '../app/utils/track'
 
 const TRACK: TrackView = {
-  language: { slug: 'javascript', label: 'JavaScript' },
+  track: { slug: 'javascript', name: 'JavaScript', programmingLanguage: 'javascript' },
   chapters: [
     {
       slug: 'premiers-pas',
       title: 'Premiers pas',
+      level: 'beginner',
       number: 1,
       lessons: [{ slug: 'variables', title: 'Variables et valeurs', summary: '`const` et `let`' }],
       exercises: [
-        { slug: 'bonjour', title: 'Bonjour, JavaScript', statement: 'Affiche bonjour.' },
-        { slug: 'variable', title: 'Une première variable', statement: 'Déclare age.' },
+        { slug: 'bonjour', title: 'Bonjour, JavaScript', instructions: 'Affiche bonjour.' },
+        { slug: 'variable', title: 'Une première variable', instructions: 'Déclare age.' },
       ],
     },
     {
       slug: 'conditions',
       title: 'Conditions',
+      level: 'beginner',
       number: 2,
       lessons: [{ slug: 'decision', title: 'Prendre une décision', summary: '`if` et `else`' }],
       exercises: [
-        { slug: 'positif', title: 'Positif ou négatif', statement: 'Compare à zéro.' },
-        { slug: 'pair', title: 'Pair ou impair', statement: 'Utilise `%`.' },
+        { slug: 'positif', title: 'Positif ou négatif', instructions: 'Compare à zéro.' },
+        { slug: 'pair', title: 'Pair ou impair', instructions: 'Utilise `%`.' },
       ],
     },
   ],
@@ -48,12 +50,16 @@ describe('buildEpisodes', () => {
       [5, 'exercise', 'Positif ou négatif'],
       [6, 'exercise', 'Pair ou impair'],
     ])
-    expect(episodes[3]?.route).toBe('/parcours/javascript/lecon/decision')
+    expect(episodes[3]?.route).toBe('/parcours/javascript/conditions/lecon/decision')
     expect(episodes[4]?.route).toBe('/parcours/javascript/conditions/positif')
   })
 
   it('le premier épisode non terminé devient « à suivre »', () => {
-    const done = ['lesson:variables', 'exercise:premiers-pas:bonjour', 'lesson:decision']
+    const done = [
+      'lesson:premiers-pas:variables',
+      'exercise:premiers-pas:bonjour',
+      'lesson:conditions:decision',
+    ]
     const episodes = buildEpisodes(TRACK, done)
 
     expect(episodes.map((e) => e.status)).toEqual([
@@ -66,6 +72,26 @@ describe('buildEpisodes', () => {
     ])
     expect(firstIncomplete(episodes)?.title).toBe('Une première variable')
     expect(progressOf(episodes)).toEqual({ done: 3, total: 6, percent: 50 })
+  })
+})
+
+describe('clés de leçon', () => {
+  it('distinguent deux leçons de même slug dans deux chapitres', () => {
+    const twice: TrackView = {
+      track: { slug: 'conception', name: 'Conception', programmingLanguage: null },
+      chapters: ['bases', 'avance'].map((slug, i) => ({
+        slug,
+        title: slug,
+        level: 'beginner',
+        number: i + 1,
+        lessons: [{ slug: 'introduction', title: 'Introduction', summary: '' }],
+        exercises: [],
+      })),
+    }
+    const episodes = buildEpisodes(twice, ['lesson:bases:introduction'])
+
+    expect(episodes.map((e) => e.status)).toEqual(['completed', 'current'])
+    expect(episodes[1]?.route).toBe('/parcours/conception/avance/lecon/introduction')
   })
 })
 

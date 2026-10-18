@@ -10,26 +10,26 @@ const SEARCH_DELAY_MS = 350
 useSeoMeta({
   title: 'Parcours — Scalar',
   description:
-    'Chaque langage est un fil continu de leçons et d’exercices. Avancez dans l’ordre ou reprenez librement un épisode.',
+    'Chaque parcours est un fil continu de leçons et d’exercices. Avancez dans l’ordre ou reprenez librement un épisode.',
 })
 
 const route = useRoute()
 const router = useRouter()
-const { languages, error: languagesError } = await useLanguages()
-const { tracks, error: tracksError, status } = await useAllTracks(languages)
+const { tracks, error: tracksError } = await useTracks()
+const { views, error: viewsError, status } = await useAllTracks(tracks)
 const progress = useProgress()
 
-const loadError = computed(() => languagesError.value ?? tracksError.value)
+const loadError = computed(() => tracksError.value ?? viewsError.value)
 
 const entries = computed(() =>
-  languages.value.map((language, i) => {
-    const track = tracks.value[i] ?? null
-    const episodes = track ? buildEpisodes(track, progress.completedIn(language.slug)) : []
+  tracks.value.map((track, i) => {
+    const view = views.value[i] ?? null
+    const episodes = view ? buildEpisodes(view, progress.completedIn(track.slug)) : []
     return {
-      language,
+      track,
       index: i + 1,
       episodes,
-      status: trackStatus(episodes, progress.isStarted(language.slug)),
+      status: trackStatus(episodes, progress.isStarted(track.slug)),
     }
   }),
 )
@@ -39,7 +39,7 @@ const resume = computed(() => {
   for (const entry of entries.value) {
     const episode = entry.status === 'active' ? firstIncomplete(entry.episodes) : null
     if (episode) {
-      return { language: entry.language, episode }
+      return { track: entry.track, episode }
     }
   }
   return null
@@ -93,9 +93,7 @@ const matched = computed(() =>
     .map((entry) => ({ ...entry, matches: searchEpisodes(entry.episodes, needle.value) }))
     .filter(
       (entry) =>
-        needle.value === '' ||
-        languageMatches(entry.language, needle.value) ||
-        entry.matches.length > 0,
+        needle.value === '' || trackMatches(entry.track, needle.value) || entry.matches.length > 0,
     ),
 )
 
@@ -130,7 +128,7 @@ const visible = computed(() =>
       :entries="visible"
       :pending="status === 'pending' && !entries.length"
       :failed="!!loadError"
-      :track-count="languages.length"
+      :track-count="tracks.length"
       @reset="resetSearch"
     />
   </div>

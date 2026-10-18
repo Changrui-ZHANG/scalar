@@ -5,20 +5,21 @@
  *
  * /connaissance                        -> /parcours
  * /connaissance/javascript             -> /parcours/javascript
- * /connaissance/javascript/conditions  -> /parcours/javascript/lecon/conditions
- * /connaissance/conception/…           -> /parcours (categorie commune a tous)
+ * /connaissance/javascript/conditions  -> /parcours/javascript/lecon/conditions,
+ *                                         qui redirige a son tour sous le chapitre
+ * /connaissance/inconnu/…              -> /parcours
  */
 const route = useRoute()
 const [section, lesson] = ([] as string[]).concat(route.params.chemin ?? [])
 
-const { find } = await useLanguages()
-const language = section ? find(section) : null
+const { find } = await useTracks()
+const track = section ? find(section) : null
 
-const target = !language
+const target = !track
   ? '/parcours'
   : lesson
-    ? `/parcours/${seg(language.slug)}/lecon/${seg(lesson)}`
-    : `/parcours/${seg(language.slug)}`
+    ? `/parcours/${seg(track.slug)}/lecon/${seg(lesson)}`
+    : `/parcours/${seg(track.slug)}`
 
 await navigateTo(target, { redirectCode: 301, replace: true })
 </script>

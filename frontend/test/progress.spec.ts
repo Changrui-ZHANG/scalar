@@ -12,11 +12,11 @@ describe('parseProgress', () => {
   it('relit une progression bien formée', () => {
     const raw = JSON.stringify({
       started: ['javascript'],
-      completed: { javascript: ['lesson:conditions'] },
+      completed: { javascript: ['lesson:conditions:decision'] },
     })
     expect(parseProgress(raw)).toEqual({
       started: ['javascript'],
-      completed: { javascript: ['lesson:conditions'] },
+      completed: { javascript: ['lesson:conditions:decision'] },
     })
   })
 
@@ -30,19 +30,22 @@ describe('parseProgress', () => {
   it('écarte les entrées mal formées sans perdre les autres', () => {
     const raw = JSON.stringify({
       started: 'javascript',
-      completed: { javascript: ['lesson:x'], typescript: 'oops', python: [1] },
+      completed: { javascript: ['lesson:bases:x'], typescript: 'oops', python: [1] },
     })
-    expect(parseProgress(raw)).toEqual({ started: [], completed: { javascript: ['lesson:x'] } })
+    expect(parseProgress(raw)).toEqual({
+      started: [],
+      completed: { javascript: ['lesson:bases:x'] },
+    })
   })
 })
 
 describe('progression par parcours', () => {
   it('commencer TypeScript ne touche pas à JavaScript', () => {
-    const js = completeEpisode(EMPTY_PROGRESS, 'javascript', 'lesson:conditions')
+    const js = completeEpisode(EMPTY_PROGRESS, 'javascript', 'lesson:conditions:decision')
     const both = startTrack(js, 'typescript')
 
     expect(both.started).toEqual(['javascript', 'typescript'])
-    expect(both.completed).toEqual({ javascript: ['lesson:conditions'] })
+    expect(both.completed).toEqual({ javascript: ['lesson:conditions:decision'] })
   })
 
   it('terminer un épisode est idempotent et ne modifie pas l’état d’origine', () => {

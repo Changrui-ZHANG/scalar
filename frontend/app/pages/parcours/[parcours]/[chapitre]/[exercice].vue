@@ -7,17 +7,17 @@
  * criteres passent.
  */
 const route = useRoute()
-const languageSlug = computed(() => String(route.params.langage))
+const trackSlug = computed(() => String(route.params.parcours))
 const chapterSlug = computed(() => String(route.params.chapitre))
 const exerciseSlug = computed(() => String(route.params.exercice))
 
 const apiPath = computed(
   () =>
-    `/languages/${seg(languageSlug.value)}/chapters/${seg(chapterSlug.value)}/exercises/${seg(exerciseSlug.value)}`,
+    `/tracks/${seg(trackSlug.value)}/chapters/${seg(chapterSlug.value)}/exercises/${seg(exerciseSlug.value)}`,
 )
 
 const { data, error } = await useFetch<ApiResponse<PublicExercise>>(() => apiUrl(apiPath.value), {
-  key: () => `exercise-${languageSlug.value}-${chapterSlug.value}-${exerciseSlug.value}`,
+  key: () => `exercise-${trackSlug.value}-${chapterSlug.value}-${exerciseSlug.value}`,
 })
 // Le chemin complet suffit : l'API repond 404 hors de la bonne hierarchie.
 if (error.value?.statusCode === 404) {
@@ -25,29 +25,31 @@ if (error.value?.statusCode === 404) {
 }
 
 const exercise = computed(() => data.value?.data ?? null)
-const { episodes, progress } = await useTrackEpisodes(() => languageSlug.value)
+const { episodes, progress } = await useTrackEpisodes(() => trackSlug.value)
 
 const key = computed(() => exerciseKey(chapterSlug.value, exerciseSlug.value))
 const episode = computed(() => episodes.value.find((e) => e.key === key.value) ?? null)
 const next = computed(() => nextEpisode(episodes.value, key.value))
 const lesson = computed(() => relatedLesson(episodes.value, key.value))
 const completed = computed(() => episode.value?.status === 'completed')
-const trackRoute = computed(() => `/parcours/${languageSlug.value}`)
+const trackRoute = computed(() => `/parcours/${trackSlug.value}`)
+/** Le moteur retire les types sans les verifier. */
+const isTypeScript = computed(() => exercise.value?.track.programmingLanguage === 'typescript')
 
 useSeoMeta({
   title: () =>
-    `${exercise.value?.title ?? 'Exercice'} — ${exercise.value?.language.label ?? ''} — Scalar`,
-  description: () => exercise.value?.statement.replaceAll('`', '') ?? '',
+    `${exercise.value?.title ?? 'Exercice'} — ${exercise.value?.track.name ?? ''} — Scalar`,
+  description: () => exercise.value?.instructions.replaceAll('`', '') ?? '',
 })
 
 // --- Code et brouillon ---------------------------------------------------------
 
-const draftKey = computed(() => `${languageSlug.value}/${key.value}`)
+const draftKey = computed(() => `${trackSlug.value}/${key.value}`)
 const code = ref(exercise.value?.starterCode ?? '')
 
 // Le brouillon n'est lisible qu'une fois dans le navigateur.
 onMounted(() => {
-  progress.start(languageSlug.value)
+  progress.start(trackSlug.value)
   code.value = progress.draft(draftKey.value) ?? code.value
 })
 
@@ -84,15 +86,15 @@ async function run() {
     return
   }
   lastAction.value = 'run'
-  // Le langage de l'exercice, jamais celui de l'URL : il decide de la preparation du code.
-  await execution.run(code.value, exercise.value.language.slug)
+  // Le langage de l'exercice, jamais l'URL : il decide de la preparation du code.
+  await execution.run(code.value, exercise.value.track.programmingLanguage)
 }
 
 async function verify() {
   lastAction.value = 'verify'
   const result = await validation.verify(code.value)
   if (result?.passed) {
-    progress.complete(languageSlug.value, key.value)
+    progress.complete(trackSlug.value, key.value)
   }
 }
 
@@ -109,7 +111,7 @@ const crumbs = computed(() => {
   const x = exercise.value
   return [
     { label: 'Parcours', to: '/parcours' },
-    { label: x?.language.label ?? 'Parcours', to: trackRoute.value },
+    { label: x?.track.name ?? 'Parcours', to: trackRoute.value },
     {
       label: x ? `Chapitre ${x.chapter.number} — ${x.chapter.title}` : 'Chapitre',
       to: `${trackRoute.value}#${chapterSlug.value}`,
@@ -161,7 +163,7 @@ const crumbs = computed(() => {
           <section class="card grid gap-5 p-5 sm:p-6" aria-labelledby="mission-titre">
             <div class="grid gap-2">
               <h2 id="mission-titre" class="eyebrow font-sans">Votre mission</h2>
-              <RichText :source="exercise.statement" class="font-semibold" />
+              <RichText :source="exercise.instructions" class="font-semibold" />
               <p class="text-body-sm text-muted-foreground">
                 Exécutez votre code pour observer sa sortie, puis vérifiez la solution avec les
                 tests.
@@ -172,8 +174,8 @@ const crumbs = computed(() => {
                 </summary>
                 <ul class="grid gap-1 pt-1 font-mono">
                   <li v-for="(test, i) in exercise.testCases" :key="i">
-                    {{ formatCall(exercise.functionName, test.args) }} →
-                    {{ JSON.stringify(test.expected) }}
+                    {{ formatCall(exercise.functionName, test.arguments) }} →
+                    {{ JSON.stringify(test.expectedResult) }}
                   </li>
                 </ul>
               </details>
@@ -184,13 +186,9 @@ const crumbs = computed(() => {
                 id="code"
                 v-model="code"
                 label="Votre code"
-                :filename="exercise.language.runtime === 'node_strip_types' ? 'main.ts' : 'main.js'"
+                :filename="isTypeScript ? 'main.ts' : 'main.js'"
               />
-              <!-- Le moteur retire les types sans les verifier (runtime node_strip_types). -->
-              <p
-                v-if="exercise.language.runtime === 'node_strip_types'"
-                class="text-body-sm text-muted-foreground"
-              >
+              <p v-if="isTypeScript" class="text-body-sm text-muted-foreground">
                 Les annotations de type sont retirées avant l’exécution : une erreur de type n’est
                 pas encore signalée.
               </p>
@@ -233,7 +231,7 @@ const crumbs = computed(() => {
                   {{
                     next
                       ? 'Tous les critères sont validés. Votre progression est enregistrée.'
-                      : `Vous avez terminé tous les épisodes de ${exercise.language.label}.`
+                      : `Vous avez terminé tous les épisodes de ${exercise.track.name}.`
                   }}
                 </p>
               </section>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{
-  resume: { readonly language: LanguageSummary; readonly episode: TrackEpisode } | null
+  resume: { readonly track: TrackSummary; readonly episode: TrackEpisode } | null
   loadError: unknown
 }>()
 </script>
@@ -10,14 +10,14 @@ defineProps<{
     <p class="eyebrow">Apprendre</p>
     <h1 class="text-4xl font-semibold sm:text-5xl">Vos parcours</h1>
     <p class="text-muted-foreground max-w-2xl text-lg">
-      Chaque langage est un fil continu de leçons et d’exercices. Avancez dans l’ordre ou reprenez
+      Chaque parcours est un fil continu de leçons et d’exercices. Avancez dans l’ordre ou reprenez
       librement un épisode.
     </p>
   </header>
 
   <NextEpisodeCard
     v-if="resume"
-    :eyebrow="`Continuer ${resume.language.label}`"
+    :eyebrow="`Continuer ${resume.track.name}`"
     :episode="resume.episode"
     action-label="Reprendre"
   />

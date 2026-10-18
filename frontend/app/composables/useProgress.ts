@@ -1,7 +1,7 @@
 /**
  * Progression de l'apprenant, sans compte : elle vit dans le navigateur, et
  * c'est la seule source de verite des parcours commences et des episodes
- * termines. Chaque langage a la sienne : commencer TypeScript ne touche pas
+ * termines. Chaque parcours a la sienne : commencer TypeScript ne touche pas
  * a JavaScript.
  *
  * Une lecon n'est terminee que sur action explicite, un exercice que si tous
@@ -9,17 +9,17 @@
  */
 
 export interface ProgressState {
-  /** Slugs des langages commences. */
+  /** Slugs des parcours commences. */
   readonly started: readonly string[]
-  /** Cles des episodes termines, par langage (voir `lessonKey`, `exerciseKey`). */
+  /** Cles des episodes termines, par parcours (voir `lessonKey`, `exerciseKey`). */
   readonly completed: Readonly<Record<string, readonly string[]>>
 }
 
 type Drafts = Readonly<Record<string, string>>
 
-// v3 : progression par episode. Les v2 (statuts « tente » sans correction)
-// sont ignorees : elles ne disent pas si un exercice a ete reussi.
-const STORAGE_KEY = 'scalar:progress:v3'
+// v4 : une cle de lecon porte son chapitre, son slug n'etant plus unique dans
+// le parcours. Les v3 sont ignorees : leurs cles ne designent plus une lecon.
+const STORAGE_KEY = 'scalar:progress:v4'
 const DRAFTS_KEY = 'scalar:drafts:v1'
 
 export const EMPTY_PROGRESS: ProgressState = { started: [], completed: {} }
@@ -65,21 +65,17 @@ function parseDrafts(raw: string | null): Drafts {
   }
 }
 
-/** Commence un langage ; idempotent. */
-export const startTrack = (state: ProgressState, language: string): ProgressState =>
-  state.started.includes(language) ? state : { ...state, started: [...state.started, language] }
+/** Commence un parcours ; idempotent. */
+export const startTrack = (state: ProgressState, track: string): ProgressState =>
+  state.started.includes(track) ? state : { ...state, started: [...state.started, track] }
 
-/** Termine un episode, et commence son langage au passage ; idempotent. */
-export function completeEpisode(
-  state: ProgressState,
-  language: string,
-  key: string,
-): ProgressState {
-  const done = state.completed[language] ?? []
-  const started = startTrack(state, language)
+/** Termine un episode, et commence son parcours au passage ; idempotent. */
+export function completeEpisode(state: ProgressState, track: string, key: string): ProgressState {
+  const done = state.completed[track] ?? []
+  const started = startTrack(state, track)
   return done.includes(key)
     ? started
-    : { ...started, completed: { ...started.completed, [language]: [...done, key] } }
+    : { ...started, completed: { ...started.completed, [track]: [...done, key] } }
 }
 
 function store(key: string, value: unknown): void {
@@ -110,11 +106,10 @@ export function useProgress() {
   }
 
   return {
-    completedIn: (language: string): readonly string[] => state.value.completed[language] ?? [],
-    isStarted: (language: string): boolean => state.value.started.includes(language),
-    start: (language: string) => update(startTrack(state.value, language)),
-    complete: (language: string, key: string) =>
-      update(completeEpisode(state.value, language, key)),
+    completedIn: (track: string): readonly string[] => state.value.completed[track] ?? [],
+    isStarted: (track: string): boolean => state.value.started.includes(track),
+    start: (track: string) => update(startTrack(state.value, track)),
+    complete: (track: string, key: string) => update(completeEpisode(state.value, track, key)),
     draft: (key: string): string | undefined => drafts.value[key],
     saveDraft(key: string, code: string): void {
       drafts.value = { ...drafts.value, [key]: code }

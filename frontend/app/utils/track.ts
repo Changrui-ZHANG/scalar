@@ -17,7 +17,7 @@ export interface TrackEpisode {
   readonly title: string
   /** Resume d'une lecon ou consigne d'un exercice. */
   readonly text: string
-  readonly languageSlug: string
+  readonly trackSlug: string
   readonly chapterSlug: string
   readonly chapterNumber: number
   readonly chapterTitle: string
@@ -31,8 +31,8 @@ export interface TrackProgress {
   readonly percent: number
 }
 
-/** Cles de progression : un slug de lecon est unique dans son langage, un exercice dans son chapitre. */
-export const lessonKey = (lesson: string): string => `lesson:${lesson}`
+/** Cles de progression : un slug de lecon ou d'exercice n'est unique que dans son chapitre. */
+export const lessonKey = (chapter: string, lesson: string): string => `lesson:${chapter}:${lesson}`
 export const exerciseKey = (chapter: string, exercise: string): string =>
   `exercise:${chapter}:${exercise}`
 
@@ -66,10 +66,10 @@ export const TRACK_FILTERS: readonly { readonly value: TrackFilter; readonly lab
 export const padNumber = (n: number): string => String(n).padStart(2, '0')
 
 export function buildEpisodes(track: TrackView, completed: readonly string[]): TrackEpisode[] {
-  const language = track.language.slug
+  const trackSlug = track.track.slug
   const flat = track.chapters.flatMap((chapter) => {
     const base = {
-      languageSlug: language,
+      trackSlug,
       chapterSlug: chapter.slug,
       chapterNumber: chapter.number,
       chapterTitle: chapter.title,
@@ -77,12 +77,12 @@ export function buildEpisodes(track: TrackView, completed: readonly string[]): T
     return [
       ...chapter.lessons.map((l) => ({
         ...base,
-        key: lessonKey(l.slug),
+        key: lessonKey(chapter.slug, l.slug),
         type: 'lesson' as const,
         slug: l.slug,
         title: l.title,
         text: l.summary,
-        route: `/parcours/${language}/lecon/${l.slug}`,
+        route: `/parcours/${trackSlug}/${chapter.slug}/lecon/${l.slug}`,
       })),
       ...chapter.exercises.map((e) => ({
         ...base,
@@ -90,8 +90,8 @@ export function buildEpisodes(track: TrackView, completed: readonly string[]): T
         type: 'exercise' as const,
         slug: e.slug,
         title: e.title,
-        text: e.statement,
-        route: `/parcours/${language}/${chapter.slug}/${e.slug}`,
+        text: e.instructions,
+        route: `/parcours/${trackSlug}/${chapter.slug}/${e.slug}`,
       })),
     ]
   })
@@ -165,5 +165,5 @@ export function searchEpisodes(episodes: readonly TrackEpisode[], query: string)
   return episodes.filter((e) => [e.title, e.text, e.chapterTitle].some((t) => contains(t, query)))
 }
 
-export const languageMatches = (language: LanguageSummary, query: string): boolean =>
-  query !== '' && [language.label, language.summary].some((t) => contains(t, query))
+export const trackMatches = (track: TrackSummary, query: string): boolean =>
+  query !== '' && [track.name, track.summary].some((t) => contains(t, query))

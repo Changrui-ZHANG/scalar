@@ -16,7 +16,7 @@ export function useExecution() {
   const running = ref(false)
 
   /** Execute `code` ; sans langage, le moteur le lit comme du JavaScript. */
-  async function run(code: string, language?: string): Promise<void> {
+  async function run(code: string, programmingLanguage?: ProgrammingLanguage): Promise<void> {
     if (running.value || code.trim() === '') {
       return
     }
@@ -26,7 +26,7 @@ export function useExecution() {
     try {
       const response = await $fetch<ApiResponse<ExecutionResult>>(apiUrl('/executions'), {
         method: 'POST',
-        body: { code, language },
+        body: { code, programmingLanguage },
         timeout: REQUEST_TIMEOUT_MS,
       })
       result.value = response.data
@@ -41,7 +41,7 @@ export function useExecution() {
   return { result, error, running, run }
 }
 
-/** Correction d'un exercice par l'API ; `path` est son chemin sous /languages. */
+/** Correction d'un exercice par l'API ; `path` est son chemin sous /tracks. */
 export function useExerciseValidation(path: () => string) {
   const verification = ref<VerificationResult | null>(null)
   const error = ref('')

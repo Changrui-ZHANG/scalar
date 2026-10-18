@@ -1,6 +1,6 @@
 <script setup lang="ts">
 interface TrackEntry {
-  readonly language: LanguageSummary
+  readonly track: TrackSummary
   readonly index: number
   readonly episodes: readonly TrackEpisode[]
   readonly status: TrackStatus
@@ -45,7 +45,7 @@ const resultLabel = computed(() => {
     <EmptyState
       v-else-if="!entries.length && trackCount"
       :title="query ? `Aucun résultat pour « ${query} »` : 'Aucun parcours dans ce filtre'"
-      description="Essayez un autre mot : un langage, une notion comme « conditions », ou le titre d’un exercice."
+      description="Essayez un autre mot : un parcours, une notion comme « conditions », ou le titre d’un exercice."
     >
       <button type="button" class="btn-secondary" @click="emit('reset')">
         Réinitialiser la recherche
@@ -53,9 +53,9 @@ const resultLabel = computed(() => {
     </EmptyState>
 
     <ul v-else class="grid gap-5 md:grid-cols-2">
-      <li v-for="entry in entries" :key="entry.language.slug" class="grid">
+      <li v-for="entry in entries" :key="entry.track.slug" class="grid">
         <TrackCard
-          :language="entry.language"
+          :track="entry.track"
           :index="entry.index"
           :episodes="entry.episodes"
           :status="entry.status"

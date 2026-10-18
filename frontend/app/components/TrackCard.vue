@@ -4,7 +4,7 @@
  * Le slot recoit les episodes trouves par une recherche.
  */
 const props = defineProps<{
-  language: LanguageSummary
+  track: TrackSummary
   index: number
   episodes: readonly TrackEpisode[]
   status: TrackStatus
@@ -16,7 +16,7 @@ const ACTIONS: Readonly<Record<TrackStatus, string>> = {
   completed: 'Revoir le parcours',
 }
 
-const trackRoute = computed(() => `/parcours/${props.language.slug}`)
+const trackRoute = computed(() => `/parcours/${props.track.slug}`)
 const progress = computed(() => progressOf(props.episodes))
 
 /** Commencer ou continuer ouvre l'episode utile ; revoir ramene au fil complet. */
@@ -37,16 +37,16 @@ const actionRoute = computed(() =>
     </div>
 
     <h3 class="font-display text-3xl font-semibold">
-      <NuxtLink :to="trackRoute" class="hover:underline">{{ language.label }}</NuxtLink>
+      <NuxtLink :to="trackRoute" class="hover:underline">{{ track.name }}</NuxtLink>
     </h3>
-    <p class="text-muted-foreground">{{ language.summary }}</p>
+    <p class="text-muted-foreground">{{ track.summary }}</p>
 
     <ProgressBar :progress="progress" />
 
-    <p v-if="language.prerequisite" class="text-body-sm text-muted-foreground">
+    <p v-if="track.prerequisite" class="text-body-sm text-muted-foreground">
       <strong class="text-foreground">Prérequis recommandé :</strong> connaître les bases de
-      <NuxtLink :to="`/parcours/${language.prerequisite.slug}`" class="underline">
-        {{ language.prerequisite.label }}</NuxtLink
+      <NuxtLink :to="`/parcours/${track.prerequisite.slug}`" class="underline">
+        {{ track.prerequisite.name }}</NuxtLink
       >. Ce parcours reste accessible librement.
     </p>
 

@@ -1,19 +1,19 @@
 <script setup lang="ts">
 /** Le fil complet d'un parcours, groupe par chapitre ; rien n'est verrouille. */
 const route = useRoute()
-const languageSlug = computed(() => String(route.params.langage))
+const trackSlug = computed(() => String(route.params.parcours))
 
-const { find, error: languagesError } = await useLanguages()
-const language = computed(() => find(languageSlug.value))
-if (!language.value && !languagesError.value) {
+const { find, error: tracksError } = await useTracks()
+const summary = computed(() => find(trackSlug.value))
+if (!summary.value && !tracksError.value) {
   throw createError({ statusCode: 404, statusMessage: 'Parcours inconnu', fatal: true })
 }
 
-const { track, episodes, error, status } = await useTrackEpisodes(() => languageSlug.value)
+const { track, episodes, error, status } = await useTrackEpisodes(() => trackSlug.value)
 
 useSeoMeta({
-  title: () => `Parcours ${language.value?.label ?? ''} — Scalar`,
-  description: () => language.value?.summary ?? '',
+  title: () => `Parcours ${summary.value?.name ?? ''} — Scalar`,
+  description: () => summary.value?.summary ?? '',
 })
 
 const progress = computed(() => progressOf(episodes.value))
@@ -42,22 +42,22 @@ const NEXT_DESCRIPTIONS: Readonly<Record<EpisodeType, string>> = {
 <template>
   <div class="grid gap-10 py-10">
     <BreadcrumbTrail
-      :items="[{ label: 'Parcours', to: '/parcours' }, { label: language?.label ?? 'Parcours' }]"
+      :items="[{ label: 'Parcours', to: '/parcours' }, { label: summary?.name ?? 'Parcours' }]"
     />
 
-    <p v-if="languagesError || error" role="alert" class="alert-error">
-      {{ apiErrorMessage(languagesError ?? error, 'Le parcours est injoignable pour l’instant.') }}
+    <p v-if="tracksError || error" role="alert" class="alert-error">
+      {{ apiErrorMessage(tracksError ?? error, 'Le parcours est injoignable pour l’instant.') }}
     </p>
 
     <header class="grid gap-6 border-b pb-8 sm:grid-cols-[1fr_auto] sm:items-start">
       <div class="grid max-w-2xl gap-3">
         <p class="eyebrow">Parcours</p>
-        <h1 class="text-4xl font-semibold sm:text-5xl">{{ language?.label }}</h1>
-        <p class="text-muted-foreground text-lg">{{ language?.summary }}</p>
-        <p v-if="language?.prerequisite" class="text-body-sm text-muted-foreground">
+        <h1 class="text-4xl font-semibold sm:text-5xl">{{ summary?.name }}</h1>
+        <p class="text-muted-foreground text-lg">{{ summary?.summary }}</p>
+        <p v-if="summary?.prerequisite" class="text-body-sm text-muted-foreground">
           <strong class="text-foreground">Prérequis recommandé :</strong> les bases de
-          <NuxtLink :to="`/parcours/${language.prerequisite.slug}`" class="underline">
-            {{ language.prerequisite.label }}</NuxtLink
+          <NuxtLink :to="`/parcours/${summary.prerequisite.slug}`" class="underline">
+            {{ summary.prerequisite.name }}</NuxtLink
           >. Ce parcours reste accessible librement.
         </p>
         <ProgressBar v-if="episodes.length" :progress="progress" class="mt-2" />
@@ -83,7 +83,7 @@ const NEXT_DESCRIPTIONS: Readonly<Record<EpisodeType, string>> = {
       >
         <h2 class="text-2xl font-semibold">Parcours terminé</h2>
         <p class="text-foreground">
-          Bravo : tous les épisodes de {{ language?.label }} sont terminés. Revoyez librement
+          Bravo : tous les épisodes de {{ summary?.name }} sont terminés. Revoyez librement
           n’importe quel épisode ci-dessous.
         </p>
       </section>
@@ -98,7 +98,11 @@ const NEXT_DESCRIPTIONS: Readonly<Record<EpisodeType, string>> = {
         <div class="grid gap-1">
           <h2 id="fil-titre" class="text-3xl font-semibold">Le fil du parcours</h2>
           <p class="text-body-sm text-muted-foreground">
-            Les leçons et les exercices se suivent dans un seul ordre.
+            {{
+              track.track.programmingLanguage
+                ? 'Les leçons et les exercices se suivent dans un seul ordre.'
+                : 'Les leçons se suivent dans un seul ordre.'
+            }}
           </p>
         </div>
 
