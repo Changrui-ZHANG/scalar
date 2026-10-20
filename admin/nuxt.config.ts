@@ -1,6 +1,6 @@
-// Meme principe que `frontend/nuxt.config.ts` : un backend lance sur l'hote
-// par defaut, surchargeable par NUXT_API_INTERNE sous Docker.
-const API_INTERNE_DEV = process.env.NUXT_API_INTERNE ?? 'http://127.0.0.1:3001/api/v1'
+// Même principe que `frontend/nuxt.config.ts` : un backend lancé sur l'hôte
+// par défaut, surchargeable par NUXT_API_INTERNAL_BASE sous Docker.
+const API_INTERNAL_BASE_DEV = process.env.NUXT_API_INTERNAL_BASE ?? 'http://127.0.0.1:3001/api/v1'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -8,11 +8,10 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ['@nuxt/eslint', '@nuxt/ui', '@pinia/nuxt', '@pinia/colada-nuxt'],
   css: ['~/assets/css/main.css'],
-  // Outil interne derriere une connexion : ni rendu serveur ni referencement.
+  // Outil interne : ni rendu serveur ni référencement.
   ssr: false,
   app: {
-    // Traefik sert cette application sous /admin, sur la meme origine que le
-    // site : le cookie de session est partage et aucun CORS n'est necessaire.
+    // Traefik sert cette application sous /admin, sur la même origine que le site.
     baseURL: '/admin/',
     head: {
       htmlAttrs: { lang: 'fr' },
@@ -25,11 +24,11 @@ export default defineNuxtConfig({
       apiBase: '/api/v1',
     },
   },
-  // Pont de developpement quand l'admin tourne seul, sans Traefik devant :
-  // voir le commentaire detaille dans `frontend/nuxt.config.ts`.
+  // Pont de développement quand l'admin tourne seul, sans Traefik devant :
+  // le pont garde Host (pas de changeOrigin).
   nitro: {
     devProxy: {
-      '/api/v1': { target: API_INTERNE_DEV },
+      '/api/v1': { target: API_INTERNAL_BASE_DEV },
     },
   },
   vite: {

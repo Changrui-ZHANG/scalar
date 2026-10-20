@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.7.11
+    image: traefik:v3.7.15
     command:
       - --providers.docker=true
       - --providers.docker.exposedByDefault=false
@@ -21,12 +21,16 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      target: dev
+    init: true
     command: npm run dev --workspace frontend
     environment:
       HOST: 0.0.0.0
       PORT: 3000
       NUXT_PUBLIC_API_BASE: /api/v1
-      NUXT_API_INTERNE: http://backend:3001/api/v1
+      NUXT_API_INTERNAL_BASE: http://backend:3001/api/v1
+      NUXT_SITE_URL: http://127.0.0.1:8080
+      NUXT_SITE_ENV: development
       CHOKIDAR_USEPOLLING: 'true'
       WATCHPACK_POLLING: 'true'
     ports:
@@ -45,17 +49,20 @@ services:
       backend:
         condition: service_started
 
-  # Backoffice : servi sous /admin sur la meme origine que le site, donc sans
-  # CORS. Sa priorite passe devant le routeur `frontend` (PathPrefix `/`).
+  # Backoffice : servi sous /admin sur la même origine que le site, donc sans
+  # CORS. Sa priorité passe devant le routeur `frontend` (PathPrefix `/`).
   admin:
     build:
       context: .
       dockerfile: admin/Dockerfile
+      target: dev
+    init: true
     command: npm run dev --workspace admin
     environment:
       HOST: 0.0.0.0
       PORT: 3002
-      NUXT_API_INTERNE: http://backend:3001/api/v1
+      NUXT_PUBLIC_API_BASE: /api/v1
+      NUXT_API_INTERNAL_BASE: http://backend:3001/api/v1
       CHOKIDAR_USEPOLLING: 'true'
       WATCHPACK_POLLING: 'true'
     ports:
@@ -78,15 +85,16 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+      target: dev
+    init: true
     command: npm run dev --workspace backend
     environment:
       PORT: 3001
       DATABASE_URL: postgres://scalar:scalar@postgres:5432/scalar
-      # Le moteur n'est joignable que par ce reseau interne : il n'est jamais
-      # expose par Traefik, ni appele depuis le navigateur.
+      # Le moteur n'est joignable que par ce réseau interne : il n'est jamais
+      # exposé par Traefik, ni appelé depuis le navigateur.
       PISTON_URL: http://piston:2000/api/v2
-      # Doit correspondre exactement au paquet installe dans Piston. Piston
-      # refuse en 400 une version qu'il n'a pas. Voir README.
+      # Doit correspondre exactement au paquet installé dans Piston.
       PISTON_NODE_VERSION: '20.11.1'
     ports:
       - '127.0.0.1:3001:3001'
@@ -101,33 +109,20 @@ services:
       - traefik.http.routers.backend.priority=10
       - traefik.http.services.backend.loadbalancer.server.port=3001
     depends_on:
-      # Les migrations tournent au demarrage du backend : la base doit deja
-      # accepter les connexions, pas seulement avoir un conteneur lance.
+      # Les migrations tournent au démarrage du backend : la base doit déjà
+      # accepter les connexions, pas seulement avoir un conteneur lancé.
       postgres:
         condition: service_healthy
       piston:
         condition: service_started
 
-  # Moteur d'execution du code soumis par les utilisateurs.
-  #
-  # Aucun label Traefik, et le port est lie a la boucle locale : seul `backend`
-  # l'appelle, jamais le navigateur. `privileged` est une exigence du moteur et
-  # non un choix -- son bac a sable `isolate` ne demarre pas sans, et il rend ce
-  # conteneur equivalent-root sur l'hote : ne rien partager avec `postgres`.
-  #
-  # L'image n'embarque aucun langage. Apres le premier demarrage, installer le
-  # runtime Node une fois (voir README) ; le volume le conserve ensuite.
+  # Moteur d'exécution du code soumis par les utilisateurs.
   piston:
     image: ghcr.io/engineer-man/piston
     privileged: true
     environment:
-      # Ces deux plafonds doivent rester alignes avec `RUN_TIMEOUT_MS` dans
-      # `backend/src/services/exercices.service.ts` : Piston refuse en 400 toute
-      # limite demandee au-dela de sa propre configuration, il ne la rabote pas.
       PISTON_RUN_TIMEOUT: 5000
       PISTON_RUN_CPU_TIME: 5000
-      # Le defaut est de 1 Kio par flux, qu'un affichage banal depasse -- et
-      # l'execution est alors tuee avec le statut `OL`.
       PISTON_OUTPUT_MAX_SIZE: 65536
     ports:
       - '127.0.0.1:2000:2000'
@@ -136,19 +131,18 @@ services:
     tmpfs:
       - /tmp:exec
 
-  # Identifiants de developpement local uniquement : le port n'est lie qu'a la
-  # boucle locale. A remplacer par des secrets avant toute mise en ligne.
+  # Identifiants de développement local uniquement : le port n'est lié qu'à la
+  # boucle locale.
   postgres:
-    image: postgres:18-alpine
+    image: postgres:18.6-alpine
     environment:
       POSTGRES_USER: scalar
       POSTGRES_PASSWORD: scalar
       POSTGRES_DB: scalar
     ports:
-      # 5433 cote hote : evite le conflit avec un PostgreSQL deja installe.
+      # 5433 côté hôte : évite le conflit avec un PostgreSQL déjà installé.
       - '127.0.0.1:5433:5432'
     volumes:
-      # A partir de la 18, l'image attend le volume sur ce dossier parent.
       - postgres-data:/var/lib/postgresql
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U scalar -d scalar']

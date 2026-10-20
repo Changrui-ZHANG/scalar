@@ -5,6 +5,7 @@
 !frontend
 !admin
 !backend
+!packages
 
 # Produits localement, reconstruits dans l'image.
 **/node_modules

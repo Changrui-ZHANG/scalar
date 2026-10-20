@@ -128,7 +128,7 @@ export interface VerificationResult {
  */
 export function apiUrl(path: string): string {
   const config = useRuntimeConfig()
-  const base = import.meta.server ? config.apiInterne : config.public.apiBase
+  const base = import.meta.server ? config.apiInternalBase : config.public.apiBase
   return `${base}${path}`
 }
 
