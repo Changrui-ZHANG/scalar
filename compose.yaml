@@ -113,8 +113,8 @@ services:
       # accepter les connexions, pas seulement avoir un conteneur lancé.
       postgres:
         condition: service_healthy
-      piston:
-        condition: service_started
+      piston-setup:
+        condition: service_completed_successfully
 
   # Moteur d'exécution du code soumis par les utilisateurs.
   piston:
@@ -123,13 +123,31 @@ services:
     environment:
       PISTON_RUN_TIMEOUT: 5000
       PISTON_RUN_CPU_TIME: 5000
+      PISTON_RUN_MEMORY_LIMIT: 268435456
       PISTON_OUTPUT_MAX_SIZE: 65536
+      PISTON_DISABLE_NETWORKING: 'true'
+      PISTON_MAX_FILE_SIZE: 1000000
+      PISTON_MAX_CONCURRENT_JOBS: 8
+      PISTON_LOG_LEVEL: INFO
     ports:
       - '127.0.0.1:2000:2000'
     volumes:
       - piston-packages:/piston/packages
     tmpfs:
       - /tmp:exec
+
+  # Initialisation ponctuelle du runtime Node dans Piston.
+  piston-setup:
+    image: curlimages/curl:8.12.1
+    environment:
+      PISTON_URL: http://piston:2000/api/v2
+      PISTON_NODE_VERSION: '20.11.1'
+    volumes:
+      - ./piston/setup.sh:/setup.sh:ro
+    entrypoint: ['/bin/sh', '/setup.sh']
+    depends_on:
+      piston:
+        condition: service_started
 
   # Identifiants de développement local uniquement : le port n'est lié qu'à la
   # boucle locale.
