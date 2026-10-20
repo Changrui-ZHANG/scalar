@@ -1,0 +1,19 @@
+{
+  "name": "@scalar/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./enums": "./src/enums.ts",
+    "./limits": "./src/limits.ts",
+    "./slug": "./src/slug.ts",
+    "./hash": "./src/hash.ts",
+    "./api": "./src/api/index.ts",
+    "./api/*": "./src/api/*.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
+  }
+}

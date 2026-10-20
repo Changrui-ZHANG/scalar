@@ -1,20 +1,16 @@
+import type { ChapterLevel, ExecutionStatus, ProgrammingLanguage } from '@scalar/shared/enums'
+import type { ApiPublicResponse } from '@scalar/shared/api'
+
+export type { ChapterLevel, ExecutionStatus, ProgrammingLanguage }
+
 /**
  * Contrats de l'API, miroirs des services du backend : parcours, lecons,
  * exercices, execution et verification.
  */
 
-export interface ApiResponse<T> {
-  readonly success: boolean
-  readonly data: T | null
-  readonly error: string | null
-}
+export type ApiResponse<T> = ApiPublicResponse<T>
 
 // --- Parcours ------------------------------------------------------------------
-
-/** Langage d'execution d'un parcours ; absent pour un parcours sans code. */
-export type ProgrammingLanguage = 'javascript' | 'typescript'
-
-export type ChapterLevel = 'beginner' | 'intermediate' | 'advanced' | 'ecosystem'
 
 export interface TrackLink {
   readonly slug: string
@@ -95,7 +91,7 @@ export interface PublicExercise {
 
 /** Miroir de `ExecutionResult` dans `execution.service.ts`. */
 export interface ExecutionResult {
-  readonly status: 'OK' | 'TO' | 'OL' | 'EL' | 'RE' | 'SG' | 'XX'
+  readonly status: ExecutionStatus
   readonly label: string
   readonly run: {
     readonly stdout: string
@@ -138,7 +134,7 @@ export const seg = (value: string): string => encodeURIComponent(value)
 /** Message affichable d'une erreur `$fetch`, sans jamais exposer de detail interne. */
 export function apiErrorMessage(err: unknown, fallback: string): string {
   const envelope = (err as { data?: Partial<ApiResponse<never>> } | null)?.data
-  return envelope?.error ?? fallback
+  return (envelope as { error?: string | null } | undefined)?.error ?? fallback
 }
 
 /** Rendu d'un appel de test, ex. `swap(1, 2)`. */

@@ -1,8 +1,10 @@
 import type { Response } from "express";
+import type { ApiPublicError, ApiSuccess } from "@scalar/shared/api";
 import { logger } from "../logger.ts";
 
 export function notFound(res: Response, error: string): void {
-  res.status(404).json({ success: false, data: null, error });
+  const payload: ApiPublicError = { success: false, data: null, error };
+  res.status(404).json(payload);
 }
 
 /**
@@ -20,13 +22,15 @@ export async function respond<T>(
       notFound(res, notFoundMessage);
       return;
     }
-    res.json({ success: true, data, error: null });
+    const payload: ApiSuccess<T> = { success: true, data, error: null };
+    res.json(payload);
   } catch (error: unknown) {
     logger.error({ err: error }, "Lecture du contenu impossible");
-    res.status(500).json({
+    const payload: ApiPublicError = {
       success: false,
       data: null,
       error: "Le contenu est momentanément indisponible.",
-    });
+    };
+    res.status(500).json(payload);
   }
 }
