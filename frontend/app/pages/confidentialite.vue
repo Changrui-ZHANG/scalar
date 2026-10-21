@@ -1,110 +1,69 @@
 <script setup lang="ts">
-useSeoMeta({
-  title: 'Politique de confidentialité — Scalar',
-  description:
-    'Politique de confidentialité de Scalar : aucun compte, aucune donnée personnelle collectée, progression stockée localement.',
+import { usePageSeo } from '~/composables/usePageSeo'
+
+definePageMeta({ layout: 'default' })
+
+usePageSeo({
+  title: ['Politique de confidentialité'],
+  description: "Politique de confidentialité de Scalar : aucun compte, stockage local uniquement.",
+  type: 'website',
 })
 </script>
 
 <template>
-  <article class="max-w-[680px] mx-auto py-12 px-4 space-y-8">
-    <header class="space-y-2 border-b border-border pb-6">
-      <h1 class="text-3xl sm:text-4xl font-bold tracking-tight">Politique de confidentialité</h1>
-      <p class="text-sm text-muted-foreground">Dernière mise à jour : 21 octobre 2026</p>
-    </header>
+  <div class="px-4 md:px-6">
+    <LegalArticle title="Politique de confidentialité" updated-at="2026-10-21T00:00:00Z">
+      <h2>1. Principe fondamental : aucun compte requis</h2>
+      <p>
+        Scalar a été conçu dans le respect strict de la vie privée. L'accès aux cours,
+        leçons, exercices et au bac à sable s'effectue sans aucune inscription préalable ni
+        création de compte utilisateur.
+      </p>
 
-    <section class="space-y-3">
-      <h2 class="text-xl font-semibold">1. Responsables du traitement</h2>
-      <p class="text-muted-foreground leading-relaxed">
-        Le traitement des données éventuelles est sous la responsabilité de Changrui ZHANG et Cédric
-        VONIN. Pour toute question ou demande :
-        <a href="mailto:m.zhang.changrui@gmail.com" class="text-brand underline hover:opacity-80">
+      <h2>2. Données personnelles et navigation</h2>
+      <p>
+        Aucune donnée directement identifiante (nom, prénom, adresse email, mot de passe)
+        n'est collectée lors de votre utilisation normale du site.
+      </p>
+
+      <h2>3. Progression et stockage local</h2>
+      <p>
+        Votre progression pédagogique (leçons lues, exercices résolus, chapitres complétés,
+        brouillons de code) est enregistrée <strong>exclusivement au sein de votre navigateur</strong>
+        (via le mécanisme de <code>localStorage</code>).
+      </p>
+      <p>
+        Ces données ne sont jamais synchronisées sur nos serveurs de façon nominative. Vous
+        pouvez à tout moment réinitialiser votre progression en vidant les données de site de
+        votre navigateur.
+      </p>
+
+      <h2>4. Cookies et traceurs</h2>
+      <p>
+        Scalar n'utilise <strong>aucun cookie publicitaire</strong> ni aucun outil de pistage
+        commercial tiers.
+      </p>
+
+      <h2>5. Exécution de code et sécurité</h2>
+      <p>
+        Le code soumis lors de l'exécution ou de la vérification d'un exercice est transmis de
+        manière sécurisée à notre environnement d'exécution isolé (Piston) aux seules fins d'évaluation
+        immédiate. Il n'est conservé dans aucune base de données nominative.
+      </p>
+
+      <h2>6. Vos droits et réclamations (CNIL)</h2>
+      <p>
+        Conformément au Règlement Général sur la Protection des Données (RGPD), vous disposez
+        d'un droit d'accès, de rectification et de suppression des données vous concernant.
+        Comme nous ne conservons aucune donnée identifiante sur nos serveurs, vous gardez la
+        maîtrise complète de vos données directement depuis votre poste.
+      </p>
+      <p>
+        Vous pouvez adresser toute demande à
+        <a href="mailto:m.zhang.changrui@gmail.com">
           m.zhang.changrui@gmail.com
-        </a>.
+        </a>, ou introduire une réclamation auprès de la CNIL si nécessaire.
       </p>
-    </section>
-
-    <section class="space-y-3">
-      <h2 class="text-xl font-semibold">2. Absence de collecte de données personnelles</h2>
-      <p class="text-muted-foreground leading-relaxed">
-        Scalar est conçu selon le principe de minimisation stricte : aucun compte utilisateur n'est
-        requis, aucune inscription n'est demandée, et aucune donnée personnelle nominative n'est
-        collectée lors de votre navigation ou de votre apprentissage.
-      </p>
-    </section>
-
-    <section class="space-y-3">
-      <h2 class="text-xl font-semibold">3. Données conservées dans votre navigateur</h2>
-      <p class="text-muted-foreground leading-relaxed">
-        Afin de vous offrir une expérience fluide, les données suivantes sont stockées exclusivement
-        dans la mémoire locale de votre navigateur (<code>localStorage</code> et
-        <code>sessionStorage</code>) :
-      </p>
-      <ul class="list-disc list-inside space-y-1 text-muted-foreground pl-2">
-        <li>Votre progression dans les parcours, chapitres, leçons et exercices ;</li>
-        <li>Vos brouillons de code saisis dans les éditeurs ;</li>
-        <li>Les indices que vous avez choisi de révéler ;</li>
-        <li>Vos préférences d'affichage (thème clair/sombre, état de repli du plan de cours).</li>
-      </ul>
-      <p class="text-muted-foreground leading-relaxed">
-        Ces informations ne sont <strong>jamais transmises à nos serveurs</strong>. Vous pouvez les
-        effacer à tout moment en vidant les données de navigation de votre navigateur. Ces éléments
-        étant strictement nécessaires à la fourniture du service expressément demandé par
-        l'utilisateur, aucun bandeau de consentement préalable n'est requis.
-      </p>
-    </section>
-
-    <section class="space-y-3">
-      <h2 class="text-xl font-semibold">4. Exécution du code</h2>
-      <p class="text-muted-foreground leading-relaxed">
-        Lorsque vous utilisez les fonctionnalités « Exécuter » ou « Vérifier », votre code est
-        transmis à notre moteur d'exécution isolé (Piston) afin d'en évaluer le résultat. Une fois
-        l'exécution terminée, le conteneur est détruit et le code soumis est immédiatement oublié :
-        il n'est ni stocké en base de données ni conservé dans les journaux.
-      </p>
-    </section>
-
-    <section class="space-y-3">
-      <h2 class="text-xl font-semibold">5. Statistiques anonymes</h2>
-      <p class="text-muted-foreground leading-relaxed">
-        Le service comptabilise des indicateurs d'usage strictement agrégés et anonymes par jour
-        (par exemple le nombre de vérifications réussies par exercice). Aucun identifiant
-        utilisateur, cookie persistant ou adresse IP n'est associé à ces mesures.
-      </p>
-    </section>
-
-    <section class="space-y-3">
-      <h2 class="text-xl font-semibold">6. Journaux techniques et sécurité</h2>
-      <p class="text-muted-foreground leading-relaxed">
-        Les serveurs consignent des journaux d'accès techniques minimaux (méthode HTTP, URL demandée,
-        code de réponse HTTP, durée d'exécution). Les adresses IP ne sont pas enregistrées dans les
-        journaux persistants ; elles sont uniquement traitées en mémoire vive de manière temporaire
-        (moins d'une minute) pour assurer la prévention des abus (limitation de débit).
-      </p>
-    </section>
-
-    <section class="space-y-3">
-      <h2 class="text-xl font-semibold">7. Cookies</h2>
-      <p class="text-muted-foreground leading-relaxed">
-        Scalar n'utilise aucun cookie traceur, publicitaire ou tiers.
-      </p>
-    </section>
-
-    <section class="space-y-3">
-      <h2 class="text-xl font-semibold">8. Vos droits</h2>
-      <p class="text-muted-foreground leading-relaxed">
-        Pour toute question relative à cette politique, vous pouvez nous écrire à l'adresse indiquée
-        ci-dessus. Vous disposez également du droit d'introduire une réclamation auprès de l'autorité
-        de contrôle compétente (la CNIL sur
-        <a
-          href="https://www.cnil.fr"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="text-brand underline hover:opacity-80"
-        >
-          cnil.fr
-        </a>).
-      </p>
-    </section>
-  </article>
+    </LegalArticle>
+  </div>
 </template>
