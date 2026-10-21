@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import express from 'express'
 import {
+  EventController,
   ExecutionController,
   ExerciseController,
   LessonController,
@@ -59,6 +60,7 @@ app.get('/api/v1/health', async (_req, res) => {
 })
 
 app.use('/api/v1/executions', new ExecutionController().buildRouter())
+app.use('/api/v1/events', new EventController().buildRouter())
 app.use(
   '/api/v1',
   new TrackController(

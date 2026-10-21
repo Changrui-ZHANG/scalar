@@ -10,7 +10,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-08-24',
   devtools: { enabled: true },
   extends: ['../packages/ui'],
-  modules: ['@nuxt/eslint', '@nuxt/icon'],
+  modules: ['@nuxt/eslint', '@nuxt/icon', '@pinia/nuxt', '@vueuse/nuxt'],
   css: ['~/assets/css/main.css'],
   app: {
     head: {
