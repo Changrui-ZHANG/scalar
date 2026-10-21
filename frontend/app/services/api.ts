@@ -11,10 +11,20 @@ export interface ApiFetchOptions {
  * Utilise apiInternalBase côté serveur et public.apiBase côté navigateur.
  */
 export async function apiFetch<T>(path: string, options?: ApiFetchOptions): Promise<T> {
-  const config = useRuntimeConfig()
+  let apiInternal: string | undefined
+  let publicApi: string | undefined
+
+  try {
+    const config = useRuntimeConfig()
+    apiInternal = config.apiInternalBase
+    publicApi = config.public?.apiBase
+  } catch {
+    // En dehors du contexte Nuxt (ex: après un await dans useAsyncData ou dans les tests)
+  }
+
   const baseURL = import.meta.server
-    ? (config.apiInternalBase ?? 'http://127.0.0.1:3001/api/v1')
-    : (config.public?.apiBase ?? '/api/v1')
+    ? (apiInternal ?? process.env.NUXT_API_INTERNAL_BASE ?? 'http://backend:3001/api/v1')
+    : (publicApi ?? '/api/v1')
 
   const res = await $fetch<ApiSuccess<T>>(path, {
     baseURL,
