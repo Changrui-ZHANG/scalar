@@ -142,3 +142,17 @@ export interface VerificationResult {
   readonly checks: readonly VerificationCheck[]
   readonly execution: ExecutionResult
 }
+
+export type EventBody =
+  | {
+      readonly type: 'lesson_completed' | 'exercise_completed'
+      readonly track: string
+      readonly chapter: string
+      readonly slug: string
+    }
+  | {
+      readonly type: 'chapter_completed'
+      readonly track: string
+      readonly chapter: string
+    }
+

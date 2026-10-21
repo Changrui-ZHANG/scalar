@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "main": "./nuxt.config.ts",
+  "scripts": {
+    "test": "vitest run"
+  },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",
     "@codemirror/commands": "^6.11.1",
