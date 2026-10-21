@@ -1,7 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it } from 'vitest'
-import LayoutSearchButton from '~/components/LayoutSearchButton.vue'
-import LayoutSearchDialog from '~/components/LayoutSearchDialog.vue'
+import LayoutSearchButton from '~/components/layout/LayoutSearchButton.vue'
+import LayoutSearchDialog from '~/components/layout/LayoutSearchDialog.vue'
 
 describe('LayoutSearchButton', () => {
   it('affiche le bouton de recherche avec libellé accessible et raccourci', async () => {
