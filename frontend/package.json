@@ -15,6 +15,8 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@iconify-json/lucide": "^1.2.141",
+    "@nuxt/icon": "^2.5.1",
     "@scalar/shared": "*",
     "@tailwindcss/vite": "^4.3.3",
     "nuxt": "^4.5.2",
