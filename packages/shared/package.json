@@ -5,6 +5,7 @@
   "private": true,
   "exports": {
     "./enums": "./src/enums.ts",
+    "./labels": "./src/labels.ts",
     "./limits": "./src/limits.ts",
     "./slug": "./src/slug.ts",
     "./hash": "./src/hash.ts",

@@ -9,6 +9,7 @@ const API_INTERNAL_BASE_DEV = process.env.NUXT_API_INTERNAL_BASE ?? 'http://127.
 export default defineNuxtConfig({
   compatibilityDate: '2026-08-24',
   devtools: { enabled: true },
+  extends: ['../packages/ui'],
   modules: ['@nuxt/eslint', '@nuxt/icon'],
   css: ['~/assets/css/main.css'],
   app: {
