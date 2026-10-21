@@ -2,8 +2,8 @@ import type { EventBody } from '@scalar/shared/api'
 
 export function sendEvent(body: EventBody): void {
   try {
-    const config = useRuntimeConfig()
-    const apiBase = config.public.apiBase ?? '/api/v1'
+    const nuxtApp = tryUseNuxtApp()
+    const apiBase = nuxtApp?.$config?.public?.apiBase ?? '/api/v1'
     fetch(`${apiBase}/events`, {
       method: 'POST',
       keepalive: true,
@@ -15,6 +15,6 @@ export function sendEvent(body: EventBody): void {
       // erreurs avalées, aucun nouvel essai (§ 9)
     })
   } catch {
-    // Si fetch ou useRuntimeConfig échoue hors contexte, erreurs avalées
+    // Si fetch échoue hors contexte, erreurs avalées
   }
 }

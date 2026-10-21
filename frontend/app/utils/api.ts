@@ -135,10 +135,10 @@ export const seg = (value: string): string => encodeURIComponent(value)
  * le navigateur reste sur l'origine unique.
  */
 export function apiUrl(path: string): string {
-  const config = useRuntimeConfig()
+  const nuxtApp = tryUseNuxtApp()
   const base = import.meta.server
-    ? (config.apiInternalBase ?? config.apiInterne ?? 'http://backend:3000')
-    : (config.public.apiBase ?? '/api')
+    ? (nuxtApp?.$config?.apiInternalBase ?? process.env.NUXT_API_INTERNAL_BASE ?? 'http://backend:3001/api/v1')
+    : (nuxtApp?.$config?.public?.apiBase ?? '/api/v1')
   return `${base}${path}`
 }
 
