@@ -3,7 +3,7 @@ ARG NODE_IMAGE=node:24.22.0-alpine
 
 FROM ${NODE_IMAGE} AS dev
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json tsconfig.base.json ./
 COPY frontend/package.json frontend/
 COPY admin/package.json admin/
 COPY backend/package.json backend/
