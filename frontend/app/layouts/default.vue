@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Deux entrees seulement : tout l'apprentissage vit dans Parcours. */
+/** Deux entrées seulement : tout l'apprentissage vit dans Parcours. */
 const LINKS = [
   { to: '/parcours', label: 'Parcours' },
   { to: '/exercices', label: 'Bac à sable' },
@@ -7,6 +7,8 @@ const LINKS = [
 
 const route = useRoute()
 const isActive = (to: string) => route.path === to || route.path.startsWith(`${to}/`)
+
+const search = useSearch()
 </script>
 
 <template>
@@ -24,26 +26,34 @@ const isActive = (to: string) => route.path === to || route.path.startsWith(`${t
         class="max-w-content mx-auto flex min-h-16 items-center justify-between gap-4 px-4"
       >
         <NuxtLink to="/" class="font-display flex min-h-11 items-center gap-2 text-xl font-bold">
-          <!-- Decoratif : le nom « Scalar » suit en texte. Meme fichier que le favicon. -->
+          <!-- Décoratif : le nom « Scalar » suit en texte. Même fichier que le favicon. -->
           <img src="/logo.svg" alt="" width="35" height="35" class="size-[35px]" >
           Scalar
         </NuxtLink>
-        <ul class="flex items-center gap-2 sm:gap-6">
-          <li v-for="link in LINKS" :key="link.to">
-            <NuxtLink
-              :to="link.to"
-              :aria-current="isActive(link.to) ? 'page' : undefined"
-              class="inline-flex min-h-11 items-center px-1 font-semibold"
-              :class="
-                isActive(link.to)
-                  ? 'text-foreground decoration-brand underline decoration-2 underline-offset-8'
-                  : 'text-muted-foreground hover:text-foreground'
-              "
-            >
-              {{ link.label }}
-            </NuxtLink>
-          </li>
-        </ul>
+
+        <div class="flex items-center gap-2 sm:gap-4">
+          <LayoutSearchButton
+            :shortcut-label="search.shortcutLabel.value"
+            @open-search="search.open.value = true"
+          />
+
+          <ul class="flex items-center gap-2 sm:gap-6">
+            <li v-for="link in LINKS" :key="link.to">
+              <NuxtLink
+                :to="link.to"
+                :aria-current="isActive(link.to) ? 'page' : undefined"
+                class="inline-flex min-h-11 items-center px-1 font-semibold"
+                :class="
+                  isActive(link.to)
+                    ? 'text-foreground decoration-brand underline decoration-2 underline-offset-8'
+                    : 'text-muted-foreground hover:text-foreground'
+                "
+              >
+                {{ link.label }}
+              </NuxtLink>
+            </li>
+          </ul>
+        </div>
       </nav>
     </header>
 
@@ -52,5 +62,8 @@ const isActive = (to: string) => route.path === to || route.path.startsWith(`${t
     </main>
 
     <LayoutFooter />
+
+    <!-- Dialogue de recherche globale monté une seule fois par le layout -->
+    <LayoutSearchDialog />
   </div>
 </template>
