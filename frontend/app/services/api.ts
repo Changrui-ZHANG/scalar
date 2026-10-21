@@ -11,16 +11,9 @@ export interface ApiFetchOptions {
  * Utilise apiInternalBase côté serveur et public.apiBase côté navigateur.
  */
 export async function apiFetch<T>(path: string, options?: ApiFetchOptions): Promise<T> {
-  let apiInternal: string | undefined
-  let publicApi: string | undefined
-
-  try {
-    const config = useRuntimeConfig()
-    apiInternal = config.apiInternalBase
-    publicApi = config.public?.apiBase
-  } catch {
-    // En dehors du contexte Nuxt (ex: après un await dans useAsyncData ou dans les tests)
-  }
+  const nuxtApp = tryUseNuxtApp()
+  const apiInternal = nuxtApp?.$config?.apiInternalBase
+  const publicApi = nuxtApp?.$config?.public?.apiBase
 
   const baseURL = import.meta.server
     ? (apiInternal ?? process.env.NUXT_API_INTERNAL_BASE ?? 'http://backend:3001/api/v1')
