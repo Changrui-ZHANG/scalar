@@ -5,22 +5,22 @@ import {
   ExerciseController,
   LessonController,
   TrackController,
-} from "./controller/index.ts"
-import { isDatabaseUp, migrateDatabase, prisma } from "./db/index.ts"
-import { isContentEmpty, seedDatabase } from "./db/seed.ts"
-import { logger } from "./logger.ts"
-import { InMemoryExerciseRepository } from "./repositories/exercise.repository.ts"
-import { InMemoryLessonRepository } from "./repositories/lesson.repository.ts"
+} from './controller/index.ts'
+import { isDatabaseUp, migrateDatabase, prisma } from './db/index.ts'
+import { isContentEmpty, seedDatabase } from './db/seed.ts'
+import { logger } from './logger.ts'
+import { InMemoryExerciseRepository } from './repositories/exercise.repository.ts'
+import { InMemoryLessonRepository } from './repositories/lesson.repository.ts'
 import {
   PrismaExerciseRepository,
   PrismaLessonRepository,
   PrismaTrackRepository,
-} from "./repositories/prisma.repository.ts"
-import { InMemoryTrackRepository } from "./repositories/track.repository.ts"
-import { hasJavascriptRuntime } from "./services/execution.service.ts"
-import { ExerciseService } from "./services/exercise.service.ts"
-import { LessonService } from "./services/lesson.service.ts"
-import { TrackService } from "./services/track.service.ts"
+} from './repositories/prisma.repository.ts'
+import { InMemoryTrackRepository } from './repositories/track.repository.ts'
+import { hasJavascriptRuntime } from './services/execution.service.ts'
+import { ExerciseService } from './services/exercise.service.ts'
+import { LessonService } from './services/lesson.service.ts'
+import { TrackService } from './services/track.service.ts'
 
 const app = express()
 const PORT = Number(process.env.PORT ?? 3001)

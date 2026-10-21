@@ -29,7 +29,11 @@ export interface TrackChapter {
   readonly level: ChapterLevel
   /** Rang continu dans le parcours, a partir de 1 : jamais la valeur de `position`. */
   readonly number: number
-  readonly lessons: readonly { readonly slug: string; readonly title: string; readonly summary: string }[]
+  readonly lessons: readonly {
+    readonly slug: string
+    readonly title: string
+    readonly summary: string
+  }[]
   readonly exercises: readonly {
     readonly slug: string
     readonly title: string
@@ -89,7 +93,11 @@ export class TrackService {
     }
   }
 
-  private async toTrackChapter(track: Track, chapter: Chapter, number: number): Promise<TrackChapter> {
+  private async toTrackChapter(
+    track: Track,
+    chapter: Chapter,
+    number: number,
+  ): Promise<TrackChapter> {
     const lessons = await this.lessons.listLessons(chapter.id)
     // Un parcours sans langage n'a pas d'exercice : rien a executer.
     const exercises =

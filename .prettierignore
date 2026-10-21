@@ -1,0 +1,7 @@
+.nuxt
+.output
+package-lock.json
+migrations
+src/db/generated
+dist
+node_modules

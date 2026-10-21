@@ -5,8 +5,7 @@
  * Remplace le contenu de la base : ne tourne qu'avec DATABASE_TESTS=1, contre
  * une base de developpement (`docker compose up`, port 5433).
  */
-import assert from 'node:assert/strict'
-import { after, before, describe, it } from 'node:test'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { prisma } from '../db/index.ts'
 import { seedDatabase } from '../db/seed.ts'
@@ -75,53 +74,50 @@ const QUESTIONS: ReadonlyArray<readonly [string, (s: Services) => Promise<unknow
   ['a corriger', (s) => s.exercises.findForVerification('javascript', 'conditions', 'est-pair')],
 ]
 
-describe(
-  'dépôts Prisma contre dépôts en mémoire',
-  { skip: !enabled && 'DATABASE_TESTS=1 requis' },
-  () => {
-    before(async () => {
-      await seedDatabase(prisma)
-    })
-    after(async () => {
-      await prisma.$disconnect()
-    })
+describe.skipIf(!enabled)('dépôts Prisma contre dépôts en mémoire', () => {
+  beforeAll(async () => {
+    await seedDatabase(prisma)
+  })
+  afterAll(async () => {
+    await prisma.$disconnect()
+  })
 
-    for (const [name, ask] of QUESTIONS) {
-      it(`même réponse : ${name}`, async () => {
-        assert.deepEqual(await ask(database), await ask(memory))
-      })
-    }
-
-    it('la base refuse un parcours qui est son propre prérequis', async () => {
-      const track = await prisma.track.findUniqueOrThrow({ where: { slug: 'javascript' } })
-      await assert.rejects(
-        prisma.track.update({ where: { id: track.id }, data: { prerequisiteTrackId: track.id } }),
-      )
+  for (const [name, ask] of QUESTIONS) {
+    it(`même réponse : ${name}`, async () => {
+      expect(await ask(database)).toEqual(await ask(memory))
     })
+  }
 
-    it('la base refuse des arguments qui ne forment pas un tableau', async () => {
-      const exercise = await prisma.exercise.findFirstOrThrow({ where: { slug: 'fizzbuzz' } })
-      await assert.rejects(
-        prisma.exerciseTestCase.create({
-          data: { exerciseId: exercise.id, position: 99, arguments: 1, expectedResult: 1 },
-        }),
-      )
-    })
+  it('la base refuse un parcours qui est son propre prérequis', async () => {
+    const track = await prisma.track.findUniqueOrThrow({ where: { slug: 'javascript' } })
+    await expect(
+      prisma.track.update({ where: { id: track.id }, data: { prerequisiteTrackId: track.id } }),
+    ).rejects.toThrow()
+  })
 
-    it('la base accepte d’échanger deux positions dans une transaction', async () => {
-      const track = await prisma.track.findUniqueOrThrow({ where: { slug: 'javascript' } })
-      const [a, b] = await prisma.chapter.findMany({
-        where: { trackId: track.id, level: 'beginner' },
-        orderBy: { position: 'asc' },
-        take: 2,
-      })
-      assert.ok(a && b)
-      await prisma.$transaction([
-        prisma.chapter.update({ where: { id: a.id }, data: { position: b.position } }),
-        prisma.chapter.update({ where: { id: b.id }, data: { position: a.position } }),
-      ])
-      // Remise en l'etat pour les autres tests.
-      await seedDatabase(prisma)
+  it('la base refuse des arguments qui ne forment pas un tableau', async () => {
+    const exercise = await prisma.exercise.findFirstOrThrow({ where: { slug: 'fizzbuzz' } })
+    await expect(
+      prisma.exerciseTestCase.create({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test de refus d'arguments invalides
+        data: { exerciseId: exercise.id, position: 99, arguments: 1 as any, expectedResult: 1 },
+      }),
+    ).rejects.toThrow()
+  })
+
+  it('la base accepte d’échanger deux positions dans une transaction', async () => {
+    const track = await prisma.track.findUniqueOrThrow({ where: { slug: 'javascript' } })
+    const [a, b] = await prisma.chapter.findMany({
+      where: { trackId: track.id, level: 'beginner' },
+      orderBy: { position: 'asc' },
+      take: 2,
     })
-  },
-)
+    expect(a && b).toBeTruthy()
+    await prisma.$transaction([
+      prisma.chapter.update({ where: { id: a!.id }, data: { position: b!.position } }),
+      prisma.chapter.update({ where: { id: b!.id }, data: { position: a!.position } }),
+    ])
+    // Remise en l'etat pour les autres tests.
+    await seedDatabase(prisma)
+  })
+})

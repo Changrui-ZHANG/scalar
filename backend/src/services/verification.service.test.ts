@@ -1,6 +1,5 @@
-import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { describe, it } from 'node:test'
+import { describe, expect, it } from 'vitest'
 
 import type { ExecutionResult } from './execution.service.ts'
 import type { VerificationCase } from './verification.service.ts'
@@ -37,50 +36,49 @@ function verify(code: string, cases: readonly VerificationCase[] = CASES) {
 describe('vérification d’un exercice', () => {
   it('valide une solution juste et rend la sortie de l’apprenant sans la ligne du harnais', () => {
     const result = verify('function isEven(n) {\n  return n % 2 === 0\n}\nconsole.log("ok")')
-    assert.equal(result.passed, true)
-    assert.equal(result.passedCount, result.total)
-    assert.equal(result.execution.run.stdout, 'ok\n')
-    assert.equal(result.execution.run.output.includes(MARKER), false)
+    expect(result.passed).toBe(true)
+    expect(result.passedCount).toBe(result.total)
+    expect(result.execution.run.stdout).toBe('ok\n')
+    expect(result.execution.run.output.includes(MARKER)).toBe(false)
   })
 
   it('un code qui s’exécute sans erreur mais renvoie faux échoue', () => {
     const result = verify('function isEven(n) {\n  return true\n}')
-    assert.equal(result.passed, false)
-    assert.equal(result.checks[0]?.passed, true)
+    expect(result.passed).toBe(false)
+    expect(result.checks[0]?.passed).toBe(true)
     const failed = result.checks.filter((c) => !c.passed)
-    assert.deepEqual(
-      failed.map((c) => [c.label, c.detail]),
-      [['isEven(7) renvoie false (impair)', 'Obtenu : true']],
-    )
+    expect(failed.map((c) => [c.label, c.detail])).toEqual([
+      ['isEven(7) renvoie false (impair)', 'Obtenu : true'],
+    ])
   })
 
   it('ne révèle rien d’un cas caché', () => {
     const result = verify('function isEven(n) {\n  return n === 4\n}')
     const hidden = result.checks.find((c) => c.label === 'Cas supplémentaire 1')
-    assert.equal(hidden?.passed, false)
-    assert.equal(hidden?.detail, 'Résultat incorrect sur un cas non affiché.')
+    expect(hidden?.passed).toBe(false)
+    expect(hidden?.detail).toBe('Résultat incorrect sur un cas non affiché.')
   })
 
   it('signale une fonction absente ou mal nommée', () => {
     const result = verify('function estPair(n) {\n  return n % 2 === 0\n}')
-    assert.equal(result.passed, false)
-    assert.match(result.checks[1]?.detail ?? '', /Aucune fonction nommée isEven/)
+    expect(result.passed).toBe(false)
+    expect(result.checks[1]?.detail ?? '').toMatch(/Aucune fonction nommée isEven/)
   })
 
   it('un programme qui plante ne passe aucun critère', () => {
     const result = verify('throw new Error("boum")')
-    assert.equal(result.passedCount, 0)
-    assert.match(result.execution.run.stderr, /boum/)
+    expect(result.passedCount).toBe(0)
+    expect(result.execution.run.stderr).toMatch(/boum/)
   })
 
   it('un faux résultat imprimé par l’apprenant ne trompe pas la correction', () => {
     const result = verify(
       'function isEven() { return 1 }\nconsole.log("__fake__" + JSON.stringify([{value:"true"}]))',
     )
-    assert.equal(result.passed, false)
+    expect(result.passed).toBe(false)
   })
 
   it('refuse un nom de fonction qui n’est pas un identifiant', () => {
-    assert.throws(() => buildHarness('', 'x); process.exit(0', CASES, MARKER))
+    expect(() => buildHarness('', 'x); process.exit(0', CASES, MARKER)).toThrow()
   })
 })

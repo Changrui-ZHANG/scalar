@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import { describe, expect, it } from 'vitest'
 
 import { InMemoryExerciseRepository } from '../repositories/exercise.repository.ts'
 import { InMemoryTrackRepository } from '../repositories/track.repository.ts'
@@ -53,10 +52,10 @@ describe('ExerciseService.getExercise', () => {
   it('ne renvoie ni la solution ni les cas cachés', async () => {
     const detail = await service.getExercise('alpha', 'boucles', 'un')
 
-    assert.ok(detail)
-    assert.equal(JSON.stringify(detail).includes('return 42'), false)
-    assert.equal(JSON.stringify(detail).includes('solution'), false)
-    assert.deepEqual(detail.testCases, [
+    expect(detail).toBeDefined()
+    expect(JSON.stringify(detail).includes('return 42')).toBe(false)
+    expect(JSON.stringify(detail).includes('solution')).toBe(false)
+    expect(detail?.testCases).toEqual([
       { arguments: [], expectedResult: 42, description: null },
       { arguments: [1], expectedResult: 1, description: 'un' },
     ])
@@ -65,45 +64,45 @@ describe('ExerciseService.getExercise', () => {
   it('situe l’exercice dans son chapitre et son parcours', async () => {
     const detail = await service.getExercise('alpha', 'boucles', 'deux')
 
-    assert.equal(detail?.number, 2)
-    assert.equal(detail?.instructions, 'consigne')
-    assert.deepEqual(detail?.chapter, { slug: 'boucles', title: 'Chapitre boucles', number: 1 })
-    assert.deepEqual(detail?.track, {
+    expect(detail?.number).toBe(2)
+    expect(detail?.instructions).toBe('consigne')
+    expect(detail?.chapter).toEqual({ slug: 'boucles', title: 'Chapitre boucles', number: 1 })
+    expect(detail?.track).toEqual({
       slug: 'alpha',
       name: 'ALPHA',
       programmingLanguage: 'javascript',
     })
     const beta = await service.getExercise('beta', 'boucles', 'un')
-    assert.equal(beta?.track.programmingLanguage, 'typescript')
+    expect(beta?.track.programmingLanguage).toBe('typescript')
   })
 
   it('numérote le chapitre par niveau puis position, jamais par `position`', async () => {
     const detail = await service.getExercise('alpha', 'fin', 'dernier')
-    assert.equal(detail?.chapter.number, 3)
+    expect(detail?.chapter.number).toBe(3)
   })
 
   it('suggère l’exercice suivant, en sautant brouillon, chapitre archivé et chapitre vide', async () => {
-    assert.deepEqual((await service.getExercise('alpha', 'boucles', 'un'))?.next, {
+    expect((await service.getExercise('alpha', 'boucles', 'un'))?.next).toEqual({
       chapterSlug: 'boucles',
       slug: 'deux',
     })
-    assert.deepEqual((await service.getExercise('alpha', 'boucles', 'deux'))?.next, {
+    expect((await service.getExercise('alpha', 'boucles', 'deux'))?.next).toEqual({
       chapterSlug: 'fin',
       slug: 'dernier',
     })
-    assert.equal((await service.getExercise('alpha', 'fin', 'dernier'))?.next, null)
+    expect((await service.getExercise('alpha', 'fin', 'dernier'))?.next).toBeNull()
   })
 
   it('renvoie null hors de la bonne hiérarchie, ou si un parent n’est pas publié', async () => {
-    assert.equal(await service.getExercise('alpha', 'fin', 'un'), null)
-    assert.equal(await service.getExercise('beta', 'boucles', 'deux'), null)
-    assert.equal(await service.getExercise('alpha', 'boucles', 'cache'), null)
-    assert.equal(await service.getExercise('alpha', 'archive', 'archive'), null)
-    assert.equal(await service.getExercise('brouillon', 'cache', 'un'), null)
+    expect(await service.getExercise('alpha', 'fin', 'un')).toBeNull()
+    expect(await service.getExercise('beta', 'boucles', 'deux')).toBeNull()
+    expect(await service.getExercise('alpha', 'boucles', 'cache')).toBeNull()
+    expect(await service.getExercise('alpha', 'archive', 'archive')).toBeNull()
+    expect(await service.getExercise('brouillon', 'cache', 'un')).toBeNull()
   })
 
   it('ne sert aucun exercice d’un parcours sans langage', async () => {
-    assert.equal(await service.getExercise('lecture', 'lire', 'egare'), null)
+    expect(await service.getExercise('lecture', 'lire', 'egare')).toBeNull()
   })
 })
 
@@ -111,20 +110,17 @@ describe('ExerciseService.findForVerification', () => {
   it('garde les cas cachés et le langage, pour la correction côté serveur', async () => {
     const target = await service.findForVerification('alpha', 'boucles', 'un')
 
-    assert.equal(target?.programmingLanguage, 'javascript')
-    assert.equal(target?.functionName, 'f')
-    assert.deepEqual(
-      target?.cases.map((c) => [c.arguments, c.expectedResult, c.isHidden]),
-      [
-        [[], 42, false],
-        [[1], 1, false],
-        [[], 42, true],
-      ],
-    )
+    expect(target?.programmingLanguage).toBe('javascript')
+    expect(target?.functionName).toBe('f')
+    expect(target?.cases.map((c) => [c.arguments, c.expectedResult, c.isHidden])).toEqual([
+      [[], 42, false],
+      [[1], 1, false],
+      [[], 42, true],
+    ])
   })
 
   it('renvoie null pour un exercice non servi', async () => {
-    assert.equal(await service.findForVerification('alpha', 'archive', 'archive'), null)
-    assert.equal(await service.findForVerification('lecture', 'lire', 'egare'), null)
+    expect(await service.findForVerification('alpha', 'archive', 'archive')).toBeNull()
+    expect(await service.findForVerification('lecture', 'lire', 'egare')).toBeNull()
   })
 })

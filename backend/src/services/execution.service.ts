@@ -127,8 +127,7 @@ export function parseSubmission(body: unknown): SubmissionParse {
 }
 
 export type Conversion =
-  | { readonly ok: true; readonly code: string }
-  | { readonly ok: false; readonly error: string }
+  { readonly ok: true; readonly code: string } | { readonly ok: false; readonly error: string }
 
 /**
  * Ramene le code soumis a du JavaScript executable par le moteur.

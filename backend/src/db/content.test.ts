@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import { describe, expect, it } from 'vitest'
 
 import type { Content } from './seed.ts'
 import { MOCK_CONTENT, validateExercises } from './seed.ts'
@@ -28,42 +27,44 @@ function contiguousBy<T extends { readonly position: number }>(
 
 describe('contenu du dépôt : exercices', () => {
   it('chaque solution passe ses cas, et aucun code de départ ne les passe tous', () => {
-    assert.deepEqual(validateExercises(c), [])
+    expect(validateExercises(c)).toEqual([])
   })
 
   it('le contrôle attrape une solution fausse et un code de départ qui résout déjà', () => {
     const [first] = c.exercises
-    assert.ok(first)
+    expect(first).toBeDefined()
     const broken: Content = {
       ...c,
-      exercises: [{ ...first, solutionCode: first.starterCode, starterCode: first.solutionCode }],
+      exercises: [
+        { ...first!, solutionCode: first!.starterCode, starterCode: first!.solutionCode },
+      ],
     }
     const problems = validateExercises(broken)
 
-    assert.ok(problems.some((p) => p.includes('la solution échoue')))
-    assert.ok(problems.some((p) => p.includes('résout déjà')))
+    expect(problems.some((p) => p.includes('la solution échoue'))).toBe(true)
+    expect(problems.some((p) => p.includes('résout déjà'))).toBe(true)
   })
 
   it('le contrôle refuse un exercice dans un parcours sans langage', () => {
     const [first] = c.exercises
     const withoutLanguage = c.tracks.find((t) => t.programmingLanguage === null)
     const chapter = c.chapters.find((ch) => ch.trackId === withoutLanguage?.id)
-    assert.ok(first && chapter)
-    const misplaced: Content = { ...c, exercises: [{ ...first, chapterId: chapter.id }] }
+    expect(first && chapter).toBeTruthy()
+    const misplaced: Content = { ...c, exercises: [{ ...first!, chapterId: chapter!.id }] }
 
-    assert.ok(validateExercises(misplaced).some((p) => p.includes('sans langage')))
+    expect(validateExercises(misplaced).some((p) => p.includes('sans langage'))).toBe(true)
   })
 
   it('chaque exercice a au moins un cas, et au plus 3 indices', () => {
     for (const e of c.exercises) {
-      assert.ok(c.testCases.some((t) => t.exerciseId === e.id), `${e.slug} : aucun cas`)
-      assert.ok(e.hints.length <= 3, `${e.slug} : trop d’indices`)
+      expect(c.testCases.some((t) => t.exerciseId === e.id)).toBe(true)
+      expect(e.hints.length <= 3).toBe(true)
     }
   })
 
   it('les arguments de chaque cas forment un tableau', () => {
     for (const t of c.testCases) {
-      assert.ok(Array.isArray(t.arguments), `cas ${t.id}`)
+      expect(Array.isArray(t.arguments)).toBe(true)
     }
   })
 })
@@ -72,56 +73,34 @@ describe('contenu du dépôt : parcours', () => {
   it('un parcours sans langage de programmation n’a aucun exercice', () => {
     for (const t of c.tracks.filter((t) => t.programmingLanguage === null)) {
       const chapters = new Set(c.chapters.filter((ch) => ch.trackId === t.id).map((ch) => ch.id))
-      assert.deepEqual(
-        c.exercises.filter((e) => chapters.has(e.chapterId)).map((e) => e.slug),
-        [],
-        t.slug,
-      )
+      expect(c.exercises.filter((e) => chapters.has(e.chapterId)).map((e) => e.slug)).toEqual([])
     }
   })
 
   it('un parcours n’est pas son propre prérequis', () => {
     for (const t of c.tracks) {
-      assert.notEqual(t.prerequisiteTrackId, t.id, t.slug)
+      expect(t.prerequisiteTrackId).not.toBe(t.id)
     }
   })
 })
 
 describe('contenu du dépôt : unicité et ordre, comme en base', () => {
   it('slugs uniques dans leur parent, sans préfixe de langage', () => {
-    assert.ok(unique(c.tracks.map((t) => t.slug)))
-    assert.ok(unique(c.chapters.map((ch) => `${ch.trackId}/${ch.slug}`)))
-    assert.ok(unique(c.lessons.map((l) => `${l.chapterId}/${l.slug}`)))
-    assert.ok(unique(c.exercises.map((e) => `${e.chapterId}/${e.slug}`)))
+    expect(unique(c.tracks.map((t) => t.slug))).toBe(true)
+    expect(unique(c.chapters.map((ch) => `${ch.trackId}/${ch.slug}`))).toBe(true)
+    expect(unique(c.lessons.map((l) => `${l.chapterId}/${l.slug}`))).toBe(true)
+    expect(unique(c.exercises.map((e) => `${e.chapterId}/${e.slug}`))).toBe(true)
     const prefixed = [...c.exercises, ...c.lessons].filter((x) => /^(js|ts)-/.test(x.slug))
-    assert.deepEqual(
-      prefixed.map((x) => x.slug),
-      [],
-    )
+    expect(prefixed.map((x) => x.slug)).toEqual([])
   })
 
   it('positions 1, 2, 3... sans trou dans leur parent', () => {
-    assert.deepEqual(
-      contiguousBy(c.tracks, () => 'parcours'),
-      [],
-    )
+    expect(contiguousBy(c.tracks, () => 'parcours')).toEqual([])
     // Les chapitres sont ordonnes dans leur niveau.
-    assert.deepEqual(
-      contiguousBy(c.chapters, (ch) => `${ch.trackId}/${ch.level}`),
-      [],
-    )
-    assert.deepEqual(
-      contiguousBy(c.lessons, (l) => `${l.chapterId}`),
-      [],
-    )
-    assert.deepEqual(
-      contiguousBy(c.exercises, (e) => `${e.chapterId}`),
-      [],
-    )
-    assert.deepEqual(
-      contiguousBy(c.testCases, (t) => `${t.exerciseId}`),
-      [],
-    )
+    expect(contiguousBy(c.chapters, (ch) => `${ch.trackId}/${ch.level}`)).toEqual([])
+    expect(contiguousBy(c.lessons, (l) => `${l.chapterId}`)).toEqual([])
+    expect(contiguousBy(c.exercises, (e) => `${e.chapterId}`)).toEqual([])
+    expect(contiguousBy(c.testCases, (t) => `${t.exerciseId}`)).toEqual([])
   })
 })
 
@@ -134,46 +113,48 @@ describe('contenu du dépôt : références', () => {
     const exercises = ids(c.exercises)
 
     for (const t of c.tracks) {
-      assert.ok(t.prerequisiteTrackId === null || tracks.has(t.prerequisiteTrackId), t.slug)
+      expect(t.prerequisiteTrackId === null || tracks.has(t.prerequisiteTrackId)).toBe(true)
     }
-    for (const ch of c.chapters) assert.ok(tracks.has(ch.trackId), ch.slug)
-    for (const l of c.lessons) assert.ok(chapters.has(l.chapterId), l.slug)
-    for (const e of c.exercises) assert.ok(chapters.has(e.chapterId), e.slug)
-    for (const t of c.testCases) assert.ok(exercises.has(t.exerciseId), `cas ${t.id}`)
+    for (const ch of c.chapters) expect(tracks.has(ch.trackId)).toBe(true)
+    for (const l of c.lessons) expect(chapters.has(l.chapterId)).toBe(true)
+    for (const e of c.exercises) expect(chapters.has(e.chapterId)).toBe(true)
+    for (const t of c.testCases) expect(exercises.has(t.exerciseId)).toBe(true)
   })
 })
 
 describe('contenu du dépôt : règles de publication', () => {
   it('un exercice publié a réussi sa correction automatique', () => {
     for (const e of c.exercises.filter(isPublished)) {
-      assert.equal(e.solutionCheckStatus, 'passed', e.slug)
+      expect(e.solutionCheckStatus).toBe('passed')
     }
   })
 
   it('un chapitre publié contient au moins une leçon ou un exercice publié', () => {
     for (const ch of c.chapters.filter(isPublished)) {
       const children = [...c.lessons, ...c.exercises].filter((x) => x.chapterId === ch.id)
-      assert.ok(children.some(isPublished), `« ${ch.slug} » est vide`)
+      expect(children.some(isPublished)).toBe(true)
     }
   })
 
   it('un parcours publié contient au moins un chapitre publié', () => {
     for (const t of c.tracks.filter(isPublished)) {
       const chapters = c.chapters.filter((ch) => ch.trackId === t.id)
-      assert.ok(chapters.some(isPublished), t.slug)
+      expect(chapters.some(isPublished)).toBe(true)
     }
   })
 
   it('date de première publication si et seulement si publié', () => {
     for (const row of [...c.tracks, ...c.chapters, ...c.lessons, ...c.exercises]) {
-      assert.equal(row.firstPublishedAt !== null, isPublished(row), row.slug)
+      expect(row.firstPublishedAt !== null).toBe(isPublished(row))
     }
   })
 
   it('les leçons d’écosystème ont une date de relecture', () => {
-    const ecosystem = new Set(c.chapters.filter((ch) => ch.level === 'ecosystem').map((ch) => ch.id))
+    const ecosystem = new Set(
+      c.chapters.filter((ch) => ch.level === 'ecosystem').map((ch) => ch.id),
+    )
     for (const l of c.lessons.filter((l) => ecosystem.has(l.chapterId))) {
-      assert.ok(l.lastReviewedAt instanceof Date, l.slug)
+      expect(l.lastReviewedAt instanceof Date).toBe(true)
     }
   })
 })

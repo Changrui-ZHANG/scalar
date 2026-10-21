@@ -116,7 +116,15 @@ export const MOCK_CHAPTERS: readonly Chapter[] = [
     'Attendre un résultat sans bloquer le programme.',
   ),
   {
-    ...chapter(12, 1, 'intermediate', 3, 'modules', 'Modules', 'Découper un programme en fichiers.'),
+    ...chapter(
+      12,
+      1,
+      'intermediate',
+      3,
+      'modules',
+      'Modules',
+      'Découper un programme en fichiers.',
+    ),
     status: 'draft',
     firstPublishedAt: null,
   },

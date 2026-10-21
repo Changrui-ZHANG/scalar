@@ -1,7 +1,6 @@
-import assert from 'node:assert/strict'
 import type { Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
-import { after, before, describe, it } from 'node:test'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import express from 'express'
 
@@ -28,6 +27,7 @@ interface TrackRow {
 interface Envelope {
   readonly success: boolean
   // Forme libre selon la route : verifiee par les assertions de chaque cas.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- charge utile polymorphe selon la route
   readonly data: any
   readonly error: string | null
 }
@@ -41,7 +41,10 @@ async function start(
   const app = express()
   app.use(express.json())
   app.use('/api/v1/executions', new ExecutionController().buildRouter())
-  app.use('/api/v1', new TrackController(new TrackService(tracks, lessons, exercises)).buildRouter())
+  app.use(
+    '/api/v1',
+    new TrackController(new TrackService(tracks, lessons, exercises)).buildRouter(),
+  )
   app.use('/api/v1', new LessonController(new LessonService(tracks, lessons)).buildRouter())
   app.use('/api/v1', new ExerciseController(new ExerciseService(tracks, exercises)).buildRouter())
   const server = await new Promise<Server>((resolve) => {
@@ -59,49 +62,52 @@ describe('API du contenu (données fictives)', () => {
     return { status: res.status, text, body: JSON.parse(text) as Envelope }
   }
 
-  before(async () => {
+  beforeAll(async () => {
     ;({ server, base } = await start())
   })
-  after(() => server.close())
+  afterAll(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        server.close((err) => (err ? reject(err) : resolve()))
+      }),
+  )
 
   it('GET /tracks liste les parcours, leur langage et leur prérequis', async () => {
     const { status, body } = await get('/tracks')
 
-    assert.equal(status, 200)
-    assert.deepEqual(
+    expect(status).toBe(200)
+    expect(
       body.data.map((t: TrackRow) => [t.slug, t.programmingLanguage, t.prerequisite?.slug ?? null]),
-      [
-        ['javascript', 'javascript', null],
-        ['typescript', 'typescript', 'javascript'],
-        ['conception', null, null],
-      ],
-    )
+    ).toEqual([
+      ['javascript', 'javascript', null],
+      ['typescript', 'typescript', 'javascript'],
+      ['conception', null, null],
+    ])
   })
 
   it('GET /tracks/:track sert le fil, numéroté de 1 à n, ou 404', async () => {
     const { status, body } = await get('/tracks/typescript')
 
-    assert.equal(status, 200)
-    assert.deepEqual(body.data.track, {
+    expect(status).toBe(200)
+    expect(body.data.track).toEqual({
       slug: 'typescript',
       name: 'TypeScript',
       programmingLanguage: 'typescript',
     })
-    assert.deepEqual(
+    expect(
       body.data.chapters.map((c: { number: number; slug: string; level: string }) => [
         c.number,
         c.level,
         c.slug,
       ]),
-      [
-        [1, 'beginner', 'pourquoi-typer'],
-        [2, 'beginner', 'types-de-base'],
-        [3, 'intermediate', 'generiques'],
-        [4, 'intermediate', 'unions-et-affinage'],
-        [5, 'ecosystem', 'tsc-et-tsconfig'],
-      ],
-    )
-    assert.deepEqual((await get('/tracks/python')).body, {
+    ).toEqual([
+      [1, 'beginner', 'pourquoi-typer'],
+      [2, 'beginner', 'types-de-base'],
+      [3, 'intermediate', 'generiques'],
+      [4, 'intermediate', 'unions-et-affinage'],
+      [5, 'ecosystem', 'tsc-et-tsconfig'],
+    ])
+    expect((await get('/tracks/python')).body).toEqual({
       success: false,
       data: null,
       error: 'Parcours introuvable.',
@@ -110,12 +116,12 @@ describe('API du contenu (données fictives)', () => {
 
   it('GET une leçon par son chemin complet, et masque les brouillons', async () => {
     const lesson = await get('/tracks/javascript/chapters/dotenv/lessons/dotenv')
-    assert.equal(lesson.status, 200)
-    assert.equal(lesson.body.data.lastReviewedAt, '2026-09-01T00:00:00.000Z')
-    assert.equal(lesson.body.data.chapter.number, 12)
+    expect(lesson.status).toBe(200)
+    expect(lesson.body.data.lastReviewedAt).toBe('2026-09-01T00:00:00.000Z')
+    expect(lesson.body.data.chapter.number).toBe(12)
 
-    assert.equal((await get('/tracks/javascript/chapters/modules/lessons/modules')).status, 404)
-    assert.equal((await get('/tracks/typescript/chapters/dotenv/lessons/dotenv')).status, 404)
+    expect((await get('/tracks/javascript/chapters/modules/lessons/modules')).status).toBe(404)
+    expect((await get('/tracks/typescript/chapters/dotenv/lessons/dotenv')).status).toBe(404)
   })
 
   it('GET un exercice par son chemin complet, sans solution', async () => {
@@ -123,28 +129,26 @@ describe('API du contenu (données fictives)', () => {
       '/tracks/typescript/chapters/generiques/exercises/dernier-ou-defaut',
     )
 
-    assert.equal(status, 200)
-    assert.equal(body.data.functionName, 'lastOr')
-    assert.equal(body.data.track.programmingLanguage, 'typescript')
-    assert.deepEqual(Object.keys(body.data.testCases[0]).toSorted(), [
+    expect(status).toBe(200)
+    expect(body.data.functionName).toBe('lastOr')
+    expect(body.data.track.programmingLanguage).toBe('typescript')
+    expect(Object.keys(body.data.testCases[0]).toSorted()).toEqual([
       'arguments',
       'description',
       'expectedResult',
     ])
-    assert.deepEqual(body.data.next, { chapterSlug: 'generiques', slug: 'envelopper' })
-    assert.equal(text.includes('solution'), false)
-    assert.equal(text.includes('return items[items.length - 1]'), false)
+    expect(body.data.next).toEqual({ chapterSlug: 'generiques', slug: 'envelopper' })
+    expect(text.includes('solution')).toBe(false)
+    expect(text.includes('return items[items.length - 1]')).toBe(false)
   })
 
   it('répond 404 pour un exercice sous le mauvais chapitre ou le mauvais parcours', async () => {
-    assert.equal(
+    expect(
       (await get('/tracks/typescript/chapters/types-de-base/exercises/dernier-ou-defaut')).status,
-      404,
-    )
-    assert.equal(
+    ).toBe(404)
+    expect(
       (await get('/tracks/javascript/chapters/generiques/exercises/dernier-ou-defaut')).status,
-      404,
-    )
+    ).toBe(404)
   })
 
   it('ne sert plus les anciennes routes', async () => {
@@ -158,7 +162,7 @@ describe('API du contenu (données fictives)', () => {
       '/tracks/javascript/chapters/boucles/lessons',
     ]) {
       const res = await fetch(`${base}${path}`)
-      assert.equal(res.status, 404, path)
+      expect(res.status).toBe(404)
     }
   })
 
@@ -170,11 +174,10 @@ describe('API du contenu (données fictives)', () => {
         body: JSON.stringify(body),
       })
     const path = '/tracks/javascript/chapters/conditions/exercises/est-pair/verifications'
-    assert.equal((await post(path, {})).status, 400)
-    assert.equal(
+    expect((await post(path, {})).status).toBe(400)
+    expect(
       (await post(path.replace('conditions', 'boucles'), { code: 'function isEven() {}' })).status,
-      404,
-    )
+    ).toBe(404)
   })
 })
 
@@ -190,23 +193,28 @@ describe('API d’exécution, avant tout appel au moteur', () => {
     return { status: res.status, body: (await res.json()) as Envelope }
   }
 
-  before(async () => {
+  beforeAll(async () => {
     ;({ server, base } = await start())
   })
-  after(() => server.close())
+  afterAll(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        server.close((err) => (err ? reject(err) : resolve()))
+      }),
+  )
 
   it('refuse un langage hors de l’enum', async () => {
     const { status, body } = await post({ programmingLanguage: 'python', code: 'print(1)' })
 
-    assert.equal(status, 400)
-    assert.match(body.error ?? '', /programmingLanguage/)
+    expect(status).toBe(400)
+    expect(body.error ?? '').toMatch(/programmingLanguage/)
   })
 
   it('applique la préparation du langage : un enum TypeScript est refusé', async () => {
     const { status, body } = await post({ programmingLanguage: 'typescript', code: 'enum A { X }' })
 
-    assert.equal(status, 400)
-    assert.match(body.error ?? '', /enum/)
+    expect(status).toBe(400)
+    expect(body.error ?? '').toMatch(/enum/)
   })
 })
 
@@ -222,19 +230,24 @@ describe('API du contenu (panne de la source)', () => {
     findChapter: down,
   }
 
-  before(async () => {
+  beforeAll(async () => {
     ;({ server, base } = await start(failing))
   })
-  after(() => server.close())
+  afterAll(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        server.close((err) => (err ? reject(err) : resolve()))
+      }),
+  )
 
   it('répond 500 avec un message générique, sans détail interne', async () => {
     for (const path of ['/tracks', '/tracks/javascript']) {
       const res = await fetch(`${base}${path}`)
       const text = await res.text()
 
-      assert.equal(res.status, 500)
-      assert.equal(JSON.parse(text).success, false)
-      assert.equal(text.includes('postgres'), false)
+      expect(res.status).toBe(500)
+      expect(JSON.parse(text).success).toBe(false)
+      expect(text.includes('postgres')).toBe(false)
     }
   })
 })

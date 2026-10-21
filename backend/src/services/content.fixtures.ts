@@ -16,7 +16,12 @@ const DATE = new Date('2026-09-28T00:00:00Z')
 const published = { status: 'published', firstPublishedAt: DATE } as const
 const stamps = { createdAt: DATE, updatedAt: DATE }
 
-export function track(id: number, slug: string, position: number, extra: Partial<Track> = {}): Track {
+export function track(
+  id: number,
+  slug: string,
+  position: number,
+  extra: Partial<Track> = {},
+): Track {
   return {
     id,
     slug,

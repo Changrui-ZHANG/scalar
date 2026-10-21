@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import { describe, expect, it } from 'vitest'
 
 import { InMemoryExerciseRepository } from '../repositories/exercise.repository.ts'
 import { InMemoryLessonRepository } from '../repositories/lesson.repository.ts'
@@ -16,7 +15,7 @@ const service = new TrackService(
 
 describe('TrackService.listTracks', () => {
   it('liste les parcours publiés dans l’ordre, avec langage et prérequis', async () => {
-    assert.deepEqual(await service.listTracks(), [
+    expect(await service.listTracks()).toEqual([
       {
         slug: 'javascript',
         name: 'JavaScript',
@@ -44,16 +43,18 @@ describe('TrackService.listTracks', () => {
   it('ne cite pas un prérequis non publié', async () => {
     const isolated = new TrackService(
       new InMemoryTrackRepository(
-        [track(1, 'base', 1, { status: 'draft' }), track(2, 'suite', 2, { prerequisiteTrackId: 1 })],
+        [
+          track(1, 'base', 1, { status: 'draft' }),
+          track(2, 'suite', 2, { prerequisiteTrackId: 1 }),
+        ],
         [],
       ),
       new InMemoryLessonRepository([]),
       new InMemoryExerciseRepository([], []),
     )
-    assert.deepEqual(
-      (await isolated.listTracks()).map((t) => [t.slug, t.prerequisite]),
-      [['suite', null]],
-    )
+    expect((await isolated.listTracks()).map((t) => [t.slug, t.prerequisite])).toEqual([
+      ['suite', null],
+    ])
   })
 })
 
@@ -61,54 +62,44 @@ describe('TrackService.getTrack', () => {
   it('ordonne les chapitres par niveau puis position, numérotés de 1 à n', async () => {
     const view = await service.getTrack('javascript')
 
-    assert.deepEqual(view?.track, {
+    expect(view?.track).toEqual({
       slug: 'javascript',
       name: 'JavaScript',
       programmingLanguage: 'javascript',
     })
-    assert.deepEqual(
-      view?.chapters.map((c) => [c.number, c.level, c.slug]),
-      [
-        [1, 'beginner', 'syntaxe-et-nommage'],
-        [2, 'beginner', 'variables'],
-        [3, 'beginner', 'conditions'],
-        [4, 'beginner', 'boucles'],
-        [5, 'beginner', 'fonctions'],
-        [6, 'beginner', 'erreurs'],
-        [7, 'beginner', 'classes'],
-        [8, 'intermediate', 'fonctions-flechees-et-closures'],
-        [9, 'intermediate', 'asynchrone'],
-        [10, 'advanced', 'prototypes'],
-        [11, 'advanced', 'proxy-et-reflect'],
-        [12, 'ecosystem', 'dotenv'],
-        [13, 'ecosystem', 'express'],
-      ],
-    )
+    expect(view?.chapters.map((c) => [c.number, c.level, c.slug])).toEqual([
+      [1, 'beginner', 'syntaxe-et-nommage'],
+      [2, 'beginner', 'variables'],
+      [3, 'beginner', 'conditions'],
+      [4, 'beginner', 'boucles'],
+      [5, 'beginner', 'fonctions'],
+      [6, 'beginner', 'erreurs'],
+      [7, 'beginner', 'classes'],
+      [8, 'intermediate', 'fonctions-flechees-et-closures'],
+      [9, 'intermediate', 'asynchrone'],
+      [10, 'advanced', 'prototypes'],
+      [11, 'advanced', 'proxy-et-reflect'],
+      [12, 'ecosystem', 'dotenv'],
+      [13, 'ecosystem', 'express'],
+    ])
   })
 
   it('donne à chaque chapitre ses leçons puis ses exercices, dans l’ordre', async () => {
     const view = await service.getTrack('typescript')
     const typesDeBase = view?.chapters.find((c) => c.slug === 'types-de-base')
 
-    assert.deepEqual(
-      typesDeBase?.lessons.map((l) => l.slug),
-      ['annotations', 'interfaces'],
-    )
-    assert.deepEqual(
-      typesDeBase?.exercises.map((e) => e.slug),
-      ['presenter', 'moyenne'],
-    )
-    assert.equal(typeof typesDeBase?.exercises[0]?.instructions, 'string')
+    expect(typesDeBase?.lessons.map((l) => l.slug)).toEqual(['annotations', 'interfaces'])
+    expect(typesDeBase?.exercises.map((e) => e.slug)).toEqual(['presenter', 'moyenne'])
+    expect(typeof typesDeBase?.exercises[0]?.instructions).toBe('string')
   })
 
   it('sert un parcours sans langage : des leçons, aucun exercice', async () => {
     const view = await service.getTrack('conception')
 
-    assert.equal(view?.track.programmingLanguage, null)
-    assert.deepEqual(
+    expect(view?.track.programmingLanguage).toBeNull()
+    expect(
       view?.chapters.map((c) => [c.slug, c.lessons.map((l) => l.slug), c.exercises.length]),
-      [['bases-de-la-conception', ['nommage-et-lisibilite', 'architecture-mvc'], 0]],
-    )
+    ).toEqual([['bases-de-la-conception', ['nommage-et-lisibilite', 'architecture-mvc'], 0]])
   })
 
   it('masque un élément dont un parent n’est pas publié', async () => {
@@ -130,14 +121,13 @@ describe('TrackService.getTrack', () => {
     )
     const view = await isolated.getTrack('publie')
 
-    assert.deepEqual(
+    expect(
       view?.chapters.map((c) => [c.slug, c.lessons.map((l) => l.slug), c.exercises.length]),
-      [['ouvert', ['lue'], 0]],
-    )
-    assert.equal(await isolated.getTrack('brouillon'), null)
+    ).toEqual([['ouvert', ['lue'], 0]])
+    expect(await isolated.getTrack('brouillon')).toBeNull()
   })
 
   it('renvoie null pour un parcours inconnu', async () => {
-    assert.equal(await service.getTrack('python'), null)
+    expect(await service.getTrack('python')).toBeNull()
   })
 })

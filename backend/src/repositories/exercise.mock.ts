@@ -51,7 +51,8 @@ export const MOCK_EXERCISES: readonly Exercise[] = [
     slug: 'est-pair',
     position: 1,
     title: 'Pair ou impair',
-    instructions: 'Écris une fonction `isEven(n)` qui renvoie `true` si `n` est pair, `false` sinon.',
+    instructions:
+      'Écris une fonction `isEven(n)` qui renvoie `true` si `n` est pair, `false` sinon.',
     functionName: 'isEven',
     starterCode: 'function isEven(n) {\n  \n}\n',
     solutionCode: 'function isEven(n) {\n  return n % 2 === 0\n}\n',

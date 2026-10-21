@@ -82,7 +82,10 @@ export function validateExercises(content: Content): readonly string[] {
     // memes prototypes, et c'est de toute facon ce que verra le client.
     const passes = (fn: (...args: unknown[]) => unknown, t: ExerciseTestCase): boolean => {
       try {
-        return JSON.stringify(fn(...(t.arguments as unknown[])) ?? null) === JSON.stringify(t.expectedResult)
+        return (
+          JSON.stringify(fn(...(t.arguments as unknown[])) ?? null) ===
+          JSON.stringify(t.expectedResult)
+        )
       } catch {
         return false
       }

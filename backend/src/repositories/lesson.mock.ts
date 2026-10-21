@@ -17,8 +17,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Syntaxe et conventions de nommage',
     summary: 'Instructions, commentaires, et comment bien nommer dès le premier jour.',
-    body:
-      '## Instructions et commentaires\n\nUn programme est une suite d’instructions. Le point-virgule final est facultatif, mais restez cohérent dans tout le projet.\n\n```js\n// commentaire sur une ligne\n/* commentaire\n   sur plusieurs lignes */\nconsole.log("Bonjour")\n```\n\n## Nommer\n\n- `camelCase` pour les variables et les fonctions : `prixTotal`, `calculerRemise()`\n- `PascalCase` pour les classes : `Panier`\n- `UPPER_SNAKE_CASE` pour les constantes de configuration : `MAX_TENTATIVES`\n- un nom dit ce que la valeur représente, pas son type : `utilisateurs` plutôt que `tableau`',
+    body: '## Instructions et commentaires\n\nUn programme est une suite d’instructions. Le point-virgule final est facultatif, mais restez cohérent dans tout le projet.\n\n```js\n// commentaire sur une ligne\n/* commentaire\n   sur plusieurs lignes */\nconsole.log("Bonjour")\n```\n\n## Nommer\n\n- `camelCase` pour les variables et les fonctions : `prixTotal`, `calculerRemise()`\n- `PascalCase` pour les classes : `Panier`\n- `UPPER_SNAKE_CASE` pour les constantes de configuration : `MAX_TENTATIVES`\n- un nom dit ce que la valeur représente, pas son type : `utilisateurs` plutôt que `tableau`',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -31,8 +30,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Variables et types primitifs',
     summary: '`const`, `let`, et les sept types primitifs du langage.',
-    body:
-      '## Déclarer\n\n`const` fige la liaison, `let` autorise la réaffectation. N’utilisez plus `var`.\n\n```js\nconst prenom = "Ada"\nlet age = 36\nage = age + 1\n```\n\n## Les types primitifs\n\n- `string` : du texte, `"Ada"`\n- `number` : entiers et décimaux, `42`, `0.1`\n- `boolean` : `true` ou `false`\n- `undefined` : une variable déclarée sans valeur\n- `null` : l’absence volontaire de valeur\n- `bigint` et `symbol`, plus rares\n\n`typeof` donne le type d’une valeur : `typeof 42` vaut `"number"`.',
+    body: '## Déclarer\n\n`const` fige la liaison, `let` autorise la réaffectation. N’utilisez plus `var`.\n\n```js\nconst prenom = "Ada"\nlet age = 36\nage = age + 1\n```\n\n## Les types primitifs\n\n- `string` : du texte, `"Ada"`\n- `number` : entiers et décimaux, `42`, `0.1`\n- `boolean` : `true` ou `false`\n- `undefined` : une variable déclarée sans valeur\n- `null` : l’absence volontaire de valeur\n- `bigint` et `symbol`, plus rares\n\n`typeof` donne le type d’une valeur : `typeof 42` vaut `"number"`.',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -45,8 +43,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Conditions',
     summary: '`if`, `else`, les comparaisons et l’égalité stricte.',
-    body:
-      '## if / else\n\n```js\nif (age >= 18) {\n  console.log("majeur")\n} else {\n  console.log("mineur")\n}\n```\n\n## Comparer\n\n- toujours `===` et `!==` : `==` convertit les types et surprend (`0 == ""` est vrai)\n- `&&` (et), `||` (ou), `!` (non)',
+    body: '## if / else\n\n```js\nif (age >= 18) {\n  console.log("majeur")\n} else {\n  console.log("mineur")\n}\n```\n\n## Comparer\n\n- toujours `===` et `!==` : `==` convertit les types et surprend (`0 == ""` est vrai)\n- `&&` (et), `||` (ou), `!` (non)',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -59,8 +56,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Boucles',
     summary: '`for`, `while` et `for…of` pour répéter une action.',
-    body:
-      '## for\n\n```js\nfor (let i = 1; i <= 3; i++) {\n  console.log(i)\n}\n```\n\n## while\n\nRépète tant que la condition est vraie. Vérifiez qu’elle finit par devenir fausse.\n\n## for…of\n\n```js\nfor (const fruit of ["pomme", "poire"]) {\n  console.log(fruit)\n}\n```',
+    body: '## for\n\n```js\nfor (let i = 1; i <= 3; i++) {\n  console.log(i)\n}\n```\n\n## while\n\nRépète tant que la condition est vraie. Vérifiez qu’elle finit par devenir fausse.\n\n## for…of\n\n```js\nfor (const fruit of ["pomme", "poire"]) {\n  console.log(fruit)\n}\n```',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -73,8 +69,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Fonctions',
     summary: 'Déclarer une fonction, ses paramètres et sa valeur de retour.',
-    body:
-      '## Déclarer et appeler\n\n```js\nfunction addition(a, b) {\n  return a + b\n}\n\naddition(2, 3) // 5\n```\n\n- une fonction sans `return` renvoie `undefined`\n- déclarer n’exécute rien : il faut l’appeler',
+    body: '## Déclarer et appeler\n\n```js\nfunction addition(a, b) {\n  return a + b\n}\n\naddition(2, 3) // 5\n```\n\n- une fonction sans `return` renvoie `undefined`\n- déclarer n’exécute rien : il faut l’appeler',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -87,8 +82,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Gérer une erreur avec try / catch',
     summary: 'Intercepter une erreur au lieu de laisser le programme s’arrêter.',
-    body:
-      '```js\ntry {\n  JSON.parse("pas du json")\n} catch (erreur) {\n  console.log("Lecture impossible :", erreur.message)\n}\n```\n\nN’attrapez que ce que vous savez traiter : un `catch` vide cache les bugs.',
+    body: '```js\ntry {\n  JSON.parse("pas du json")\n} catch (erreur) {\n  console.log("Lecture impossible :", erreur.message)\n}\n```\n\nN’attrapez que ce que vous savez traiter : un `catch` vide cache les bugs.',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -101,8 +95,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Classes',
     summary: 'Regrouper des données et le comportement qui va avec.',
-    body:
-      '```js\nclass Compteur {\n  valeur = 0\n\n  incrementer() {\n    this.valeur++\n  }\n}\n\nconst c = new Compteur()\nc.incrementer()\n```',
+    body: '```js\nclass Compteur {\n  valeur = 0\n\n  incrementer() {\n    this.valeur++\n  }\n}\n\nconst c = new Compteur()\nc.incrementer()\n```',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -115,8 +108,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Fonctions fléchées et closures',
     summary: 'Les fonctions anonymes de JavaScript, et ce qu’elles capturent.',
-    body:
-      '## Fonction fléchée\n\nC’est la « lambda » de JavaScript.\n\n```js\nconst double = (n) => n * 2\n[1, 2, 3].map((n) => n * 2) // [2, 4, 6]\n```\n\n## Closure\n\nUne fonction garde accès aux variables de l’endroit où elle a été créée.\n\n```js\nfunction creerCompteur() {\n  let n = 0\n  return () => ++n\n}\n```',
+    body: '## Fonction fléchée\n\nC’est la « lambda » de JavaScript.\n\n```js\nconst double = (n) => n * 2\n[1, 2, 3].map((n) => n * 2) // [2, 4, 6]\n```\n\n## Closure\n\nUne fonction garde accès aux variables de l’endroit où elle a été créée.\n\n```js\nfunction creerCompteur() {\n  let n = 0\n  return () => ++n\n}\n```',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -129,8 +121,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Promesses et async / await',
     summary: 'Attendre un résultat sans bloquer le programme.',
-    body:
-      '```js\nasync function chargerUtilisateur(id) {\n  const reponse = await fetch(`/api/utilisateurs/${id}`)\n  if (!reponse.ok) {\n    throw new Error(`Statut ${reponse.status}`)\n  }\n  return reponse.json()\n}\n```\n\n- `await` n’est permis que dans une fonction `async`\n- une erreur dans une fonction `async` rejette la promesse : entourez l’appel d’un `try / catch`',
+    body: '```js\nasync function chargerUtilisateur(id) {\n  const reponse = await fetch(`/api/utilisateurs/${id}`)\n  if (!reponse.ok) {\n    throw new Error(`Statut ${reponse.status}`)\n  }\n  return reponse.json()\n}\n```\n\n- `await` n’est permis que dans une fonction `async`\n- une erreur dans une fonction `async` rejette la promesse : entourez l’appel d’un `try / catch`',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -143,8 +134,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Prototypes',
     summary: 'Ce que `class` cache : la chaîne de prototypes.',
-    body:
-      'Chaque objet a un prototype, qui lui prête ses propriétés. `class` n’est qu’une syntaxe au-dessus de ce mécanisme.\n\n```js\nclass Animal {\n  parler() { return "..." }\n}\nObject.getPrototypeOf(new Animal()) === Animal.prototype // true\n```',
+    body: 'Chaque objet a un prototype, qui lui prête ses propriétés. `class` n’est qu’une syntaxe au-dessus de ce mécanisme.\n\n```js\nclass Animal {\n  parler() { return "..." }\n}\nObject.getPrototypeOf(new Animal()) === Animal.prototype // true\n```',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -157,8 +147,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Proxy et Reflect : la réflexivité en JavaScript',
     summary: 'Inspecter et intercepter les opérations sur un objet.',
-    body:
-      '```js\nconst suivi = new Proxy({}, {\n  set(cible, cle, valeur) {\n    console.log(`${String(cle)} = ${valeur}`)\n    return Reflect.set(cible, cle, valeur)\n  },\n})\nsuivi.nom = "Ada" // affiche nom = Ada\n```\n\nC’est ce qu’utilisent les frameworks réactifs, dont Vue.',
+    body: '```js\nconst suivi = new Proxy({}, {\n  set(cible, cle, valeur) {\n    console.log(`${String(cle)} = ${valeur}`)\n    return Reflect.set(cible, cle, valeur)\n  },\n})\nsuivi.nom = "Ada" // affiche nom = Ada\n```\n\nC’est ce qu’utilisent les frameworks réactifs, dont Vue.',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -171,8 +160,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'dotenv : la configuration hors du code',
     summary: 'Charger les variables d’environnement depuis un fichier `.env`.',
-    body:
-      '## À quoi ça sert\n\nGarder mots de passe et URL hors du code source, et changer de configuration sans recompiler.\n\n```js\nimport "dotenv/config"\nconst url = process.env.DATABASE_URL\n```\n\n## À savoir\n\n- ne commitez jamais le `.env`, mais un `.env.example` sans secret\n- depuis Node 20.6, `node --env-file=.env` fait la même chose sans dépendance',
+    body: '## À quoi ça sert\n\nGarder mots de passe et URL hors du code source, et changer de configuration sans recompiler.\n\n```js\nimport "dotenv/config"\nconst url = process.env.DATABASE_URL\n```\n\n## À savoir\n\n- ne commitez jamais le `.env`, mais un `.env.example` sans secret\n- depuis Node 20.6, `node --env-file=.env` fait la même chose sans dépendance',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: REVIEWED,
@@ -185,8 +173,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Express : un serveur HTTP en quelques lignes',
     summary: 'Le framework web minimal le plus répandu de Node.js.',
-    body:
-      '```js\nimport express from "express"\n\nconst app = express()\napp.get("/bonjour", (req, res) => res.json({ message: "Bonjour" }))\napp.listen(3000)\n```\n\n## Quand l’utiliser\n\n- une API simple, sans besoin de structure imposée\n- alternatives : Fastify (plus rapide), NestJS (plus structuré)',
+    body: '```js\nimport express from "express"\n\nconst app = express()\napp.get("/bonjour", (req, res) => res.json({ message: "Bonjour" }))\napp.listen(3000)\n```\n\n## Quand l’utiliser\n\n- une API simple, sans besoin de structure imposée\n- alternatives : Fastify (plus rapide), NestJS (plus structuré)',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: REVIEWED,
@@ -199,8 +186,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Nommage et lisibilité',
     summary: 'Un code se lit dix fois plus qu’il ne s’écrit.',
-    body:
-      '- une fonction fait une chose, et son nom dit laquelle : `envoyerFacture`, pas `traiter`\n- un booléen se lit comme une question : `estConnecte`, `aDesErreurs`\n- évitez les abréviations, sauf universelles (`id`, `url`)\n- préférez un nom long et clair à un commentaire qui explique un nom court',
+    body: '- une fonction fait une chose, et son nom dit laquelle : `envoyerFacture`, pas `traiter`\n- un booléen se lit comme une question : `estConnecte`, `aDesErreurs`\n- évitez les abréviations, sauf universelles (`id`, `url`)\n- préférez un nom long et clair à un commentaire qui explique un nom court',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -213,8 +199,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 2,
     title: 'L’architecture MVC',
     summary: 'Séparer les données, l’affichage et la logique qui les relie.',
-    body:
-      '## Les trois rôles\n\n- Modèle : les données et leurs règles\n- Vue : ce que voit l’utilisateur\n- Contrôleur : reçoit la demande, appelle le modèle, choisit la vue\n\nDans une API, la « vue » est la réponse JSON. C’est la structure du backend de Scalar : un contrôleur par ressource, qui délègue à un service.',
+    body: '## Les trois rôles\n\n- Modèle : les données et leurs règles\n- Vue : ce que voit l’utilisateur\n- Contrôleur : reçoit la demande, appelle le modèle, choisit la vue\n\nDans une API, la « vue » est la réponse JSON. C’est la structure du backend de Scalar : un contrôleur par ressource, qui délègue à un service.',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -227,8 +212,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Pourquoi typer ?',
     summary: 'Ce que TypeScript ajoute à JavaScript, et ce qu’il ne change pas.',
-    body:
-      'TypeScript, c’est JavaScript avec des types vérifiés avant l’exécution. Le code produit reste du JavaScript : les bases (conditions, boucles, fonctions) sont les mêmes.\n\n- une faute de frappe dans un nom de propriété est signalée avant de lancer le programme\n- l’éditeur complète et documente le code\n- les types disparaissent à l’exécution : ils ne protègent pas des données reçues de l’extérieur',
+    body: 'TypeScript, c’est JavaScript avec des types vérifiés avant l’exécution. Le code produit reste du JavaScript : les bases (conditions, boucles, fonctions) sont les mêmes.\n\n- une faute de frappe dans un nom de propriété est signalée avant de lancer le programme\n- l’éditeur complète et documente le code\n- les types disparaissent à l’exécution : ils ne protègent pas des données reçues de l’extérieur',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -241,8 +225,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Annotations et types primitifs',
     summary: 'Annoter variables, paramètres et valeurs de retour.',
-    body:
-      '```ts\nconst prenom: string = "Ada"\nlet age: number = 36\nconst actif: boolean = true\n\nfunction doubler(n: number): number {\n  return n * 2\n}\n```\n\n- `const x = 42` suffit : TypeScript infère `number`\n- annotez surtout les paramètres et les valeurs de retour des fonctions',
+    body: '```ts\nconst prenom: string = "Ada"\nlet age: number = 36\nconst actif: boolean = true\n\nfunction doubler(n: number): number {\n  return n * 2\n}\n```\n\n- `const x = 42` suffit : TypeScript infère `number`\n- annotez surtout les paramètres et les valeurs de retour des fonctions',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -255,8 +238,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 2,
     title: 'Interfaces et types d’objets',
     summary: 'Décrire la forme d’un objet avec `interface` ou `type`.',
-    body:
-      '```ts\ninterface Utilisateur {\n  id: number\n  nom: string\n  email?: string\n}\n\nfunction afficher(u: Utilisateur): string {\n  return u.nom\n}\n```\n\n- `?` rend une propriété facultative\n- `interface` pour une forme d’objet, `type` pour une union ou un alias',
+    body: '```ts\ninterface Utilisateur {\n  id: number\n  nom: string\n  email?: string\n}\n\nfunction afficher(u: Utilisateur): string {\n  return u.nom\n}\n```\n\n- `?` rend une propriété facultative\n- `interface` pour une forme d’objet, `type` pour une union ou un alias',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -269,8 +251,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Génériques',
     summary: 'Écrire une fonction ou une classe valable pour plusieurs types.',
-    body:
-      '```ts\nfunction premier<T>(elements: T[]): T | undefined {\n  return elements[0]\n}\n\npremier([1, 2]) // number | undefined\npremier(["a"]) // string | undefined\n```\n\n## Classe générique\n\n```ts\nclass Pile<T> {\n  private elements: T[] = []\n\n  empiler(e: T): void {\n    this.elements.push(e)\n  }\n}\n```',
+    body: '```ts\nfunction premier<T>(elements: T[]): T | undefined {\n  return elements[0]\n}\n\npremier([1, 2]) // number | undefined\npremier(["a"]) // string | undefined\n```\n\n## Classe générique\n\n```ts\nclass Pile<T> {\n  private elements: T[] = []\n\n  empiler(e: T): void {\n    this.elements.push(e)\n  }\n}\n```',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -283,8 +264,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'Unions et affinage',
     summary: 'Une valeur qui peut avoir plusieurs types, et comment les distinguer.',
-    body:
-      '```ts\nfunction longueur(x: string | string[]): number {\n  if (typeof x === "string") {\n    return x.length // ici, x est une string\n  }\n  return x.length // ici, un tableau\n}\n```',
+    body: '```ts\nfunction longueur(x: string | string[]): number {\n  if (typeof x === "string") {\n    return x.length // ici, x est une string\n  }\n  return x.length // ici, un tableau\n}\n```',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: null,
@@ -297,8 +277,7 @@ export const MOCK_LESSONS: readonly Lesson[] = [
     position: 1,
     title: 'tsc et tsconfig.json',
     summary: 'Vérifier les types d’un projet et régler le compilateur.',
-    body:
-      '```bash\nnpx tsc --noEmit\n```\n\nVérifie tout le projet sans rien produire : c’est ce que lance la CI de Scalar.\n\n- activez `"strict": true` dès le début : l’ajouter plus tard coûte cher\n- depuis Node 22.18, `node fichier.ts` exécute directement un fichier TypeScript simple',
+    body: '```bash\nnpx tsc --noEmit\n```\n\nVérifie tout le projet sans rien produire : c’est ce que lance la CI de Scalar.\n\n- activez `"strict": true` dès le début : l’ajouter plus tard coûte cher\n- depuis Node 22.18, `node fichier.ts` exécute directement un fichier TypeScript simple',
     status: 'published',
     firstPublishedAt: DATE,
     lastReviewedAt: REVIEWED,
