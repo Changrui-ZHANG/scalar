@@ -51,13 +51,6 @@ const isActive = (to: string) => route.path === to || route.path.startsWith(`${t
       <slot />
     </main>
 
-    <footer class="border-t">
-      <div
-        class="max-w-content text-body-sm text-muted-foreground mx-auto flex flex-wrap justify-between gap-2 px-4 py-5"
-      >
-        <span class="text-foreground font-semibold">Scalar</span>
-        <span>Comprendre. Pratiquer. Exécuter.</span>
-      </div>
-    </footer>
+    <LayoutFooter />
   </div>
 </template>
