@@ -1,0 +1,5 @@
+# Normalisation des fins de ligne
+* text=auto
+
+# Les scripts shell doivent toujours avoir des fins de ligne LF (Linux)
+*.sh text eol=lf
