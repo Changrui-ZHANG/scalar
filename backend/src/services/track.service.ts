@@ -5,6 +5,8 @@
  * ne renvoient que du contenu publie, et chaque recherche part du parcours.
  */
 
+import { parseMarkdown, type MarkdownBlock } from '@scalar/shared/markdown'
+import type { LessonHeading } from '@scalar/shared/api'
 import type { Chapter, ChapterLevel, ProgrammingLanguage, Track } from '../db/schema.ts'
 import type { ExerciseRepository } from '../repositories/exercise.repository.ts'
 import type { LessonRepository } from '../repositories/lesson.repository.ts'
@@ -33,6 +35,7 @@ export interface TrackChapter {
     readonly slug: string
     readonly title: string
     readonly summary: string
+    readonly headings: readonly LessonHeading[]
   }[]
   readonly exercises: readonly {
     readonly slug: string
@@ -93,6 +96,13 @@ export class TrackService {
     }
   }
 
+  private extractHeadings(body: string): readonly LessonHeading[] {
+    const blocks = parseMarkdown(body, null)
+    return blocks
+      .filter((b): b is Extract<MarkdownBlock, { type: 'heading' }> => b.type === 'heading')
+      .map((b) => ({ id: b.id, text: b.text }))
+  }
+
   private async toTrackChapter(
     track: Track,
     chapter: Chapter,
@@ -107,7 +117,12 @@ export class TrackService {
       title: chapter.title,
       level: chapter.level,
       number,
-      lessons: lessons.map((l) => ({ slug: l.slug, title: l.title, summary: l.summary })),
+      lessons: lessons.map((l) => ({
+        slug: l.slug,
+        title: l.title,
+        summary: l.summary,
+        headings: this.extractHeadings(l.body),
+      })),
       exercises: exercises.map((e) => ({
         slug: e.slug,
         title: e.title,

@@ -93,6 +93,16 @@ describe('TrackService.getTrack', () => {
     expect(typeof typesDeBase?.exercises[0]?.instructions).toBe('string')
   })
 
+  it('expose les headings (intertitres ##) avec ancres calculées dans les leçons', async () => {
+    const view = await service.getTrack('javascript')
+    const syntaxe = view?.chapters.find((c) => c.slug === 'syntaxe-et-nommage')
+    const firstLesson = syntaxe?.lessons[0]
+    expect(firstLesson?.headings).toEqual([
+      { id: 'instructions-et-commentaires', text: 'Instructions et commentaires' },
+      { id: 'nommer', text: 'Nommer' },
+    ])
+  })
+
   it('sert un parcours sans langage : des leçons, aucun exercice', async () => {
     const view = await service.getTrack('conception')
 

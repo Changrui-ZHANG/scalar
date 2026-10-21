@@ -107,6 +107,15 @@ describe('API du contenu (données fictives)', () => {
       [4, 'intermediate', 'unions-et-affinage'],
       [5, 'ecosystem', 'tsc-et-tsconfig'],
     ])
+    const firstLesson = body.data.chapters[0].lessons[0]
+    expect(Array.isArray(firstLesson.headings)).toBe(true)
+    const lessonWithHeadings = body.data.chapters
+      .flatMap((c: { lessons: { headings: { id: string; text: string }[] }[] }) => c.lessons)
+      .find((l: { headings: { id: string; text: string }[] }) => l.headings.length > 0)
+    expect(lessonWithHeadings).toBeDefined()
+    expect(lessonWithHeadings?.headings[0]).toHaveProperty('id')
+    expect(lessonWithHeadings?.headings[0]).toHaveProperty('text')
+
     expect((await get('/tracks/python')).body).toEqual({
       success: false,
       data: null,
