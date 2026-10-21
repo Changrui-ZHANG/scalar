@@ -12,7 +12,7 @@ COPY packages/ui/package.json packages/ui/
 COPY packages packages
 COPY frontend frontend
 # Le postinstall (nuxt prepare) a besoin de frontend/ : copié avant.
-RUN --mount=type=cache,target=/root/.npm npm ci --workspace frontend --include-workspace-root
+RUN --mount=type=cache,target=/root/.npm npm ci --workspace frontend --workspace @scalar/ui --include-workspace-root
 ENV HOST=0.0.0.0 PORT=3000
 EXPOSE 3000
 CMD ["npm", "run", "dev", "--workspace", "frontend"]
