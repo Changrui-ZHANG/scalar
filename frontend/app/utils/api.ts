@@ -1,7 +1,7 @@
 import type { ChapterLevel, ExecutionStatus, ProgrammingLanguage } from '@scalar/shared/enums'
-import type { ApiPublicResponse } from '@scalar/shared/api'
+import type { ApiPublicResponse, LessonHeading } from '@scalar/shared/api'
 
-export type { ChapterLevel, ExecutionStatus, ProgrammingLanguage }
+export type { ChapterLevel, ExecutionStatus, LessonHeading, ProgrammingLanguage }
 
 /**
  * Contrats de l'API, miroirs des services du backend : parcours, lecons,
@@ -34,6 +34,7 @@ export interface TrackChapter {
     readonly slug: string
     readonly title: string
     readonly summary: string
+    readonly headings: readonly LessonHeading[]
   }[]
   readonly exercises: readonly {
     readonly slug: string
@@ -54,12 +55,13 @@ export interface ChapterLink {
   readonly number: number
 }
 
-// --- Lecons et exercices -------------------------------------------------------
+// --- Lecons --------------------------------------------------------------------
 
 export interface LessonDetail {
   readonly slug: string
   readonly title: string
   readonly summary: string
+  /** Contenu Markdown complet. */
   readonly body: string
   readonly lastReviewedAt: string | null
   readonly number: number
@@ -67,13 +69,15 @@ export interface LessonDetail {
   readonly chapter: ChapterLink
 }
 
-export interface TestCaseView {
+// --- Exercices -----------------------------------------------------------------
+
+export interface PublicTestCase {
   readonly arguments: readonly unknown[]
   readonly expectedResult: unknown
   readonly description: string | null
 }
 
-export interface PublicExercise {
+export interface ExerciseDetail {
   readonly slug: string
   readonly title: string
   readonly number: number
@@ -81,60 +85,67 @@ export interface PublicExercise {
   readonly functionName: string
   readonly starterCode: string
   readonly hints: readonly string[]
-  readonly testCases: readonly TestCaseView[]
+  readonly testCases: readonly PublicTestCase[]
   readonly track: TrackLink & { readonly programmingLanguage: ProgrammingLanguage }
   readonly chapter: ChapterLink
   readonly next: { readonly chapterSlug: string; readonly slug: string } | null
 }
 
-// --- Execution et correction ---------------------------------------------------
+export type PublicExercise = ExerciseDetail
 
-/** Miroir de `ExecutionResult` dans `execution.service.ts`. */
+// --- Execution et verification -------------------------------------------------
+
+export interface ExecutionRun {
+  readonly stdout: string
+  readonly stderr: string
+  readonly output: string
+  readonly code: number | null
+  readonly signal: string | null
+  readonly wall_time: number | null
+}
+
 export interface ExecutionResult {
   readonly status: ExecutionStatus
   readonly label: string
-  readonly run: {
-    readonly stdout: string
-    readonly stderr: string
-    readonly code: number | null
-    readonly signal: string | null
-    readonly cpu_time?: number
-    readonly wall_time?: number
-  }
+  readonly run: ExecutionRun
 }
 
-/** Miroir de `VerificationResult` dans `verification.service.ts`. */
+export interface VerificationCheck {
+  readonly label: string
+  readonly passed: boolean
+  readonly detail: string | null
+  readonly actual?: unknown
+}
+
 export interface VerificationResult {
   readonly passed: boolean
   readonly passedCount: number
   readonly total: number
-  readonly checks: readonly {
-    readonly label: string
-    readonly passed: boolean
-    readonly detail: string | null
-  }[]
+  readonly checks: readonly VerificationCheck[]
   readonly execution: ExecutionResult
 }
 
-// --- Outils --------------------------------------------------------------------
+// --- Fonctions utilitaires -----------------------------------------------------
+
+/** Segment d'URL sûr : un slug vient de l'URL, donc de l'utilisateur. */
+export const seg = (value: string): string => encodeURIComponent(value)
 
 /**
- * Base de l'API selon le cote : le rendu serveur appelle le backend en direct,
+ * Base de l'API selon le côté : le rendu serveur appelle le backend en direct,
  * le navigateur reste sur l'origine unique.
  */
 export function apiUrl(path: string): string {
   const config = useRuntimeConfig()
-  const base = import.meta.server ? config.apiInternalBase : config.public.apiBase
+  const base = import.meta.server
+    ? (config.apiInternalBase ?? config.apiInterne ?? 'http://backend:3000')
+    : (config.public.apiBase ?? '/api')
   return `${base}${path}`
 }
 
-/** Segment d'URL sur : un slug vient de l'URL, donc de l'utilisateur. */
-export const seg = (value: string): string => encodeURIComponent(value)
-
-/** Message affichable d'une erreur `$fetch`, sans jamais exposer de detail interne. */
+/** Message affichable d'une erreur `$fetch`, sans jamais exposer de détail interne. */
 export function apiErrorMessage(err: unknown, fallback: string): string {
   const envelope = (err as { data?: Partial<ApiResponse<never>> } | null)?.data
-  return (envelope as { error?: string | null } | undefined)?.error ?? fallback
+  return envelope?.error ?? fallback
 }
 
 /** Rendu d'un appel de test, ex. `swap(1, 2)`. */
