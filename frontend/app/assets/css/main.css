@@ -1,138 +1,164 @@
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 @import 'tailwindcss';
 @import '../../../../packages/ui/assets/css/code.css';
 @import '../../../../packages/ui/assets/css/content.css';
 @source '../../../../packages/ui';
 
-/* Charte Scalar. Le clair suit la charte ; le sombre reprend la maquette Figma. */
+/* Thème forcé par l'apprenant ; sinon les variables suivent le système. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
 :root {
-  --background: #f7f5ef;
-  --surface: #fffef9;
-  --foreground: #19211c;
-  --border: #d8d9d0;
-  --muted-foreground: #62685f;
-  --brand: #3757f5;
-  --brand-foreground: #ffffff;
-  --lesson: #3757f5;
-  --lesson-soft: #e9edff;
-  --exercise: #c94f2a;
-  --exercise-soft: #fff0e9;
-  --success: #237650;
-  --success-soft: #e5f4eb;
-  --danger: #b42318;
-  --danger-soft: #fdecea;
-  --example: #7550ad;
-  --code-surface: #18201b;
-  --code-foreground: #e8ebe4;
+  --bg: #fffdf7;
+  --surface: #ffffff;
+  --surface-muted: #f6f1e6;
+  --border: #e7dfcc;
+  --text: #22201b;
+  --text-muted: #6b6457;
+  --primary: #3757f5;
+  --primary-soft: #eceffe;
+  --on-primary: #ffffff;
+  --exercise: #b05129;
+  --exercise-soft: #fbede4;
+  --success: #3c7854;
+  --success-soft: #e6f1ea;
+  --danger: #b3261e;
+  --danger-soft: #fbeae8;
+  --code-bg: #f6f1e6;
+  --code-text: #22201b;
+  --code-keyword: #3757f5;
+  --code-function: #a1491f;
+  --code-string: #3c7854;
+  --code-comment: #746d5f;
+  --code-line: #726d61;
+}
+
+[data-theme='dark'] {
+  --bg: #0f1115;
+  --surface: #161920;
+  --surface-muted: #1d212a;
+  --border: #272b35;
+  --text: #ecedef;
+  --text-muted: #9aa0ad;
+  --primary: #7c8cff;
+  --primary-soft: #1e2340;
+  --on-primary: #0f1115;
+  --exercise: #f5a524;
+  --exercise-soft: #33260f;
+  --success: #4ade80;
+  --success-soft: #13301f;
+  --danger: #f87171;
+  --danger-soft: #3a1717;
+  --code-bg: #12151b;
+  --code-text: #e6e8ec;
+  --code-keyword: #8ea0ff;
+  --code-function: #f5b451;
+  --code-string: #7ee2a0;
+  --code-comment: #787f8b;
+  --code-line: #7a7e89;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #161b18;
-    --surface: #1e2420;
-    --foreground: #f0f1ec;
-    --border: #333a35;
-    --muted-foreground: #a3a9a0;
-    --brand: #8193ff;
-    --brand-foreground: #10131f;
-    --lesson: #a9b5ff;
-    --lesson-soft: #232a4a;
-    --exercise: #f09a78;
-    --exercise-soft: #3a241c;
-    --success: #7fd3a4;
-    --success-soft: #1f3a2b;
-    --danger: #ff9b8f;
-    --danger-soft: #3d1f1b;
-    --example: #c3a5f0;
-    --code-surface: #111512;
-    --code-foreground: #e8ebe4;
+  :root:not([data-theme='light']) {
+    --bg: #0f1115;
+    --surface: #161920;
+    --surface-muted: #1d212a;
+    --border: #272b35;
+    --text: #ecedef;
+    --text-muted: #9aa0ad;
+    --primary: #7c8cff;
+    --primary-soft: #1e2340;
+    --on-primary: #0f1115;
+    --exercise: #f5a524;
+    --exercise-soft: #33260f;
+    --success: #4ade80;
+    --success-soft: #13301f;
+    --danger: #f87171;
+    --danger-soft: #3a1717;
+    --code-bg: #12151b;
+    --code-text: #e6e8ec;
+    --code-keyword: #8ea0ff;
+    --code-function: #f5b451;
+    --code-string: #7ee2a0;
+    --code-comment: #787f8b;
+    --code-line: #7a7e89;
   }
 }
 
 @theme inline {
-  --font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
-  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-
-  --text-title: 1.375rem;
-  --text-title--line-height: 1.25;
-  --text-title--font-weight: 700;
-  --text-title--letter-spacing: -0.01em;
-
-  --text-body-sm: 0.84375rem;
-  --text-body-sm--line-height: 1.6;
-  --text-body-sm--font-weight: 400;
-
-  --container-content: 1180px;
-
-  --color-background: var(--background);
+  --color-bg: var(--bg);
   --color-surface: var(--surface);
-  --color-foreground: var(--foreground);
+  --color-surface-muted: var(--surface-muted);
   --color-border: var(--border);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-brand: var(--brand);
-  --color-brand-foreground: var(--brand-foreground);
-  --color-lesson: var(--lesson);
-  --color-lesson-soft: var(--lesson-soft);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-primary: var(--primary);
+  --color-primary-soft: var(--primary-soft);
+  --color-on-primary: var(--on-primary);
   --color-exercise: var(--exercise);
   --color-exercise-soft: var(--exercise-soft);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
-  --color-example: var(--example);
-  --color-code-surface: var(--code-surface);
-  --color-code-foreground: var(--code-foreground);
+  --color-code-bg: var(--code-bg);
+  --color-code-text: var(--code-text);
+  --color-code-keyword: var(--code-keyword);
+  --color-code-function: var(--code-function);
+  --color-code-string: var(--code-string);
+  --color-code-comment: var(--code-comment);
+  --color-code-line: var(--code-line);
+
+  /* Aliases de compatibilité */
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-muted-foreground: var(--text-muted);
+  --color-brand: var(--primary);
+  --color-brand-foreground: var(--on-primary);
+  --color-lesson: var(--primary);
+  --color-lesson-soft: var(--primary-soft);
+}
+
+@theme {
+  --font-display: 'Fraunces', serif;
+  --font-sans: 'Source Sans 3', sans-serif;
+  --font-mono: 'Fira Code', monospace;
+
+  --text-hero: 3.375rem;   /* 54 */
+  --text-h1: 2.625rem;    /* 42 */
+  --text-title: 1.875rem;  /* 30 */
+  --text-h2: 1.625rem;    /* 26 */
+  --text-lede: 1.1875rem;  /* 19 */
+  --text-body: 1.0625rem; /* 17 */
+  --text-ui: 0.90625rem;   /* 14,5 */
+  --text-meta: 0.8125rem; /* 13 */
+
+  --radius-card: 14px;
+  --radius-control: 12px;
+  --radius-row: 10px;
+  --radius-inline: 5px;
+
+  --spacing-55: 13.75rem;  /* 220px */
+  --spacing-70: 17.5rem;   /* 280px */
+  --spacing-80: 20rem;     /* 320px */
+  --spacing-90: 22.5rem;   /* 360px */
+  --spacing-125: 31.25rem; /* 500px */
+  --spacing-170: 42.5rem;  /* 680px */
+  --spacing-280: 70rem;    /* 1120px */
 }
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: var(--border);
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
   }
 
-  h1,
-  h2 {
-    @apply font-display;
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
   }
-
-  :focus-visible {
-    @apply outline-brand outline-2 outline-offset-2;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      transition-duration: 0.01ms !important;
-      animation-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
-    }
-  }
-}
-
-/* Boutons : 44 px de haut minimum, zone tactile suffisante sur mobile. */
-@utility btn {
-  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 py-2 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
-}
-@utility btn-primary {
-  @apply btn bg-brand text-brand-foreground border-transparent hover:opacity-90;
-}
-@utility btn-inverse {
-  @apply btn bg-foreground text-background border-transparent hover:opacity-90;
-}
-@utility btn-secondary {
-  @apply btn bg-surface hover:bg-foreground/5;
-}
-@utility card {
-  @apply bg-surface rounded-2xl border;
-}
-@utility eyebrow {
-  @apply text-muted-foreground text-xs font-semibold tracking-[0.12em] uppercase;
-}
-@utility alert-error {
-  @apply border-danger/40 bg-danger-soft text-danger rounded-lg border p-3;
 }
