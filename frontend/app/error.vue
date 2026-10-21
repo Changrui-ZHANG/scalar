@@ -1,23 +1,37 @@
 <script setup lang="ts">
 import type { NuxtError } from '#app'
 
-const props = defineProps<{ error: NuxtError }>()
+interface Props {
+  error: NuxtError
+}
 
-const titre = computed(() =>
-  props.error.statusCode === 404 ? 'Page introuvable' : 'Une erreur est survenue',
+const props = defineProps<Props>()
+
+const is404 = computed(() => props.error.statusCode === 404)
+const title = computed(() => (is404.value ? 'Page introuvable' : 'Service indisponible'))
+const text = computed(() =>
+  is404.value
+    ? "La page que vous cherchez n'existe pas ou a été déplacée."
+    : 'Une erreur inattendue est survenue lors du chargement des données.',
 )
 
-function retourAccueil() {
+function onReturnHome() {
   clearError({ redirect: '/' })
 }
 </script>
 
 <template>
-  <div class="grid min-h-screen place-items-center p-4">
-    <section class="grid gap-4 text-center">
-      <p class="text-sm">{{ error.statusCode }}</p>
-      <h1 class="text-3xl font-semibold">{{ titre }}</h1>
-      <button type="button" class="underline" @click="retourAccueil">Revenir a l'accueil</button>
-    </section>
+  <div class="flex min-h-screen items-center justify-center p-4 bg-bg text-text">
+    <UiStatePanel
+      :icon="is404 ? 'lucide:map-pin-off' : 'lucide:cloud-off'"
+      :title="title"
+      :text="text"
+    >
+      <template #actions>
+        <UiButton variant="primary" icon="lucide:arrow-left" @click="onReturnHome">
+          Revenir à l'accueil
+        </UiButton>
+      </template>
+    </UiStatePanel>
   </div>
 </template>

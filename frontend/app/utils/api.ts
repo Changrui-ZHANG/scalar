@@ -148,7 +148,4 @@ export function apiErrorMessage(err: unknown, fallback: string): string {
   return envelope?.error ?? fallback
 }
 
-/** Rendu d'un appel de test, ex. `swap(1, 2)`. */
-export function formatCall(functionName: string, args: readonly unknown[]): string {
-  return `${functionName}(${args.map((a) => JSON.stringify(a)).join(', ')})`
-}
+
