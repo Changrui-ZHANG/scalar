@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160" fill="none" role="img" aria-label="Scalar">
+  <!-- Complète : 3 carrés avec nuances -->
+  <style>
+    .square-large { stroke: #C3CDFD; }
+    .square-medium { stroke: #7F96F9; }
+    .square-small { fill: #3757F5; }
+    @media (prefers-color-scheme: dark) {
+      .square-large { stroke: #2B3570; }
+      .square-medium { stroke: #5868D8; }
+      .square-small { fill: #7C8CFF; }
+    }
+  </style>
+  <rect class="square-large" x="25.5" y="25.5" width="109" height="109" rx="22" stroke-width="11" />
+  <rect class="square-medium" x="25.5" y="61.5" width="73" height="73" rx="16" stroke-width="11" />
+  <rect class="square-small" x="20" y="92" width="48" height="48" rx="10" />
+</svg>
