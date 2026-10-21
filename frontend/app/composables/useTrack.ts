@@ -1,36 +1,53 @@
-/**
- * Les episodes d'un parcours, avec leur statut tire de la progression.
- * Construits a partir du fil servi par l'API : rien n'est recopie ici.
- */
-export async function useTrackEpisodes(trackSlug: () => string) {
-  // Avant tout `await` : apres, le contexte Nuxt (useState, onMounted) est perdu.
-  const progress = useProgress()
-  const { data, error, status } = await useFetch<ApiResponse<TrackView>>(
-    () => apiUrl(`/tracks/${seg(trackSlug())}`),
-    { key: () => `track-${trackSlug()}` },
-  )
+import { computed, toValue } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter } from 'vue'
+import type { TrackView } from '@scalar/shared/api'
+import type { TrackCard } from '~/types/episode'
+import { fetchTrack } from '~/services/tracks'
+import { useProgressStore } from '~/stores/progress'
+import { buildTrackCard } from '~/utils/track'
 
-  const track = computed(() => data.value?.data ?? null)
-  const episodes = computed(() =>
-    track.value ? buildEpisodes(track.value, progress.completedIn(trackSlug())) : [],
-  )
-
-  return { track, episodes, error, status, progress }
+export interface TrackState {
+  readonly track: ComputedRef<TrackView>
+  readonly card: ComputedRef<TrackCard>
+  refresh(): Promise<void>
 }
 
-/** Le fil de chaque parcours, pour la page Parcours et sa recherche. */
-export async function useAllTracks(tracks: Ref<readonly TrackSummary[]>) {
-  const { data, error, status } = await useAsyncData(
-    'track-views',
-    () =>
-      Promise.all(
-        tracks.value.map((t) => $fetch<ApiResponse<TrackView>>(apiUrl(`/tracks/${seg(t.slug)}`))),
-      ),
-    { watch: [tracks] },
+export async function useTrack(slug?: MaybeRefOrGetter<string>): Promise<TrackState> {
+  const route = useRoute()
+  const trackSlug = computed<string>(() => {
+    if (slug !== undefined) {
+      return toValue(slug)
+    }
+    const param = route.params.track ?? route.params.parcours
+    const val = Array.isArray(param) ? param[0] : param
+    return val ?? ''
+  })
+
+  const progressStore = useProgressStore()
+
+  const { data: trackData, refresh } = await useAsyncData<TrackView>(
+    () => `track:${trackSlug.value}`,
+    () => fetchTrack(trackSlug.value),
+    { watch: [trackSlug] },
   )
 
-  const views = computed<readonly (TrackView | null)[]>(() =>
-    (data.value ?? []).map((response) => response.data),
-  )
-  return { views, error, status }
+  const track = computed<TrackView>(() => {
+    if (!trackData.value) {
+      throw createError({ statusCode: 404, statusMessage: 'Parcours introuvable', fatal: true })
+    }
+    return trackData.value
+  })
+
+  const card = computed<TrackCard>(() => {
+    const t = track.value
+    return buildTrackCard(t, progressStore.progress)
+  })
+
+  return {
+    track,
+    card,
+    refresh,
+  }
 }
+
+
