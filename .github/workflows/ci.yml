@@ -67,12 +67,14 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Formater le nom du dépôt en minuscules
+        run: echo "REPO_LOWERCASE=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
       - uses: docker/build-push-action@v7
         with:
           context: .
           push: ${{ github.ref == 'refs/heads/main' }}
           file: ${{ matrix.dockerfile }}
           target: ${{ matrix.target }}
-          tags: ghcr.io/${{ github.repository }}/${{ matrix.name }}:latest
+          tags: ghcr.io/${{ env.REPO_LOWERCASE }}/${{ matrix.name }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
