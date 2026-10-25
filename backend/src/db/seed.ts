@@ -108,8 +108,98 @@ export function validateExercises(content: Content): readonly string[] {
   return problems
 }
 
-/** Tables de contenu, des feuilles vers les racines. */
-const TABLES = ['exercise_test_cases', 'exercises', 'lessons', 'chapters', 'tracks'] as const
+/**
+ * Tables de contenu, des feuilles vers les racines. CASCADE vide aussi ce qui
+ * pointe vers un episode (progression des apprenants) : ses ids ne designeraient
+ * plus le meme contenu.
+ */
+const TABLES = [
+  'exercise_hints',
+  'exercise_test_cases',
+  'lesson_objectives',
+  'exercises',
+  'lessons',
+  'episodes',
+  'chapters',
+  'tracks',
+] as const
+
+/** Tables dont le seed fournit les ids : leur sequence doit repartir apres le plus grand. */
+const TABLES_WITH_GIVEN_IDS = ['exercise_test_cases', 'episodes', 'chapters', 'tracks'] as const
+
+/**
+ * Les donnees du depot numerotent lecons et exercices chacun de leur cote ;
+ * en base, ils partagent les ids et les positions des episodes. Meme regle que
+ * la migration `*_episodes_learners` : les lecons gardent leur id, les
+ * exercices sont decales apres la plus grande lecon, et passent apres les
+ * lecons de leur chapitre.
+ */
+export function toEpisodes(content: Content) {
+  const exerciseOffset = Math.max(0, ...content.lessons.map((l) => l.id))
+  const lastLessonPosition = new Map<number, number>()
+  for (const l of content.lessons) {
+    lastLessonPosition.set(
+      l.chapterId,
+      Math.max(lastLessonPosition.get(l.chapterId) ?? 0, l.position),
+    )
+  }
+  const episode = (
+    row: Lesson | Exercise,
+    type: 'lesson' | 'exercise',
+    id: number,
+    position: number,
+  ) => ({
+    id,
+    chapterId: row.chapterId,
+    type,
+    slug: row.slug,
+    position,
+    title: row.title,
+    status: row.status,
+    firstPublishedAt: row.firstPublishedAt,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  })
+  const exerciseId = (id: number) => id + exerciseOffset
+
+  return {
+    episodes: [
+      ...content.lessons.map((l) => episode(l, 'lesson', l.id, l.position)),
+      ...content.exercises.map((e) =>
+        episode(
+          e,
+          'exercise',
+          exerciseId(e.id),
+          e.position + (lastLessonPosition.get(e.chapterId) ?? 0),
+        ),
+      ),
+    ],
+    lessons: content.lessons.map((l) => ({
+      episodeId: l.id,
+      summary: l.summary,
+      body: l.body,
+      lastReviewedAt: l.lastReviewedAt,
+    })),
+    exercises: content.exercises.map((e) => ({
+      episodeId: exerciseId(e.id),
+      instructions: e.instructions,
+      functionName: e.functionName,
+      starterCode: e.starterCode,
+      solutionCode: e.solutionCode,
+      solutionCheckStatus: e.solutionCheckStatus,
+      solutionCheckedAt: e.solutionCheckedAt,
+    })),
+    hints: content.exercises.flatMap((e) =>
+      e.hints.map((text, i) => ({ exerciseId: exerciseId(e.id), position: i + 1, text })),
+    ),
+    testCases: content.testCases.map((t) => ({
+      ...t,
+      exerciseId: exerciseId(t.exerciseId),
+      arguments: t.arguments as Prisma.InputJsonValue,
+      expectedResult: t.expectedResult as Prisma.InputJsonValue,
+    })),
+  }
+}
 
 /** Vrai si aucun parcours n'est en base : premier demarrage d'un depot clone. */
 export async function isContentEmpty(prisma: PrismaClient): Promise<boolean> {
@@ -140,18 +230,15 @@ export async function seedDatabase(
       ),
     })
     await tx.chapter.createMany({ data: [...content.chapters] })
-    await tx.lesson.createMany({ data: [...content.lessons] })
-    await tx.exercise.createMany({ data: [...content.exercises] })
-    await tx.exerciseTestCase.createMany({
-      data: content.testCases.map((t) => ({
-        ...t,
-        arguments: t.arguments as Prisma.InputJsonValue,
-        expectedResult: t.expectedResult as Prisma.InputJsonValue,
-      })),
-    })
+    // L'episode d'abord ; sa specialisation suit dans la meme transaction.
+    const rows = toEpisodes(content)
+    await tx.episode.createMany({ data: rows.episodes })
+    await tx.lesson.createMany({ data: rows.lessons })
+    await tx.exercise.createMany({ data: rows.exercises })
+    await tx.exerciseHint.createMany({ data: rows.hints })
+    await tx.exerciseTestCase.createMany({ data: rows.testCases })
 
-    // Ids fournis explicitement : chaque sequence doit repartir apres le plus grand.
-    for (const table of TABLES) {
+    for (const table of TABLES_WITH_GIVEN_IDS) {
       await tx.$executeRawUnsafe(
         `SELECT setval(pg_get_serial_sequence('${table}', 'id'), COALESCE((SELECT MAX(id) FROM ${table}), 0) + 1, false)`,
       )

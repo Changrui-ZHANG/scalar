@@ -96,13 +96,71 @@ describe.skipIf(!enabled)('dépôts Prisma contre dépôts en mémoire', () => {
   })
 
   it('la base refuse des arguments qui ne forment pas un tableau', async () => {
-    const exercise = await prisma.exercise.findFirstOrThrow({ where: { slug: 'fizzbuzz' } })
+    const exercise = await prisma.exercise.findFirstOrThrow({
+      where: { episode: { slug: 'fizzbuzz' } },
+    })
     await expect(
       prisma.exerciseTestCase.create({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test de refus d'arguments invalides
-        data: { exerciseId: exercise.id, position: 99, arguments: 1 as any, expectedResult: 1 },
+        data: {
+          exerciseId: exercise.episodeId,
+          position: 99,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test de refus d'arguments invalides
+          arguments: 1 as any,
+          expectedResult: 1,
+        },
       }),
     ).rejects.toThrow()
+  })
+
+  it('la base refuse qu’un épisode-exercice soit aussi une leçon', async () => {
+    const exercise = await prisma.episode.findFirstOrThrow({ where: { slug: 'fizzbuzz' } })
+    await expect(
+      prisma.lesson.create({ data: { episodeId: exercise.id, summary: 's', body: 'b' } }),
+    ).rejects.toThrow()
+  })
+
+  it('la base refuse un épisode sans sa leçon ni son exercice', async () => {
+    const chapter = await prisma.chapter.findFirstOrThrow()
+    await expect(
+      prisma.episode.create({
+        data: {
+          chapterId: chapter.id,
+          type: 'lesson',
+          slug: 'orpheline',
+          position: 99,
+          title: 't',
+        },
+      }),
+    ).rejects.toThrow()
+  })
+
+  it('la base refuse deux épisodes à la même position d’un chapitre', async () => {
+    const [first] = await prisma.episode.findMany({ orderBy: { id: 'asc' }, take: 1 })
+    expect(first).toBeDefined()
+    await expect(
+      prisma.$transaction(async (tx) => {
+        const episode = await tx.episode.create({
+          data: {
+            chapterId: first!.chapterId,
+            type: 'lesson',
+            slug: 'doublon',
+            position: first!.position,
+            title: 't',
+          },
+        })
+        await tx.lesson.create({ data: { episodeId: episode.id, summary: 's', body: 'b' } })
+      }),
+    ).rejects.toThrow()
+  })
+
+  it('supprimer un épisode supprime sa leçon', async () => {
+    const lesson = await prisma.lesson.findFirstOrThrow({
+      where: { linkedExercises: { none: {} } },
+    })
+    await prisma.episode.delete({ where: { id: lesson.episodeId } })
+    expect(await prisma.lesson.findUnique({ where: { episodeId: lesson.episodeId } })).toBeNull()
+    // Remise en l'etat pour les autres tests.
+    await seedDatabase(prisma)
   })
 
   it('la base accepte d’échanger deux positions dans une transaction', async () => {

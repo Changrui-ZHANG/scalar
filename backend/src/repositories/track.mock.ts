@@ -5,6 +5,8 @@ import type { Track } from '../db/schema.ts'
 const DATE = new Date('2026-09-27T00:00:00Z')
 const published = { status: 'published', firstPublishedAt: DATE } as const
 const stamps = { createdAt: DATE, updatedAt: DATE }
+/** Pas encore d'accroche, de couleur ni de description dediee. */
+const presentation = { tagline: null, accentColor: null, seoDescription: null }
 
 export const MOCK_TRACKS: readonly Track[] = [
   {
@@ -15,6 +17,7 @@ export const MOCK_TRACKS: readonly Track[] = [
     summary: 'Le point de départ : variables, conditions, boucles, fonctions.',
     programmingLanguage: 'javascript',
     prerequisiteTrackId: null,
+    ...presentation,
     ...published,
     ...stamps,
   },
@@ -26,6 +29,7 @@ export const MOCK_TRACKS: readonly Track[] = [
     summary: 'JavaScript avec des types vérifiés. Suppose les bases de JavaScript.',
     programmingLanguage: 'typescript',
     prerequisiteTrackId: 1,
+    ...presentation,
     ...published,
     ...stamps,
   },
@@ -38,6 +42,7 @@ export const MOCK_TRACKS: readonly Track[] = [
     // Parcours de lecons seulement : pas de langage, donc pas d'exercice.
     programmingLanguage: null,
     prerequisiteTrackId: null,
+    ...presentation,
     ...published,
     ...stamps,
   },

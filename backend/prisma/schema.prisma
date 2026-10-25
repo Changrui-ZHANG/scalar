@@ -7,8 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Contraintes que Prisma ne sait pas exprimer, ecrites a la main a la fin de la
-// migration `*_init` : positions uniques a controle differe, et controles CHECK.
+// Contraintes que Prisma ne sait pas exprimer, ecrites a la main a la fin des
+// migrations : positions uniques a controle differe, controles CHECK, et
+// totalite de l'heritage EPISODE -> LECON / EXERCICE.
 
 /// Ou en est la publication d'un contenu : seul `published` est servi.
 enum PublicationStatus {
@@ -46,6 +47,47 @@ enum SolutionCheckStatus {
   @@map("solution_check_status")
 }
 
+/// Specialisation d'un episode : partition, un episode est l'un ou l'autre.
+enum EpisodeType {
+  lesson
+  exercise
+
+  @@map("episode_type")
+}
+
+/// Issue d'une verification (STAT_METRICS de @scalar/shared, sans le prefixe).
+enum VerificationOutcome {
+  passed
+  failed_runtime
+  failed_missing_function
+  failed_case
+
+  @@map("verification_outcome")
+}
+
+/// Statut renvoye par le moteur d'execution (EXECUTION_STATUSES de @scalar/shared).
+enum ExecutionStatus {
+  OK
+  TO
+  OL
+  EL
+  RE
+  SG
+  XX
+
+  @@map("execution_status")
+}
+
+enum AdminRole {
+  editor
+  reviewer
+  admin
+
+  @@map("admin_role")
+}
+
+// --- Contenu -------------------------------------------------------------------
+
 /// Un parcours du site : JavaScript, TypeScript, Conception...
 model Track {
   id                  Int                  @id @default(autoincrement())
@@ -53,6 +95,11 @@ model Track {
   name                String
   /// Une phrase affichee sur la page Parcours.
   summary             String
+  /// Accroche courte, facultative.
+  tagline             String?
+  /// Couleur de la carte du parcours, ex. `#4f46e5`.
+  accentColor         String?              @map("accent_color")
+  seoDescription      String?              @map("seo_description")
   /// Ordre sur la page Parcours, a partir de 1.
   position            Int
   /// Nul pour un parcours de lecons seulement : ses chapitres n'ont pas d'exercice.
@@ -66,6 +113,7 @@ model Track {
   createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
   chapters            Chapter[]
+  enrollments         TrackEnrollment[]
 
   @@map("tracks")
 }
@@ -84,70 +132,117 @@ model Chapter {
   firstPublishedAt DateTime?         @map("first_published_at") @db.Timestamptz(6)
   createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
-  lessons          Lesson[]
-  exercises        Exercise[]
+  episodes         Episode[]
 
   @@unique([trackId, slug], name: "chapters_track_slug_key")
   @@map("chapters")
 }
 
-model Lesson {
-  id               Int               @id @default(autoincrement())
-  chapterId        Int               @map("chapter_id")
-  chapter          Chapter           @relation(fields: [chapterId], references: [id], onDelete: Restrict)
+/// Ce qu'une lecon et un exercice ont en commun : une place dans le fil du
+/// chapitre. Se specialise en `Lesson` ou `Exercise`, jamais les deux.
+model Episode {
+  id               Int                 @id @default(autoincrement())
+  chapterId        Int                 @map("chapter_id")
+  chapter          Chapter             @relation(fields: [chapterId], references: [id], onDelete: Restrict)
+  type             EpisodeType
   slug             String
-  /// Ordre dans le chapitre, a partir de 1.
+  /// Ordre dans le chapitre, a partir de 1, lecons et exercices confondus.
   position         Int
   title            String
-  /// Une phrase, affichee dans les listes.
-  summary          String
-  /// Le cours, en Markdown.
-  body             String
-  /// Un cours vieillit vite : date de sa derniere relecture.
-  lastReviewedAt   DateTime?         @map("last_reviewed_at") @db.Timestamptz(6)
-  status           PublicationStatus @default(draft)
-  firstPublishedAt DateTime?         @map("first_published_at") @db.Timestamptz(6)
-  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  estimatedMinutes Int?                @map("estimated_minutes")
+  seoDescription   String?             @map("seo_description")
+  status           PublicationStatus   @default(draft)
+  firstPublishedAt DateTime?           @map("first_published_at") @db.Timestamptz(6)
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  lesson           Lesson?
+  exercise         Exercise?
+  completions      EpisodeCompletion[]
 
-  @@unique([chapterId, slug], name: "lessons_chapter_slug_key")
+  @@unique([chapterId, slug], name: "episodes_chapter_slug_key")
+  /// Cible des cles etrangeres des specialisations : le type y est repete.
+  @@unique([id, type])
+  @@map("episodes")
+}
+
+model Lesson {
+  /// Identifiant herite de l'episode.
+  episodeId       Int               @id @map("episode_id")
+  /// Toujours `lesson` : garantit qu'un episode-exercice ne devient pas aussi une lecon.
+  type            EpisodeType       @default(lesson)
+  episode         Episode           @relation(fields: [episodeId, type], references: [id, type], onDelete: Cascade)
+  /// Une phrase, affichee dans les listes.
+  summary         String
+  /// Le cours, en Markdown.
+  body            String
+  /// Rappel court, affiche dans l'aide d'un exercice.
+  recap           String?
+  /// Un cours vieillit vite : date de sa derniere relecture.
+  lastReviewedAt  DateTime?         @map("last_reviewed_at") @db.Timestamptz(6)
+  objectives      LessonObjective[]
+  linkedExercises Exercise[]
+  feedbacks       LessonFeedback[]
+
+  @@unique([episodeId, type])
   @@map("lessons")
 }
 
+model LessonObjective {
+  id       Int    @id @default(autoincrement())
+  lessonId Int    @map("lesson_id")
+  lesson   Lesson @relation(fields: [lessonId], references: [episodeId], onDelete: Cascade)
+  /// Ordre d'affichage, a partir de 1.
+  position Int
+  text     String
+
+  @@map("lesson_objectives")
+}
+
 model Exercise {
-  id                  Int                 @id @default(autoincrement())
-  chapterId           Int                 @map("chapter_id")
-  chapter             Chapter             @relation(fields: [chapterId], references: [id], onDelete: Restrict)
-  slug                String
-  /// Ordre dans le chapitre, a partir de 1.
-  position            Int
-  title               String
+  /// Identifiant herite de l'episode.
+  episodeId           Int                   @id @map("episode_id")
+  /// Toujours `exercise` : garantit qu'un episode-lecon ne devient pas aussi un exercice.
+  type                EpisodeType           @default(exercise)
+  episode             Episode               @relation(fields: [episodeId, type], references: [id, type], onDelete: Cascade)
   /// La consigne, en Markdown.
   instructions        String
   /// Fonction que l'apprenant doit ecrire, et que les cas de test appellent.
-  functionName        String              @map("function_name")
-  starterCode         String              @map("starter_code")
+  functionName        String                @map("function_name")
+  starterCode         String                @map("starter_code")
   /// Jamais renvoyee au navigateur avant une premiere soumission.
-  solutionCode        String              @map("solution_code")
-  /// Du plus vague au plus precis, trois au plus.
-  hints               String[]            @default([])
+  solutionCode        String                @map("solution_code")
   /// Remis a `not_checked` des que le code ou un cas de test change.
-  solutionCheckStatus SolutionCheckStatus @default(not_checked) @map("solution_check_status")
-  solutionCheckedAt   DateTime?           @map("solution_checked_at") @db.Timestamptz(6)
-  status              PublicationStatus   @default(draft)
-  firstPublishedAt    DateTime?           @map("first_published_at") @db.Timestamptz(6)
-  createdAt           DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  solutionCheckStatus SolutionCheckStatus   @default(not_checked) @map("solution_check_status")
+  solutionCheckedAt   DateTime?             @map("solution_checked_at") @db.Timestamptz(6)
+  /// La lecon a relire depuis l'aide de l'exercice.
+  relatedLessonId     Int?                  @map("related_lesson_id")
+  relatedLesson       Lesson?               @relation(fields: [relatedLessonId], references: [episodeId], onDelete: SetNull)
+  hints               ExerciseHint[]
   testCases           ExerciseTestCase[]
+  work                ExerciseWork[]
+  attempts            VerificationAttempt[]
+  executions          Execution[]
 
-  @@unique([chapterId, slug], name: "exercises_chapter_slug_key")
+  @@unique([episodeId, type])
   @@map("exercises")
+}
+
+/// Du plus vague au plus precis, trois au plus.
+model ExerciseHint {
+  id         Int      @id @default(autoincrement())
+  exerciseId Int      @map("exercise_id")
+  exercise   Exercise @relation(fields: [exerciseId], references: [episodeId], onDelete: Cascade)
+  /// De 1 a 3.
+  position   Int
+  text       String
+
+  @@map("exercise_hints")
 }
 
 model ExerciseTestCase {
   id             Int      @id @default(autoincrement())
   exerciseId     Int      @map("exercise_id")
-  exercise       Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  exercise       Exercise @relation(fields: [exerciseId], references: [episodeId], onDelete: Cascade)
   /// Ordre d'affichage, a partir de 1.
   position       Int
   /// Arguments passes a la fonction : toujours un tableau JSON.
@@ -161,4 +256,154 @@ model ExerciseTestCase {
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("exercise_test_cases")
+}
+
+// --- Apprenant -----------------------------------------------------------------
+
+/// Un apprenant, anonyme tant qu'il n'a pas de compte : son UUID vit dans le navigateur.
+model Learner {
+  id          String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email       String?               @unique
+  displayName String?               @map("display_name")
+  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastSeenAt  DateTime              @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  enrollments TrackEnrollment[]
+  completions EpisodeCompletion[]
+  work        ExerciseWork[]
+  feedbacks   LessonFeedback[]
+  attempts    VerificationAttempt[]
+  executions  Execution[]
+
+  @@map("learners")
+}
+
+/// Un parcours commence. Termine se calcule : tous ses episodes le sont.
+model TrackEnrollment {
+  learnerId String   @map("learner_id") @db.Uuid
+  learner   Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  trackId   Int      @map("track_id")
+  track     Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  startedAt DateTime @default(now()) @map("started_at") @db.Timestamptz(6)
+
+  @@id([learnerId, trackId])
+  @@map("track_enrollments")
+}
+
+/// Une lecon terminee sur action explicite, ou un exercice dont tous les cas passent.
+model EpisodeCompletion {
+  learnerId   String   @map("learner_id") @db.Uuid
+  learner     Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  episodeId   Int      @map("episode_id")
+  episode     Episode  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  completedAt DateTime @default(now()) @map("completed_at") @db.Timestamptz(6)
+
+  @@id([learnerId, episodeId])
+  @@map("episode_completions")
+}
+
+/// Le travail en cours d'un apprenant sur un exercice.
+model ExerciseWork {
+  learnerId     String   @map("learner_id") @db.Uuid
+  learner       Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  exerciseId    Int      @map("exercise_id")
+  exercise      Exercise @relation(fields: [exerciseId], references: [episodeId], onDelete: Cascade)
+  /// Nul tant que le code de depart n'a pas ete modifie.
+  draftCode     String?  @map("draft_code")
+  /// Indices deja affiches, de 0 a 3.
+  hintsRevealed Int      @default(0) @map("hints_revealed")
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@id([learnerId, exerciseId])
+  @@map("exercise_work")
+}
+
+/// « Cette lecon vous a aide ? » : un avis par apprenant et par lecon.
+model LessonFeedback {
+  learnerId String   @map("learner_id") @db.Uuid
+  learner   Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  lessonId  Int      @map("lesson_id")
+  lesson    Lesson   @relation(fields: [lessonId], references: [episodeId], onDelete: Cascade)
+  helpful   Boolean
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@id([learnerId, lessonId])
+  @@map("lesson_feedbacks")
+}
+
+/// Un clic sur « Verifier la solution ».
+model VerificationAttempt {
+  id              Int                 @id @default(autoincrement())
+  learnerId       String              @map("learner_id") @db.Uuid
+  learner         Learner             @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  exerciseId      Int                 @map("exercise_id")
+  exercise        Exercise            @relation(fields: [exerciseId], references: [episodeId], onDelete: Cascade)
+  outcome         VerificationOutcome
+  passedCount     Int                 @map("passed_count")
+  total           Int
+  /// Position du premier cas en echec ; nul si tout passe.
+  firstFailedCase Int?                @map("first_failed_case")
+  executionStatus ExecutionStatus     @map("execution_status")
+  cpuTimeMs       Int?                @map("cpu_time_ms")
+  wallTimeMs      Int?                @map("wall_time_ms")
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([exerciseId, createdAt])
+  @@map("verification_attempts")
+}
+
+/// Un clic sur « Executer ». Le code soumis n'est jamais conserve, seule sa taille.
+model Execution {
+  id                  Int                 @id @default(autoincrement())
+  learnerId           String              @map("learner_id") @db.Uuid
+  learner             Learner             @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  /// Nul pour le bac a sable.
+  exerciseId          Int?                @map("exercise_id")
+  exercise            Exercise?           @relation(fields: [exerciseId], references: [episodeId], onDelete: SetNull)
+  programmingLanguage ProgrammingLanguage @map("programming_language")
+  status              ExecutionStatus
+  exitCode            Int?                @map("exit_code")
+  signal              String?
+  cpuTimeMs           Int?                @map("cpu_time_ms")
+  wallTimeMs          Int?                @map("wall_time_ms")
+  codeBytes           Int                 @map("code_bytes")
+  createdAt           DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([exerciseId, createdAt])
+  @@map("executions")
+}
+
+// --- Site et backoffice --------------------------------------------------------
+
+/// Une recherche de la page Parcours ; zero resultat signale un contenu manquant.
+model SearchQuery {
+  id          Int      @id @default(autoincrement())
+  /// Deja normalisee : sans accents ni casse.
+  query       String
+  resultCount Int      @map("result_count")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([resultCount, createdAt])
+  @@map("search_queries")
+}
+
+/// Une ancienne adresse du site, et celle qui la remplace.
+model SlugRedirect {
+  id        Int      @id @default(autoincrement())
+  oldPath   String   @unique @map("old_path")
+  newPath   String   @map("new_path")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("slug_redirects")
+}
+
+model AdminUser {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  displayName  String    @map("display_name")
+  passwordHash String    @map("password_hash")
+  role         AdminRole @default(editor)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("admin_users")
 }
