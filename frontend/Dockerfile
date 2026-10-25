@@ -6,6 +6,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY frontend/package.json frontend/
 COPY admin/package.json admin/
+COPY backoffice/package.json backoffice/
 COPY backend/package.json backend/
 COPY packages/shared/package.json packages/shared/
 COPY packages/ui/package.json packages/ui/

@@ -5,9 +5,10 @@ FROM ${NODE_IMAGE} AS base
 # Prisma (moteur de migration) a besoin d'OpenSSL, absent d'Alpine.
 RUN apk add --no-cache openssl
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json tsconfig.base.json ./
 COPY frontend/package.json frontend/
 COPY admin/package.json admin/
+COPY backoffice/package.json backoffice/
 COPY backend/package.json backend/
 COPY packages/shared/package.json packages/shared/
 COPY packages/ui/package.json packages/ui/

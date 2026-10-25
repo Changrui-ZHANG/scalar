@@ -52,6 +52,9 @@ jobs:
           - name: admin
             dockerfile: admin/Dockerfile
             target: prod
+          - name: backoffice
+            dockerfile: backoffice/Dockerfile
+            target: prod
           - name: backend
             dockerfile: backend/Dockerfile
             target: prod

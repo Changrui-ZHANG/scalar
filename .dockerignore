@@ -2,8 +2,10 @@
 *
 !package.json
 !package-lock.json
+!tsconfig.base.json
 !frontend
 !admin
+!backoffice
 !backend
 !packages
 

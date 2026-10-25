@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" viewBox="0 0 35 35" role="img" aria-label="Scalar">
+  <!-- Logo Scalar : carre de la marque, « S » trace (aucune police requise), ombre portee nette.
+       Sert de favicon et de logo du header ; suit le theme clair ou sombre du systeme. -->
+  <style>
+    .shadow { fill: #19211c }
+    .tile { fill: #3757f5 }
+    .letter { stroke: #ffffff }
+    @media (prefers-color-scheme: dark) {
+      .shadow { fill: #f0f1ec }
+      .tile { fill: #8193ff }
+      .letter { stroke: #10131f }
+    }
+  </style>
+  <rect class="shadow" x="3" y="3" width="32" height="32" rx="7" />
+  <rect class="tile" width="32" height="32" rx="7" />
+  <path
+    class="letter"
+    d="M20.6 11.6C20.1 9.9 18.5 9 16.2 9 13.4 9 11.7 10.4 11.7 12.4c0 4.6 8.9 2.3 8.9 7.2 0 2.2-1.9 3.4-4.6 3.4-2.5 0-4.2-1-4.7-2.8"
+    fill="none"
+    stroke-width="2.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

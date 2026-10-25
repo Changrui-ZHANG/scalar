@@ -14,6 +14,8 @@ services:
         condition: service_started
       admin:
         condition: service_started
+      backoffice:
+        condition: service_started
       backend:
         condition: service_started
 
@@ -80,6 +82,37 @@ services:
     depends_on:
       backend:
         condition: service_started
+
+  # Consultation des données du backend, en lecture seule : le service lit
+  # directement sa base PostgreSQL. Aucune authentification pour l'instant.
+  backoffice:
+    build:
+      context: .
+      dockerfile: backoffice/Dockerfile
+      target: dev
+    init: true
+    command: npm run dev --workspace backoffice
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3003
+      NUXT_DATABASE_URL: postgres://scalar:scalar@postgres:5432/scalar
+      CHOKIDAR_USEPOLLING: 'true'
+      WATCHPACK_POLLING: 'true'
+    ports:
+      - '127.0.0.1:3003:3003'
+    volumes:
+      - ./backoffice:/app/backoffice
+      - /app/backoffice/node_modules
+      - /app/node_modules
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.backoffice.rule=PathPrefix(`/backoffice`)
+      - traefik.http.routers.backoffice.entryPoints=web
+      - traefik.http.routers.backoffice.priority=10
+      - traefik.http.services.backoffice.loadbalancer.server.port=3003
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   backend:
     build:

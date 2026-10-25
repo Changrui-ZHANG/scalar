@@ -1,0 +1,35 @@
+{
+  "name": "backoffice",
+  "private": true,
+  "type": "module",
+  "description": "Backoffice Scalar : consultation en lecture seule de la base du backend",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "^1.17.0",
+    "@types/pg": "^8.23.1",
+    "eslint": "^10.12.0",
+    "prettier": "^3.9.9",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11",
+    "vue-tsc": "^3.3.12"
+  },
+  "dependencies": {
+    "@iconify-json/lucide": "^1.2.141",
+    "@nuxt/ui": "^4.11.3",
+    "nuxt": "^4.5.2",
+    "pg": "^8.23.1",
+    "tailwindcss": "^4.3.3",
+    "zod": "^4.6.5"
+  }
+}
