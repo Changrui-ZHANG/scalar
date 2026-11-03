@@ -1,11 +1,10 @@
-import type {
-  Chapter,
-  ChapterLevel,
-  Exercise,
-  ExerciseTestCase,
-  Lesson,
-  Track,
-} from '../database/types.ts'
+import type { ChapterLevel } from '@scalar/shared/enums'
+
+import type { Chapter } from '../entity/chapter.entity.ts'
+import type { Exercise } from '../entity/exercise.entity.ts'
+import type { ExerciseTestCase } from '../entity/exercise-test-case.entity.ts'
+import type { Lesson } from '../entity/lesson.entity.ts'
+import type { Track } from '../entity/track.entity.ts'
 
 const DATE = new Date('2026-09-28T00:00:00Z')
 const published = { status: 'published', firstPublishedAt: DATE } as const

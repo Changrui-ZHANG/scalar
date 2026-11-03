@@ -1,4 +1,4 @@
-import type { Lesson } from '../database/types.ts'
+import type { Lesson } from '../entity/lesson.entity.ts'
 import { LESSONS } from '../content/lessons.ts'
 
 export interface LessonRepository {

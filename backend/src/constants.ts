@@ -1,4 +1,4 @@
-import type { ChapterLevel, ProgrammingLanguage } from './database/types.ts'
+import type { ChapterLevel, ProgrammingLanguage } from '@scalar/shared/enums'
 
 // Exécution
 

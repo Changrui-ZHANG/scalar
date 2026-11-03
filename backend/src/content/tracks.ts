@@ -1,4 +1,4 @@
-import type { Track } from '../database/types.ts'
+import type { Track } from '../entity/track.entity.ts'
 
 const DATE = new Date('2026-09-27T00:00:00Z')
 const published = { status: 'published', firstPublishedAt: DATE } as const

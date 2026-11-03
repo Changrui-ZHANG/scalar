@@ -1,5 +1,6 @@
 import { CHAPTER_LEVELS } from '../constants.ts'
-import type { Chapter, Track } from '../database/types.ts'
+import type { Chapter } from '../entity/chapter.entity.ts'
+import type { Track } from '../entity/track.entity.ts'
 import { CHAPTERS } from '../content/chapters.ts'
 import { TRACKS } from '../content/tracks.ts'
 

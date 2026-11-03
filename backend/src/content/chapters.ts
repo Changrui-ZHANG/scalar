@@ -1,4 +1,5 @@
-import type { Chapter, ChapterLevel } from '../database/types.ts'
+import type { ChapterLevel } from '@scalar/shared/enums'
+import type { Chapter } from '../entity/chapter.entity.ts'
 
 const DATE = new Date('2026-09-25T00:00:00Z')
 const published = { status: 'published', firstPublishedAt: DATE } as const

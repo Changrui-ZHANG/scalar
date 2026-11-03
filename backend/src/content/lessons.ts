@@ -1,4 +1,4 @@
-import type { Lesson } from '../database/types.ts'
+import type { Lesson } from '../entity/lesson.entity.ts'
 
 const DATE = new Date('2026-09-27T00:00:00Z')
 const REVIEWED = new Date('2026-09-01T00:00:00Z')

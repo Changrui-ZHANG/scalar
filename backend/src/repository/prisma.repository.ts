@@ -1,8 +1,13 @@
 import type { PrismaClient } from '@prisma/client'
 
 import { ORDER_BY_POSITION, PUBLISHED } from '../constants.ts'
-import type { Chapter, Exercise, ExerciseTestCase, Lesson, Track } from '../database/types.ts'
+import type { Chapter } from '../entity/chapter.entity.ts'
+import type { Exercise } from '../entity/exercise.entity.ts'
+import type { ExerciseTestCase } from '../entity/exercise-test-case.entity.ts'
+import type { Lesson } from '../entity/lesson.entity.ts'
+import type { Track } from '../entity/track.entity.ts'
 import type { ExerciseRepository } from './exercise.repository.ts'
+import { toChapter, toExercise, toExerciseTestCase, toLesson, toTrack } from './prisma.mapper.ts'
 import type { LessonRepository } from './lesson.repository.ts'
 import type { TrackRepository } from './track.repository.ts'
 
@@ -13,24 +18,31 @@ export class PrismaTrackRepository implements TrackRepository {
     this.prisma = prisma
   }
 
-  listTracks(): Promise<Track[]> {
-    return this.prisma.track.findMany({ where: { status: PUBLISHED }, orderBy: ORDER_BY_POSITION })
+  async listTracks(): Promise<Track[]> {
+    const rows = await this.prisma.track.findMany({
+      where: { status: PUBLISHED },
+      orderBy: ORDER_BY_POSITION,
+    })
+    return rows.map(toTrack)
   }
 
-  findTrackBySlug(slug: string): Promise<Track | null> {
-    return this.prisma.track.findFirst({ where: { slug, status: PUBLISHED } })
+  async findTrackBySlug(slug: string): Promise<Track | null> {
+    const row = await this.prisma.track.findFirst({ where: { slug, status: PUBLISHED } })
+    return row && toTrack(row)
   }
 
-  listChapters(trackId: number): Promise<Chapter[]> {
-    return this.prisma.chapter.findMany({
+  async listChapters(trackId: number): Promise<Chapter[]> {
+    const rows = await this.prisma.chapter.findMany({
       where: { trackId, status: PUBLISHED },
       // Un enum PostgreSQL se trie dans l'ordre de declaration de ses valeurs.
       orderBy: [{ level: 'asc' }, ORDER_BY_POSITION],
     })
+    return rows.map(toChapter)
   }
 
-  findChapter(trackId: number, slug: string): Promise<Chapter | null> {
-    return this.prisma.chapter.findFirst({ where: { trackId, slug, status: PUBLISHED } })
+  async findChapter(trackId: number, slug: string): Promise<Chapter | null> {
+    const row = await this.prisma.chapter.findFirst({ where: { trackId, slug, status: PUBLISHED } })
+    return row && toChapter(row)
   }
 }
 
@@ -41,22 +53,27 @@ export class PrismaExerciseRepository implements ExerciseRepository {
     this.prisma = prisma
   }
 
-  listExercises(chapterId: number): Promise<Exercise[]> {
-    return this.prisma.exercise.findMany({
+  async listExercises(chapterId: number): Promise<Exercise[]> {
+    const rows = await this.prisma.exercise.findMany({
       where: { chapterId, status: PUBLISHED },
       orderBy: ORDER_BY_POSITION,
     })
+    return rows.map(toExercise)
   }
 
-  findExercise(chapterId: number, slug: string): Promise<Exercise | null> {
-    return this.prisma.exercise.findFirst({ where: { chapterId, slug, status: PUBLISHED } })
+  async findExercise(chapterId: number, slug: string): Promise<Exercise | null> {
+    const row = await this.prisma.exercise.findFirst({
+      where: { chapterId, slug, status: PUBLISHED },
+    })
+    return row && toExercise(row)
   }
 
-  listTestCases(exerciseId: number): Promise<ExerciseTestCase[]> {
-    return this.prisma.exerciseTestCase.findMany({
+  async listTestCases(exerciseId: number): Promise<ExerciseTestCase[]> {
+    const rows = await this.prisma.exerciseTestCase.findMany({
       where: { exerciseId },
       orderBy: ORDER_BY_POSITION,
     })
+    return rows.map(toExerciseTestCase)
   }
 }
 
@@ -67,14 +84,18 @@ export class PrismaLessonRepository implements LessonRepository {
     this.prisma = prisma
   }
 
-  listLessons(chapterId: number): Promise<Lesson[]> {
-    return this.prisma.lesson.findMany({
+  async listLessons(chapterId: number): Promise<Lesson[]> {
+    const rows = await this.prisma.lesson.findMany({
       where: { chapterId, status: PUBLISHED },
       orderBy: ORDER_BY_POSITION,
     })
+    return rows.map(toLesson)
   }
 
-  findLesson(chapterId: number, slug: string): Promise<Lesson | null> {
-    return this.prisma.lesson.findFirst({ where: { chapterId, slug, status: PUBLISHED } })
+  async findLesson(chapterId: number, slug: string): Promise<Lesson | null> {
+    const row = await this.prisma.lesson.findFirst({
+      where: { chapterId, slug, status: PUBLISHED },
+    })
+    return row && toLesson(row)
   }
 }

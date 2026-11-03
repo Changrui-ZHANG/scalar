@@ -1,4 +1,5 @@
-import type { Exercise, ExerciseTestCase } from '../database/types.ts'
+import type { Exercise } from '../entity/exercise.entity.ts'
+import type { ExerciseTestCase } from '../entity/exercise-test-case.entity.ts'
 
 const DATE = new Date('2026-09-25T00:00:00Z')
 const stamps = { createdAt: DATE, updatedAt: DATE }

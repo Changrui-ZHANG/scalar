@@ -2,7 +2,10 @@
 
 import { randomUUID } from 'node:crypto'
 
-import type { Chapter, Exercise, ProgrammingLanguage, Track } from '../database/types.ts'
+import type { ProgrammingLanguage } from '@scalar/shared/enums'
+import type { Chapter } from '../entity/chapter.entity.ts'
+import type { Exercise } from '../entity/exercise.entity.ts'
+import type { Track } from '../entity/track.entity.ts'
 import type { ExerciseRepository } from '../repository/exercise.repository.ts'
 import type { TrackRepository } from '../repository/track.repository.ts'
 import { executeCode, toJavaScript } from './execution.service.ts'
@@ -48,9 +51,6 @@ interface Located {
   readonly exercise: Exercise
 }
 
-// La contrainte `arguments` tableau JSON est tenue par la base.
-const toArguments = (value: unknown): readonly unknown[] => value as unknown[]
-
 export class ExerciseService {
   private readonly tracks: TrackRepository
   private readonly exercises: ExerciseRepository
@@ -85,7 +85,7 @@ export class ExerciseService {
       testCases: testCases
         .filter((t) => !t.isHidden)
         .map((t) => ({
-          arguments: toArguments(t.arguments),
+          arguments: t.arguments,
           expectedResult: t.expectedResult,
           description: t.description,
         })),
@@ -109,7 +109,7 @@ export class ExerciseService {
       functionName: located.exercise.functionName,
       programmingLanguage: located.programmingLanguage,
       cases: testCases.map((t) => ({
-        arguments: toArguments(t.arguments),
+        arguments: t.arguments,
         expectedResult: t.expectedResult,
         description: t.description,
         isHidden: t.isHidden,

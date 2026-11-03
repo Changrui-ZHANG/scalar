@@ -1,6 +1,8 @@
 // Toute recherche part du parcours : un element n'est servi que si ses parents sont publies.
 
-import type { Chapter, ChapterLevel, ProgrammingLanguage, Track } from '../database/types.ts'
+import type { ChapterLevel, ProgrammingLanguage } from '@scalar/shared/enums'
+import type { Chapter } from '../entity/chapter.entity.ts'
+import type { Track } from '../entity/track.entity.ts'
 import type { ExerciseRepository } from '../repository/exercise.repository.ts'
 import type { LessonRepository } from '../repository/lesson.repository.ts'
 import type { TrackRepository } from '../repository/track.repository.ts'

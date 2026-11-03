@@ -1,4 +1,5 @@
-import type { Exercise, ExerciseTestCase } from '../database/types.ts'
+import type { Exercise } from '../entity/exercise.entity.ts'
+import type { ExerciseTestCase } from '../entity/exercise-test-case.entity.ts'
 import { EXERCISES, EXERCISE_TEST_CASES } from '../content/exercises.ts'
 
 export interface ExerciseRepository {

@@ -13,7 +13,7 @@ import {
   PROGRAMMING_LANGUAGES,
   RUN_TIMEOUT_MS,
 } from '../constants.ts'
-import type { ProgrammingLanguage } from '../database/types.ts'
+import type { ProgrammingLanguage } from '@scalar/shared/enums'
 import { logger } from '../logger.ts'
 
 export type ExecutionStatus = keyof typeof EXECUTION_STATUS_LABELS
