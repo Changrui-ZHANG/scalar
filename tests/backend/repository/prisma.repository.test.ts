@@ -1,22 +1,22 @@
 // Vide et recharge la base : ne tourne qu'avec DATABASE_TESTS=1, jamais contre une base utile.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { prisma } from '../database/client.ts'
-import { seedDatabase } from '../database/seed.ts'
-import { ExerciseService } from '../service/exercise.service.ts'
-import { LessonService } from '../service/lesson.service.ts'
-import { TrackService } from '../service/track.service.ts'
-import type { ExerciseRepository } from './exercise.repository.ts'
-import { InMemoryExerciseRepository } from './exercise.repository.ts'
-import type { LessonRepository } from './lesson.repository.ts'
-import { InMemoryLessonRepository } from './lesson.repository.ts'
+import { prisma } from '../../../backend/src/database/client.ts'
+import { seedDatabase } from '../../../backend/src/database/seed.ts'
+import { ExerciseService } from '../../../backend/src/service/exercise.service.ts'
+import { LessonService } from '../../../backend/src/service/lesson.service.ts'
+import { TrackService } from '../../../backend/src/service/track.service.ts'
+import type { ExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
+import { InMemoryExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
+import type { LessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
+import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
 import {
   PrismaExerciseRepository,
   PrismaLessonRepository,
   PrismaTrackRepository,
-} from './prisma.repository.ts'
-import type { TrackRepository } from './track.repository.ts'
-import { InMemoryTrackRepository } from './track.repository.ts'
+} from '../../../backend/src/repository/prisma.repository.ts'
+import type { TrackRepository } from '../../../backend/src/repository/track.repository.ts'
+import { InMemoryTrackRepository } from '../../../backend/src/repository/track.repository.ts'
 
 const enabled = process.env.DATABASE_TESTS === '1'
 

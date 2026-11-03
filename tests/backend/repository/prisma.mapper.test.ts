@@ -9,7 +9,13 @@ import type {
 import { describe, expect, it } from 'vitest'
 
 import { chapter, exercise, lesson, testCase, track } from '../service/content.fixtures.ts'
-import { toChapter, toExercise, toExerciseTestCase, toLesson, toTrack } from './prisma.mapper.ts'
+import {
+  toChapter,
+  toExercise,
+  toExerciseTestCase,
+  toLesson,
+  toTrack,
+} from '../../../backend/src/repository/prisma.mapper.ts'
 
 const columns = (fields: Record<string, string>): string[] => Object.values(fields).toSorted()
 const keys = (entity: object): string[] => Object.keys(entity).toSorted()

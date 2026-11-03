@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseConfig } from './config.ts'
+import { parseConfig } from '../../backend/src/config.ts'
 
 describe('parseConfig', () => {
   it('applique les valeurs par défaut d’avant la refonte', () => {

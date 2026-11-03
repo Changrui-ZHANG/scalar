@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Content } from './seed.ts'
-import { CONTENT, validateExercises } from './seed.ts'
+import type { Content } from '../../../backend/src/database/seed.ts'
+import { CONTENT, validateExercises } from '../../../backend/src/database/seed.ts'
 
 const unique = (values: readonly unknown[]) => new Set(values).size === values.length
 const c = CONTENT

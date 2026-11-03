@@ -1,9 +1,9 @@
 import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 
-import type { ExecutionResult } from './execution.service.ts'
-import type { VerificationCase } from './verification.service.ts'
-import { buildHarness, readVerdict } from './verification.service.ts'
+import type { ExecutionResult } from '../../../backend/src/service/execution.service.ts'
+import type { VerificationCase } from '../../../backend/src/service/verification.service.ts'
+import { buildHarness, readVerdict } from '../../../backend/src/service/verification.service.ts'
 
 const MARKER = '__scalar_test__'
 

@@ -23,8 +23,6 @@ FROM base AS prod
 ENV NODE_ENV=production
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --workspace backend --include-workspace-root --omit=dev
-# Les tests ne partent pas en production.
-RUN find backend -name '*.test.ts' -delete
 # Fichiers à root, lisibles : l'utilisateur node n'a rien à écrire.
 USER node
 EXPOSE 3001

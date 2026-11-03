@@ -4,8 +4,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import express from 'express'
 
-import { MESSAGES } from '../constants.ts'
-import { errorHandler, routeNotFound } from './errors.ts'
+import { MESSAGES } from '../../../backend/src/constants.ts'
+import { errorHandler, routeNotFound } from '../../../backend/src/http/errors.ts'
 
 describe('gestionnaire d’erreurs', () => {
   let server: Server

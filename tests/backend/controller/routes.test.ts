@@ -3,13 +3,13 @@ import type { AddressInfo } from 'node:net'
 import { spawnSync } from 'node:child_process'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { buildApp } from '../app.ts'
-import { config } from '../config.ts'
-import { MESSAGES } from '../constants.ts'
-import { InMemoryExerciseRepository } from '../repository/exercise.repository.ts'
-import { InMemoryLessonRepository } from '../repository/lesson.repository.ts'
-import type { TrackRepository } from '../repository/track.repository.ts'
-import { InMemoryTrackRepository } from '../repository/track.repository.ts'
+import { buildApp } from '../../../backend/src/app.ts'
+import { config } from '../../../backend/src/config.ts'
+import { MESSAGES } from '../../../backend/src/constants.ts'
+import { InMemoryExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
+import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
+import type { TrackRepository } from '../../../backend/src/repository/track.repository.ts'
+import { InMemoryTrackRepository } from '../../../backend/src/repository/track.repository.ts'
 
 interface TrackRow {
   readonly slug: string

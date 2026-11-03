@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { InMemoryExerciseRepository } from '../repository/exercise.repository.ts'
-import { InMemoryLessonRepository } from '../repository/lesson.repository.ts'
-import { InMemoryTrackRepository } from '../repository/track.repository.ts'
+import { InMemoryExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
+import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
+import { InMemoryTrackRepository } from '../../../backend/src/repository/track.repository.ts'
 import { chapter, exercise, lesson, track } from './content.fixtures.ts'
-import { TrackService } from './track.service.ts'
+import { TrackService } from '../../../backend/src/service/track.service.ts'
 
 const service = new TrackService(
   new InMemoryTrackRepository(),

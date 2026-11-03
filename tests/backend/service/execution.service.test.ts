@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { MAX_CODE_BYTES } from '../constants.ts'
+import { MAX_CODE_BYTES } from '../../../backend/src/constants.ts'
 import {
   EngineUnavailableError,
   executeCode,
   parseSubmission,
   toExecutionStatus,
   toJavaScript,
-} from './execution.service.ts'
+} from '../../../backend/src/service/execution.service.ts'
 
 const RUN_NOMINAL = {
   stdout: '2\n',
