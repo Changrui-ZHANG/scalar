@@ -1,22 +1,15 @@
 import type { Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { spawnSync } from 'node:child_process'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import express from 'express'
-
-import { InMemoryExerciseRepository } from '../repositories/exercise.repository.ts'
-import { InMemoryLessonRepository } from '../repositories/lesson.repository.ts'
-import type { TrackRepository } from '../repositories/track.repository.ts'
-import { InMemoryTrackRepository } from '../repositories/track.repository.ts'
-import { ExerciseService } from '../services/exercise.service.ts'
-import { LessonService } from '../services/lesson.service.ts'
-import { TrackService } from '../services/track.service.ts'
-import {
-  ExecutionController,
-  ExerciseController,
-  LessonController,
-  TrackController,
-} from './index.ts'
+import { buildApp } from '../app.ts'
+import { config } from '../config.ts'
+import { MESSAGES } from '../constants.ts'
+import { InMemoryExerciseRepository } from '../repository/exercise.repository.ts'
+import { InMemoryLessonRepository } from '../repository/lesson.repository.ts'
+import type { TrackRepository } from '../repository/track.repository.ts'
+import { InMemoryTrackRepository } from '../repository/track.repository.ts'
 
 interface TrackRow {
   readonly slug: string
@@ -26,27 +19,23 @@ interface TrackRow {
 
 interface Envelope {
   readonly success: boolean
-  // Forme libre selon la route : verifiee par les assertions de chaque cas.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- charge utile polymorphe selon la route
   readonly data: any
   readonly error: string | null
 }
 
-/** Monte l'API comme `index.ts`, sur un port ephemere. */
 async function start(
   tracks: TrackRepository = new InMemoryTrackRepository(),
 ): Promise<{ server: Server; base: string }> {
   const lessons = new InMemoryLessonRepository()
   const exercises = new InMemoryExerciseRepository()
-  const app = express()
-  app.use(express.json())
-  app.use('/api/v1/executions', new ExecutionController().buildRouter())
-  app.use(
-    '/api/v1',
-    new TrackController(new TrackService(tracks, lessons, exercises)).buildRouter(),
-  )
-  app.use('/api/v1', new LessonController(new LessonService(tracks, lessons)).buildRouter())
-  app.use('/api/v1', new ExerciseController(new ExerciseService(tracks, exercises)).buildRouter())
+  const app = buildApp({
+    tracks,
+    lessons,
+    exercises,
+    contentSource: 'mock',
+    isDatabaseUp: async () => false,
+  })
   const server = await new Promise<Server>((resolve) => {
     const s = app.listen(0, () => resolve(s))
   })
@@ -249,5 +238,182 @@ describe('API du contenu (panne de la source)', () => {
       expect(JSON.parse(text).success).toBe(false)
       expect(text.includes('postgres')).toBe(false)
     }
+  })
+})
+
+const realFetch = globalThis.fetch
+
+function fakePiston(engine: (code: string) => Promise<Response>) {
+  vi.spyOn(globalThis, 'fetch').mockImplementation((url, init) =>
+    String(url).startsWith(config.PISTON_URL)
+      ? engine(JSON.parse(String(init?.body)).files[0].content)
+      : realFetch(url, init),
+  )
+}
+
+const runInNode = async (code: string): Promise<Response> => {
+  const run = spawnSync(process.execPath, ['-e', code], { encoding: 'utf8' })
+  return Response.json({
+    run: {
+      stdout: run.stdout,
+      stderr: run.stderr,
+      output: run.stdout + run.stderr,
+      code: run.status,
+      signal: null,
+      status: run.status === 0 ? null : 'RE',
+    },
+  })
+}
+
+describe('API de vérification, avec le moteur', () => {
+  let server: Server
+  let base: string
+  const verify = async (path: string, code: string) => {
+    const res = await realFetch(`${base}${path}/verifications`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ code }),
+    })
+    return { status: res.status, text: await res.text() }
+  }
+  const IS_EVEN = '/tracks/javascript/chapters/conditions/exercises/est-pair'
+
+  beforeAll(async () => {
+    ;({ server, base } = await start())
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+  afterAll(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        server.close((err) => (err ? reject(err) : resolve()))
+      }),
+  )
+
+  it('valide une solution juste', async () => {
+    fakePiston(runInNode)
+
+    const { status, text } = await verify(IS_EVEN, 'function isEven(n) { return n % 2 === 0 }')
+    const data = (JSON.parse(text) as Envelope).data
+
+    expect(status).toBe(200)
+    expect(data.passed).toBe(true)
+    expect(data.passedCount).toBe(data.total)
+  })
+
+  it('refuse une solution fausse', async () => {
+    fakePiston(runInNode)
+
+    const { status, text } = await verify(IS_EVEN, 'function isEven(n) { return true }')
+    const data = (JSON.parse(text) as Envelope).data
+
+    expect(status).toBe(200)
+    expect(data.passed).toBe(false)
+    expect(data.passedCount).toBeLessThan(data.total)
+  })
+
+  it('refuse en 400 une syntaxe TypeScript non prise en charge, sans appeler le moteur', async () => {
+    const engine = vi.fn(runInNode)
+    fakePiston(engine)
+
+    const { status, text } = await verify(
+      '/tracks/typescript/chapters/generiques/exercises/envelopper',
+      'enum A { X }',
+    )
+
+    expect(status).toBe(400)
+    expect(text).toMatch(/enum/)
+    expect(engine).not.toHaveBeenCalled()
+  })
+
+  it('répond 503 quand le moteur est en panne, sans détail interne', async () => {
+    fakePiston(() => Promise.reject(new TypeError('fetch failed: piston:2000')))
+
+    for (const call of [
+      () => verify(IS_EVEN, 'function isEven() {}'),
+      async () => {
+        const res = await realFetch(`${base}/executions`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ code: 'console.log(1)' }),
+        })
+        return { status: res.status, text: await res.text() }
+      },
+    ]) {
+      const { status, text } = await call()
+      expect(status).toBe(503)
+      expect(JSON.parse(text).error).toBe(MESSAGES.engineUnavailable)
+      expect(text.includes('piston')).toBe(false)
+    }
+  })
+
+  it('répond 500 quand la lecture de l’exercice échoue, même moteur disponible', async () => {
+    fakePiston(runInNode)
+    const failing = await start({
+      listTracks: () => Promise.reject(new Error('db down')),
+      findTrackBySlug: () => Promise.reject(new Error('db down')),
+      listChapters: () => Promise.reject(new Error('db down')),
+      findChapter: () => Promise.reject(new Error('db down')),
+    })
+    try {
+      const res = await realFetch(`${failing.base}${IS_EVEN}/verifications`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ code: 'function isEven() {}' }),
+      })
+      expect(res.status).toBe(500)
+      expect(((await res.json()) as Envelope).error).toBe(MESSAGES.contentUnavailable)
+    } finally {
+      failing.server.close()
+    }
+  })
+})
+
+describe('Enveloppe HTTP commune', () => {
+  let server: Server
+  let base: string
+
+  beforeAll(async () => {
+    ;({ server, base } = await start())
+  })
+  afterAll(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        server.close((err) => (err ? reject(err) : resolve()))
+      }),
+  )
+
+  it('répond 400 en JSON à un corps JSON mal formé', async () => {
+    const res = await fetch(`${base}/executions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{pas du json',
+    })
+    const text = await res.text()
+
+    expect(res.status).toBe(400)
+    expect(JSON.parse(text)).toEqual({ success: false, data: null, error: MESSAGES.invalidRequest })
+    expect(text.includes('SyntaxError')).toBe(false)
+  })
+
+  it('répond 404 en JSON sur une route inconnue', async () => {
+    const res = await fetch(`${base}/nulle-part`)
+
+    expect(res.status).toBe(404)
+    expect(((await res.json()) as Envelope).error).toBe(MESSAGES.routeNotFound)
+  })
+
+  it('n’annonce pas Express et interdit le sniffing de type', async () => {
+    const res = await fetch(`${base}/tracks`)
+
+    expect(res.headers.get('x-powered-by')).toBeNull()
+    expect(res.headers.get('x-content-type-options')).toBe('nosniff')
+  })
+
+  it('expose la source du contenu et l’état de la base sur /health', async () => {
+    const res = await fetch(`${base}/health`)
+
+    expect(await res.json()).toEqual({ status: 'ok', content: 'mock', database: 'disconnected' })
   })
 })

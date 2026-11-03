@@ -59,7 +59,7 @@ Le backend applique les migrations au démarrage, puis charge le contenu
 (langages, chapitres, exercices, cours) si la base est vide : `docker compose up`
 suffit sur un dépôt fraîchement cloné.
 
-Le contenu est rédigé dans le dépôt, dans `backend/src/repositories/*.mock.ts`.
+Le contenu est rédigé dans le dépôt, dans `backend/src/content/*.ts`.
 Après l'avoir modifié :
 
 ```bash
@@ -121,7 +121,7 @@ qu'il ne connaît pas, sans rapport apparent avec le code soumis.
 
 De même, `PISTON_RUN_TIMEOUT` et `PISTON_RUN_CPU_TIME` dans `compose.yaml`
 doivent rester alignés sur les limites que le backend demande
-(`RUN_TIMEOUT_MS` dans `backend/src/services/execution.service.ts`) : Piston
+(`RUN_TIMEOUT_MS` dans `backend/src/constants.ts`) : Piston
 refuse en `400` toute limite supérieure à sa propre configuration, il ne la
 rabote pas.
 
