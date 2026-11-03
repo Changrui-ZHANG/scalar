@@ -1,7 +1,8 @@
-// Vide et recharge la base : ne tourne qu'avec DATABASE_TESTS=1, jamais contre une base utile.
+import { PrismaClient } from '@prisma/client'
+import { execSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { prisma } from '../../../backend/src/database/client.ts'
 import { seedDatabase } from '../../../backend/src/database/seed.ts'
 import { ExerciseService } from '../../../backend/src/service/exercise.service.ts'
 import { LessonService } from '../../../backend/src/service/lesson.service.ts'
@@ -18,7 +19,9 @@ import {
 import type { TrackRepository } from '../../../backend/src/repository/track.repository.ts'
 import { InMemoryTrackRepository } from '../../../backend/src/repository/track.repository.ts'
 
-const enabled = process.env.DATABASE_TESTS === '1'
+// Vide la base : jamais DATABASE_URL, toujours la base de test.
+const url = process.env.DATABASE_URL_TEST
+const prisma = new PrismaClient({ datasourceUrl: url })
 
 interface Services {
   readonly tracks: TrackService
@@ -67,10 +70,15 @@ const QUESTIONS: ReadonlyArray<readonly [string, (s: Services) => Promise<unknow
   ['a corriger', (s) => s.exercises.findForVerification('javascript', 'conditions', 'est-pair')],
 ]
 
-describe.skipIf(!enabled)('dépôts Prisma contre dépôts en mémoire', () => {
+describe.skipIf(!url)('dépôts Prisma contre dépôts en mémoire', () => {
   beforeAll(async () => {
+    execSync('npx prisma migrate deploy', {
+      cwd: fileURLToPath(new URL('../../../backend/', import.meta.url)),
+      env: { ...process.env, DATABASE_URL: url },
+      stdio: 'ignore',
+    })
     await seedDatabase(prisma)
-  })
+  }, 60_000)
   afterAll(async () => {
     await prisma.$disconnect()
   })

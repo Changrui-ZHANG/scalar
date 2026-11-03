@@ -6,5 +6,5 @@
 npm test --workspace backend                    # tous les tests
 npm run test:watch --workspace backend          # relance à chaque modification
 npm run test:coverage --workspace backend       # couverture
-DATABASE_TESTS=1 npm test --workspace backend   # + PostgreSQL : base migrée, VIDÉE par les tests
+DATABASE_URL_TEST=... npm test --workspace backend   # autre base de test (défaut : scalar_test du compose, VIDÉE)
 ```
