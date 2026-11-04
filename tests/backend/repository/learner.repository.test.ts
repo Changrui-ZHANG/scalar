@@ -5,11 +5,13 @@ import { migrateTestDatabase } from '../database.fixtures.ts'
 import { CONTENT, seedDatabase } from '../../../backend/src/database/seed.ts'
 import type { CertificateRepository } from '../../../backend/src/repository/certificate.repository.ts'
 import { InMemoryCertificateRepository } from '../../../backend/src/repository/certificate.repository.ts'
+import { InvalidHolderNameError } from '../../../backend/src/repository/invalid-holder-name.error.ts'
 import { PrismaCertificateRepository } from '../../../backend/src/repository/prisma-certificate.repository.ts'
 import { PrismaProgressRepository } from '../../../backend/src/repository/prisma-progress.repository.ts'
 import { PrismaUserRepository } from '../../../backend/src/repository/prisma-user.repository.ts'
 import type { ProgressRepository } from '../../../backend/src/repository/progress.repository.ts'
 import { InMemoryProgressRepository } from '../../../backend/src/repository/progress.repository.ts'
+import { UnknownReferenceError } from '../../../backend/src/repository/unknown-reference.error.ts'
 import type { UserRepository } from '../../../backend/src/repository/user.repository.ts'
 import { InMemoryUserRepository } from '../../../backend/src/repository/user.repository.ts'
 
@@ -23,11 +25,14 @@ interface Repositories {
   readonly certificates: CertificateRepository
 }
 
-const memory = (): Repositories => ({
-  users: new InMemoryUserRepository(),
-  progress: new InMemoryProgressRepository(),
-  certificates: new InMemoryCertificateRepository(),
-})
+const memory = (): Repositories => {
+  const users = new InMemoryUserRepository()
+  return {
+    users,
+    progress: new InMemoryProgressRepository(users),
+    certificates: new InMemoryCertificateRepository(users),
+  }
+}
 const database = (): Repositories => ({
   users: new PrismaUserRepository(prisma),
   progress: new PrismaProgressRepository(prisma),
@@ -43,6 +48,8 @@ const BACKENDS: ReadonlyArray<readonly [string, () => Repositories]> = url
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const UNKNOWN_ID = '00000000-0000-4000-8000-000000000000'
+const MALFORMED_ID = 'pas-un-uuid'
+const UNKNOWN_CONTENT_ID = 999_999
 const [FIRST, SECOND] = CONTENT.exercises
 const TRACK = CONTENT.tracks[0]!
 const OTHER_TRACK = CONTENT.tracks[1]!
@@ -156,6 +163,21 @@ describe.each(BACKENDS)('dépôt de la progression (%s)', (_name, open) => {
     expect(await repos.progress.findProgress(userId, FIRST!.id)).toBeNull()
   })
 
+  it('répond null ou [] pour un id d’apprenant mal formé', async () => {
+    expect(await repos.progress.findProgress(MALFORMED_ID, FIRST!.id)).toBeNull()
+    expect(await repos.progress.listProgress(MALFORMED_ID)).toEqual([])
+  })
+
+  it.each([
+    ['un apprenant inconnu', () => UNKNOWN_ID, () => FIRST!.id],
+    ['un apprenant mal formé', () => MALFORMED_ID, () => FIRST!.id],
+    ['un exercice inconnu', (id: string) => id, () => UNKNOWN_CONTENT_ID],
+  ])('refuse une soumission pour %s', async (_cas, user, exercise) => {
+    await expect(
+      repos.progress.recordAttempt(user(userId), exercise(), true, day(1)),
+    ).rejects.toBeInstanceOf(UnknownReferenceError)
+  })
+
   it('liste la progression d’un apprenant par exercice, sans celle des autres', async () => {
     const other = (await repos.users.create({ ...account, email: 'grace@example.org' }))!.id
     await repos.progress.recordAttempt(userId, SECOND!.id, true, day(1))
@@ -210,6 +232,27 @@ describe.each(BACKENDS)('dépôt des certificats (%s)', (_name, open) => {
 
   it('répond null pour un code inconnu', async () => {
     expect(await repos.certificates.findByCode('INCONNU')).toBeNull()
+  })
+
+  it('répond [] pour un id d’apprenant mal formé', async () => {
+    expect(await repos.certificates.listCertificates(MALFORMED_ID)).toEqual([])
+  })
+
+  it.each([
+    ['un apprenant inconnu', { userId: UNKNOWN_ID }],
+    ['un apprenant mal formé', { userId: MALFORMED_ID }],
+    ['un parcours inconnu', { trackId: UNKNOWN_CONTENT_ID }],
+  ])('refuse un certificat pour %s', async (_cas, override) => {
+    await expect(
+      repos.certificates.issue({ ...request('ABC123'), ...override }),
+    ).rejects.toBeInstanceOf(UnknownReferenceError)
+  })
+
+  it.each(['', '   '])('refuse un certificat au nom vide (%j)', async (holderName) => {
+    await expect(
+      repos.certificates.issue({ ...request('ABC123'), holderName }),
+    ).rejects.toBeInstanceOf(InvalidHolderNameError)
+    expect(await repos.certificates.findByCode('ABC123')).toBeNull()
   })
 
   it('liste les certificats d’un apprenant du plus ancien au plus récent', async () => {
