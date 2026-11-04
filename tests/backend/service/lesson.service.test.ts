@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
 import { InMemoryTrackRepository } from '../../../backend/src/repository/track.repository.ts'
-import { chapter, lesson, track } from './content.fixtures.ts'
+import { chapter, lesson, track } from '../content.fixtures.ts'
 import { LessonService } from '../../../backend/src/service/lesson.service.ts'
 
 const service = new LessonService(new InMemoryTrackRepository(), new InMemoryLessonRepository())

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { InMemoryExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
 import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
 import { InMemoryTrackRepository } from '../../../backend/src/repository/track.repository.ts'
-import { chapter, exercise, lesson, track } from './content.fixtures.ts'
+import { chapter, exercise, lesson, track } from '../content.fixtures.ts'
 import { TrackService } from '../../../backend/src/service/track.service.ts'
 
 const service = new TrackService(

@@ -8,7 +8,7 @@ import type {
 } from '@prisma/client'
 import { describe, expect, it } from 'vitest'
 
-import { chapter, exercise, lesson, testCase, track } from '../service/content.fixtures.ts'
+import { chapter, exercise, lesson, testCase, track } from '../content.fixtures.ts'
 import {
   toChapter,
   toExercise,

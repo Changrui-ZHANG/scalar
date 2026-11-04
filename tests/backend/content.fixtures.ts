@@ -1,10 +1,10 @@
 import type { ChapterLevel } from '@scalar/shared/enums'
 
-import type { Chapter } from '../../../backend/src/entity/chapter.entity.ts'
-import type { Exercise } from '../../../backend/src/entity/exercise.entity.ts'
-import type { ExerciseTestCase } from '../../../backend/src/entity/exercise-test-case.entity.ts'
-import type { Lesson } from '../../../backend/src/entity/lesson.entity.ts'
-import type { Track } from '../../../backend/src/entity/track.entity.ts'
+import type { Chapter } from '../../backend/src/entity/chapter.entity.ts'
+import type { Exercise } from '../../backend/src/entity/exercise.entity.ts'
+import type { ExerciseTestCase } from '../../backend/src/entity/exercise-test-case.entity.ts'
+import type { Lesson } from '../../backend/src/entity/lesson.entity.ts'
+import type { Track } from '../../backend/src/entity/track.entity.ts'
 
 const DATE = new Date('2026-09-28T00:00:00Z')
 const published = { status: 'published', firstPublishedAt: DATE } as const
