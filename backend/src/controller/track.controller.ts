@@ -2,7 +2,8 @@ import { Router } from 'express'
 import type { Request, Response } from 'express'
 
 import { MESSAGES } from '../constants.ts'
-import { respond } from '../http/envelope.ts'
+import { ok, respond } from '../http/envelope.ts'
+import { contentUnavailable } from '../http/errors.ts'
 import type { TrackService } from '../service/track.service.ts'
 
 export class TrackController {
@@ -13,7 +14,11 @@ export class TrackController {
   }
 
   async listTracks(_req: Request, res: Response) {
-    await respond(res, MESSAGES.noTracks, () => this.service.listTracks())
+    try {
+      ok(res, await this.service.listTracks())
+    } catch (error: unknown) {
+      contentUnavailable(res, error)
+    }
   }
 
   async getTrack(req: Request<{ track: string }>, res: Response) {

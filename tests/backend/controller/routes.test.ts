@@ -26,6 +26,7 @@ interface Envelope {
 
 async function start(
   tracks: TrackRepository = new InMemoryTrackRepository(),
+  isDatabaseUp: () => Promise<boolean> = async () => false,
 ): Promise<{ server: Server; base: string }> {
   const lessons = new InMemoryLessonRepository()
   const exercises = new InMemoryExerciseRepository()
@@ -34,7 +35,7 @@ async function start(
     lessons,
     exercises,
     contentSource: 'mock',
-    isDatabaseUp: async () => false,
+    isDatabaseUp,
   })
   const server = await new Promise<Server>((resolve) => {
     const s = app.listen(0, () => resolve(s))
@@ -428,5 +429,23 @@ describe('Enveloppe HTTP commune', () => {
     const res = await fetch(`${base}/health`)
 
     expect(await res.json()).toEqual({ status: 'ok', content: 'mock', database: 'disconnected' })
+  })
+
+  it('répond 500 en JSON générique à une erreur non prévue, sans détail interne', async () => {
+    const crashing = await start(undefined, () => Promise.reject(new Error('socket postgres')))
+    try {
+      const res = await fetch(`${crashing.base}/health`)
+      const text = await res.text()
+
+      expect(res.status).toBe(500)
+      expect(JSON.parse(text)).toEqual({
+        success: false,
+        data: null,
+        error: MESSAGES.internalError,
+      })
+      expect(text.includes('postgres')).toBe(false)
+    } finally {
+      crashing.server.close()
+    }
   })
 })

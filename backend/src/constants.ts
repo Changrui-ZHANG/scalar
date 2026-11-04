@@ -61,7 +61,6 @@ export const MESSAGES = {
   invalidRequest: 'Requête invalide.',
   internalError: 'Erreur interne du serveur.',
   routeNotFound: 'Route introuvable.',
-  noTracks: 'Aucun parcours.',
   trackNotFound: 'Parcours introuvable.',
   lessonNotFound: 'Cours introuvable.',
   exerciseNotFound: 'Exercice introuvable.',
