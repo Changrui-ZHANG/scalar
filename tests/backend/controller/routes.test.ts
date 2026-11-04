@@ -36,6 +36,8 @@ async function start(
     exercises,
     contentSource: 'mock',
     isDatabaseUp,
+    executionRateLimit: 1_000,
+    trustProxyHops: 0,
   })
   const server = await new Promise<Server>((resolve) => {
     const s = app.listen(0, () => resolve(s))

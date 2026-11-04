@@ -63,6 +63,8 @@ export const viteNodeApp = buildApp({
   ...repositories,
   contentSource: config.CONTENT_SOURCE,
   isDatabaseUp,
+  executionRateLimit: config.EXECUTION_RATE_LIMIT,
+  trustProxyHops: config.TRUST_PROXY_HOPS,
 })
 
 if (config.NODE_ENV === 'production') {

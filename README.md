@@ -26,7 +26,11 @@ Ce qui existe aujourd'hui :
 - la correction automatique d'un exercice (`POST …/verifications`) : un verdict
   par cas de test, les valeurs attendues ne quittant jamais le serveur ;
 - l'exécution isolée par [Piston](https://github.com/engineer-man/piston), avec
-  réseau coupé, plafond de durée et plafond de sortie.
+  réseau coupé, plafond de durée et plafond de sortie ;
+- une limitation de débit commune aux exécutions et aux vérifications
+  (`EXECUTION_RATE_LIMIT` par minute et par adresse IP, 30 par défaut ; au-delà,
+  `429`). Derrière un reverse proxy, `TRUST_PROXY_HOPS` doit valoir le nombre
+  de proxys (1 avec le Traefik du compose) pour compter chaque client à part.
 
 Ce qui n'existe pas encore : authentification, comptes, quotas, vérification
 des types TypeScript, persistance des soumissions, certification. La

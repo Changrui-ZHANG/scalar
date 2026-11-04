@@ -12,6 +12,9 @@ export const MAX_BODY_BYTES = 6 * MAX_CODE_BYTES + 1024
 // Doit rester egal a PISTON_RUN_TIMEOUT et PISTON_RUN_CPU_TIME (compose.yaml) : au-dela, Piston refuse toutes les executions en 400.
 export const RUN_TIMEOUT_MS = 5_000
 
+// Fenêtre de EXECUTION_RATE_LIMIT : budget commun aux exécutions et aux vérifications, par adresse IP.
+export const EXECUTION_RATE_WINDOW_MS = 60_000
+
 export const PROGRAMMING_LANGUAGES = [
   'javascript',
   'typescript',
@@ -64,4 +67,5 @@ export const MESSAGES = {
   trackNotFound: 'Parcours introuvable.',
   lessonNotFound: 'Cours introuvable.',
   exerciseNotFound: 'Exercice introuvable.',
+  tooManyExecutions: 'Trop d’exécutions en peu de temps : patientez une minute avant de réessayer.',
 } as const
