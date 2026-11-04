@@ -81,3 +81,41 @@ describe('vérification d’un exercice', () => {
     expect(() => buildHarness('', 'x); process.exit(0', CASES, MARKER)).toThrow()
   })
 })
+
+function verdictOf(stdout: string, cases: readonly VerificationCase[] = CASES) {
+  const execution: ExecutionResult = {
+    status: 'OK',
+    label: 'Terminé',
+    run: { stdout, stderr: '', output: stdout, code: 0, signal: null, status: null },
+  }
+  return readVerdict(execution, 'isEven', cases, MARKER)
+}
+
+describe('sortie du harnais inattendue', () => {
+  it('une ligne de résultats illisible vaut un programme arrêté avant la fin', () => {
+    const result = verdictOf(`sortie\n${MARKER}{pas du json`)
+
+    expect(result.passed).toBe(false)
+    expect(result.checks[0]?.passed).toBe(false)
+    expect(result.execution.run.stdout).toContain(MARKER)
+  })
+
+  it('une erreur levée sur un cas n’échoue que ce cas, et reste muette si le cas est caché', () => {
+    const result = verify(
+      'function isEven(n) {\n  if (n !== 4) throw new Error("refus " + n)\n  return true\n}',
+    )
+
+    expect(result.checks.slice(2).map((c) => [c.passed, c.detail])).toEqual([
+      [true, null],
+      [false, expect.stringMatching(/^Erreur : .*refus 7/)],
+      [false, 'Le programme lève une erreur sur ce cas.'],
+    ])
+  })
+
+  it('une valeur renvoyée qui n’est pas du JSON échoue', () => {
+    const [visible] = CASES
+    const result = verdictOf(`\n${MARKER}${JSON.stringify([{ value: 'undefined' }])}`, [visible!])
+
+    expect(result.checks[2]).toMatchObject({ passed: false, detail: 'Obtenu : undefined' })
+  })
+})

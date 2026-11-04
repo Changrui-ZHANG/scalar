@@ -4,6 +4,7 @@ import { MAX_CODE_BYTES } from '../../../backend/src/constants.ts'
 import {
   EngineUnavailableError,
   executeCode,
+  hasJavascriptRuntime,
   parseSubmission,
   toExecutionStatus,
   toJavaScript,
@@ -221,5 +222,30 @@ describe('panne du moteur', () => {
 
     expect(erreur).toBeInstanceOf(EngineUnavailableError)
     expect((erreur as Error).cause).toBeInstanceOf(Error)
+  })
+})
+
+describe('hasJavascriptRuntime', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it.each([
+    ['par son nom', [{ language: 'javascript' }], true],
+    ['par un alias', [{ language: 'node', aliases: ['javascript'] }], true],
+    ['absent', [{ language: 'python', aliases: ['py'] }], false],
+  ])('trouve le runtime %s', async (_cas, runtimes, attendu) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => reponsePiston(runtimes))
+
+    expect(await hasJavascriptRuntime()).toBe(attendu)
+  })
+
+  it.each([
+    ['injoignable', () => Promise.reject(new TypeError('fetch failed'))],
+    ['erreur HTTP', async () => reponsePiston({ message: 'boom' }, 500)],
+  ])('moteur %s : répond non sans lever', async (_cas, reponse) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(reponse)
+
+    expect(await hasJavascriptRuntime()).toBe(false)
   })
 })
