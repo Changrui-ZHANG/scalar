@@ -10,6 +10,7 @@ import { InMemoryExerciseRepository } from '../../../backend/src/repository/exer
 import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
 import type { TrackRepository } from '../../../backend/src/repository/track.repository.ts'
 import { InMemoryTrackRepository } from '../../../backend/src/repository/track.repository.ts'
+import { InMemoryUserRepository } from '../../../backend/src/repository/user.repository.ts'
 
 interface TrackRow {
   readonly slug: string
@@ -38,6 +39,9 @@ async function start(
     isDatabaseUp,
     executionRateLimit: 1_000,
     trustProxyHops: 0,
+    users: new InMemoryUserRepository(),
+    jwtSecret: config.JWT_SECRET,
+    secureCookie: true,
   })
   const server = await new Promise<Server>((resolve) => {
     const s = app.listen(0, () => resolve(s))

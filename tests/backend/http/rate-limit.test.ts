@@ -7,6 +7,7 @@ import { MESSAGES } from '../../../backend/src/constants.ts'
 import { InMemoryExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
 import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
 import { InMemoryTrackRepository } from '../../../backend/src/repository/track.repository.ts'
+import { InMemoryUserRepository } from '../../../backend/src/repository/user.repository.ts'
 
 const LIMIT = 2
 const VERIFICATIONS = '/tracks/javascript/chapters/conditions/exercises/est-pair/verifications'
@@ -24,6 +25,9 @@ async function start(trustProxyHops = 0): Promise<string> {
     isDatabaseUp: async () => false,
     executionRateLimit: LIMIT,
     trustProxyHops,
+    users: new InMemoryUserRepository(),
+    jwtSecret: 'secret-de-test-assez-long-pour-hs256-0123456789',
+    secureCookie: true,
   })
   const server = await new Promise<Server>((resolve) => {
     const s = app.listen(0, () => resolve(s))

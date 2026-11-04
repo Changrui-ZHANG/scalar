@@ -12,6 +12,9 @@ const schema = z.object({
   PISTON_NODE_VERSION: z.string().default('20.11.1'),
   EXECUTION_RATE_LIMIT: z.coerce.number().int().positive().default(30),
   TRUST_PROXY_HOPS: z.coerce.number().int().nonnegative().default(0),
+  JWT_SECRET: z.string().min(32),
+  // false seulement pour un front servi en http hors localhost : le navigateur y ignorerait un cookie Secure.
+  AUTH_COOKIE_SECURE: z.stringbool().default(true),
 })
 
 export type Config = z.infer<typeof schema>

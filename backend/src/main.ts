@@ -9,7 +9,9 @@ import { InMemoryLessonRepository } from './repository/lesson.repository.ts'
 import { PrismaExerciseRepository } from './repository/prisma-exercise.repository.ts'
 import { PrismaLessonRepository } from './repository/prisma-lesson.repository.ts'
 import { PrismaTrackRepository } from './repository/prisma-track.repository.ts'
+import { PrismaUserRepository } from './repository/prisma-user.repository.ts'
 import { InMemoryTrackRepository } from './repository/track.repository.ts'
+import { InMemoryUserRepository } from './repository/user.repository.ts'
 import { hasJavascriptRuntime } from './service/execution.service.ts'
 
 if (config.CONTENT_SOURCE === 'database' && !config.DATABASE_URL) {
@@ -22,11 +24,13 @@ const repositories =
         tracks: new InMemoryTrackRepository(),
         exercises: new InMemoryExerciseRepository(),
         lessons: new InMemoryLessonRepository(),
+        users: new InMemoryUserRepository(),
       }
     : {
         tracks: new PrismaTrackRepository(prisma),
         exercises: new PrismaExerciseRepository(prisma),
         lessons: new PrismaLessonRepository(prisma),
+        users: new PrismaUserRepository(prisma),
       }
 
 async function prepareDatabase(): Promise<void> {
@@ -65,6 +69,8 @@ export const viteNodeApp = buildApp({
   isDatabaseUp,
   executionRateLimit: config.EXECUTION_RATE_LIMIT,
   trustProxyHops: config.TRUST_PROXY_HOPS,
+  jwtSecret: config.JWT_SECRET,
+  secureCookie: config.AUTH_COOKIE_SECURE,
 })
 
 if (config.NODE_ENV === 'production') {

@@ -13,6 +13,7 @@ export default defineConfig({
     env: {
       DATABASE_URL_TEST:
         process.env.DATABASE_URL_TEST ?? 'postgres://scalar:scalar@localhost:5433/scalar_test',
+      JWT_SECRET: 'secret-de-test-jamais-utilise-ailleurs-0123456789',
     },
     projects: [
       {

@@ -1,0 +1,156 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { MESSAGES } from '../../../backend/src/constants.ts'
+import { InMemoryUserRepository } from '../../../backend/src/repository/user.repository.ts'
+import { AuthService, parseCredentials } from '../../../backend/src/service/auth.service.ts'
+import type { PasswordHasher } from '../../../backend/src/service/password-hasher.service.ts'
+import { SessionTokenService } from '../../../backend/src/service/session-token.service.ts'
+
+const SECRET = 'secret-de-test-assez-long-pour-hs256-0123456789'
+const ADA = { email: 'ada@example.org', password: 'correct horse' }
+
+// Hachage factice : argon2 a ses propres tests, ici seul le flux compte.
+const fakeHasher = (): PasswordHasher => ({
+  hash: vi.fn(async (password: string) => `hash:${password}`),
+  verify: vi.fn(async (hash: string, password: string) => hash === `hash:${password}`),
+})
+
+describe('parseCredentials', () => {
+  it('normalise l’email : espaces retirés, minuscules', () => {
+    expect(parseCredentials({ email: '  Ada@Example.ORG ', password: 'correct horse' })).toEqual({
+      ok: true,
+      credentials: ADA,
+    })
+  })
+
+  it.each([
+    ['sans corps', undefined, MESSAGES.invalidEmail],
+    ['email absent', { password: 'correct horse' }, MESSAGES.invalidEmail],
+    ['email invalide', { email: 'ada', password: 'correct horse' }, MESSAGES.invalidEmail],
+    ['email non texte', { email: 42, password: 'correct horse' }, MESSAGES.invalidEmail],
+    ['mot de passe absent', { email: ADA.email }, MESSAGES.invalidPassword],
+    ['mot de passe court', { email: ADA.email, password: '1234567' }, MESSAGES.invalidPassword],
+    [
+      'mot de passe trop long',
+      { email: ADA.email, password: 'x'.repeat(129) },
+      MESSAGES.invalidPassword,
+    ],
+  ])('refuse : %s', (_cas, body, error) => {
+    expect(parseCredentials(body)).toEqual({ ok: false, error })
+  })
+
+  it('accepte un mot de passe de 8 à 128 caractères', () => {
+    expect(parseCredentials({ email: ADA.email, password: 'x'.repeat(8) }).ok).toBe(true)
+    expect(parseCredentials({ email: ADA.email, password: 'x'.repeat(128) }).ok).toBe(true)
+  })
+})
+
+describe('AuthService', () => {
+  let users: InMemoryUserRepository
+  let hasher: PasswordHasher
+  let clock: Date
+  let auth: AuthService
+  beforeEach(() => {
+    users = new InMemoryUserRepository()
+    hasher = fakeHasher()
+    clock = new Date('2026-11-05T10:00:00Z')
+    auth = new AuthService(users, hasher, new SessionTokenService(SECRET, 900, () => clock))
+  })
+  const later = (seconds: number) => {
+    clock = new Date(clock.getTime() + seconds * 1000)
+  }
+
+  it('inscrit un apprenant, stocke le hash et ouvre une session', async () => {
+    const session = await auth.register(ADA)
+
+    expect(session?.user).toEqual({
+      id: expect.any(String),
+      email: ADA.email,
+      createdAt: expect.any(Date),
+    })
+    expect((await users.findByEmail(ADA.email))?.passwordHash).toBe('hash:correct horse')
+    expect((await auth.authenticate(session!.token))?.user).toEqual(session!.user)
+  })
+
+  it('normalise l’email même sans passer par parseCredentials', async () => {
+    const session = await auth.register({ ...ADA, email: '  Ada@Example.ORG ' })
+
+    expect(session?.user.email).toBe(ADA.email)
+    expect(await auth.register(ADA)).toBeNull()
+    expect((await auth.login({ ...ADA, email: ' ADA@example.org ' }))?.user).toEqual(session!.user)
+  })
+
+  it('ne renvoie jamais le hash du mot de passe', async () => {
+    const session = await auth.register(ADA)
+
+    expect(JSON.stringify(session)).not.toContain('hash:')
+  })
+
+  it('refuse une inscription avec un email déjà pris', async () => {
+    await auth.register(ADA)
+
+    expect(await auth.register({ ...ADA, password: 'autre mot de passe' })).toBeNull()
+  })
+
+  it('connecte avec le bon mot de passe', async () => {
+    const { user } = (await auth.register(ADA))!
+
+    expect((await auth.login(ADA))?.user).toEqual(user)
+  })
+
+  it('refuse un mauvais mot de passe ou un email inconnu de la même façon', async () => {
+    await auth.register(ADA)
+
+    expect(await auth.login({ ...ADA, password: 'mauvais mot de passe' })).toBeNull()
+    expect(await auth.login({ ...ADA, email: 'personne@example.org' })).toBeNull()
+  })
+
+  it('vérifie quand même un hash pour un email inconnu, pour ne pas répondre plus vite', async () => {
+    await auth.login({ ...ADA, email: 'personne@example.org' })
+    await auth.login({ ...ADA, email: 'personne@example.org' })
+
+    expect(hasher.verify).toHaveBeenCalledTimes(2)
+    expect(hasher.hash).toHaveBeenCalledTimes(1)
+  })
+
+  it('refuse un jeton illisible', async () => {
+    expect(await auth.authenticate('pas-un-jeton')).toBeNull()
+  })
+
+  it('refuse le jeton d’un compte qui n’existe plus', async () => {
+    const other = new AuthService(
+      new InMemoryUserRepository(),
+      hasher,
+      new SessionTokenService(SECRET, 900, () => clock),
+    )
+    const { token } = (await other.register(ADA))!
+
+    expect(await auth.authenticate(token)).toBeNull()
+  })
+
+  it('la déconnexion révoque tous les jetons déjà émis', async () => {
+    const first = (await auth.register(ADA))!
+    const second = (await auth.login(ADA))!
+
+    await auth.logout(first.user.id)
+
+    expect(await auth.authenticate(first.token)).toBeNull()
+    expect(await auth.authenticate(second.token)).toBeNull()
+    expect(await auth.authenticate((await auth.login(ADA))!.token)).not.toBeNull()
+  })
+
+  it('renouvelle le jeton passé la moitié de sa vie, pas avant', async () => {
+    const { token } = (await auth.register(ADA))!
+
+    later(449)
+    expect((await auth.authenticate(token))?.renewedToken).toBeNull()
+
+    later(1)
+    const renewed = (await auth.authenticate(token))?.renewedToken
+    expect(renewed).toEqual(expect.any(String))
+
+    later(600)
+    expect(await auth.authenticate(token)).toBeNull()
+    expect(await auth.authenticate(renewed!)).not.toBeNull()
+  })
+})
