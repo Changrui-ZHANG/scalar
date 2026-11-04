@@ -420,11 +420,15 @@ describe('Enveloppe HTTP commune', () => {
     expect(((await res.json()) as Envelope).error).toBe(MESSAGES.routeNotFound)
   })
 
-  it('n’annonce pas Express et interdit le sniffing de type', async () => {
+  it('n’annonce pas Express et pose les en-têtes de sécurité', async () => {
     const res = await fetch(`${base}/tracks`)
 
     expect(res.headers.get('x-powered-by')).toBeNull()
     expect(res.headers.get('x-content-type-options')).toBe('nosniff')
+    expect(res.headers.get('content-security-policy')).toBe(
+      "default-src 'none'; frame-ancestors 'none'",
+    )
+    expect(res.headers.get('referrer-policy')).toBe('no-referrer')
   })
 
   it('expose la source du contenu et l’état de la base sur /health', async () => {
