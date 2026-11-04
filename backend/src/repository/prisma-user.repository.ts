@@ -1,15 +1,10 @@
-import { Prisma } from '@prisma/client'
 import type { PrismaClient } from '@prisma/client'
 
 import type { User } from '../entity/user.entity.ts'
+import { isKnownError, RECORD_NOT_FOUND, UNIQUE_VIOLATION } from './prisma-errors.ts'
 import { toUser } from './prisma.mapper.ts'
 import type { NewUser, UserRepository } from './user.repository.ts'
-
-// Prisma leve sur un id mal forme pour une colonne UUID, la ou le depot en memoire repond null.
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-const isKnownError = (error: unknown, code: string): boolean =>
-  error instanceof Prisma.PrismaClientKnownRequestError && error.code === code
+import { isUuid } from './uuid.ts'
 
 export class PrismaUserRepository implements UserRepository {
   private readonly prisma: PrismaClient
@@ -25,7 +20,7 @@ export class PrismaUserRepository implements UserRepository {
       })
       return toUser(row)
     } catch (error: unknown) {
-      if (isKnownError(error, 'P2002')) {
+      if (isKnownError(error, UNIQUE_VIOLATION)) {
         return null
       }
       throw error
@@ -33,7 +28,7 @@ export class PrismaUserRepository implements UserRepository {
   }
 
   async findById(id: string): Promise<User | null> {
-    if (!UUID.test(id)) {
+    if (!isUuid(id)) {
       return null
     }
     const row = await this.prisma.user.findUnique({ where: { id } })
@@ -46,7 +41,7 @@ export class PrismaUserRepository implements UserRepository {
   }
 
   async incrementTokenVersion(id: string): Promise<number | null> {
-    if (!UUID.test(id)) {
+    if (!isUuid(id)) {
       return null
     }
     try {
@@ -56,7 +51,7 @@ export class PrismaUserRepository implements UserRepository {
       })
       return row.tokenVersion
     } catch (error: unknown) {
-      if (isKnownError(error, 'P2025')) {
+      if (isKnownError(error, RECORD_NOT_FOUND)) {
         return null
       }
       throw error
