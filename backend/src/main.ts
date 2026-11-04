@@ -9,6 +9,7 @@ import { InMemoryLessonRepository } from './repository/lesson.repository.ts'
 import { PrismaExerciseRepository } from './repository/prisma-exercise.repository.ts'
 import { PrismaLessonRepository } from './repository/prisma-lesson.repository.ts'
 import { PrismaTrackRepository } from './repository/prisma-track.repository.ts'
+import { InMemoryQuestionnaireRepository } from './repository/questionnaire.repository.ts'
 import { InMemoryTrackRepository } from './repository/track.repository.ts'
 import { hasJavascriptRuntime } from './service/execution.service.ts'
 
@@ -61,6 +62,8 @@ await prepare()
 
 export const viteNodeApp = buildApp({
   ...repositories,
+  // En memoire dans les deux modes tant que ses tables n'existent pas : CONTENT_SOURCE ne le concerne pas encore.
+  questionnaire: new InMemoryQuestionnaireRepository(),
   contentSource: config.CONTENT_SOURCE,
   isDatabaseUp,
 })

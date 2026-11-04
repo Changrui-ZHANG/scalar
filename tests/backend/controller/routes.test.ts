@@ -8,6 +8,7 @@ import { config } from '../../../backend/src/config.ts'
 import { MAX_CODE_BYTES, MESSAGES } from '../../../backend/src/constants.ts'
 import { InMemoryExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
 import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
+import { InMemoryQuestionnaireRepository } from '../../../backend/src/repository/questionnaire.repository.ts'
 import type { TrackRepository } from '../../../backend/src/repository/track.repository.ts'
 import { InMemoryTrackRepository } from '../../../backend/src/repository/track.repository.ts'
 
@@ -34,6 +35,7 @@ async function start(
     tracks,
     lessons,
     exercises,
+    questionnaire: new InMemoryQuestionnaireRepository(),
     contentSource: 'mock',
     isDatabaseUp,
   })

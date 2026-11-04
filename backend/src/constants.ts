@@ -78,4 +78,5 @@ export const MESSAGES = {
   trackNotFound: 'Parcours introuvable.',
   lessonNotFound: 'Cours introuvable.',
   exerciseNotFound: 'Exercice introuvable.',
+  questionNotFound: 'Question introuvable.',
 } as const
