@@ -2,6 +2,7 @@ import express from 'express'
 import type { Express } from 'express'
 
 import type { Config } from './config.ts'
+import { MAX_BODY_BYTES } from './constants.ts'
 import { ExecutionController } from './controller/execution.controller.ts'
 import { ExerciseController } from './controller/exercise.controller.ts'
 import { LessonController } from './controller/lesson.controller.ts'
@@ -27,7 +28,7 @@ export function buildApp(deps: AppDependencies): Express {
   const { tracks, lessons, exercises } = deps
   const app = express()
   secure(app)
-  app.use(express.json())
+  app.use(express.json({ limit: MAX_BODY_BYTES }))
 
   app.get('/api/v1', (_req, res) => {
     res.json({ status: 'ok', message: 'API Scalar (Backend)' })

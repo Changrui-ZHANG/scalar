@@ -5,7 +5,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 
 import { buildApp } from '../../../backend/src/app.ts'
 import { config } from '../../../backend/src/config.ts'
-import { MESSAGES } from '../../../backend/src/constants.ts'
+import { MAX_CODE_BYTES, MESSAGES } from '../../../backend/src/constants.ts'
 import { InMemoryExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
 import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
 import type { TrackRepository } from '../../../backend/src/repository/track.repository.ts'
@@ -205,6 +205,19 @@ describe('API d’exécution, avant tout appel au moteur', () => {
     expect(status).toBe(400)
     expect(body.error ?? '').toMatch(/enum/)
   })
+
+  it.each([
+    ['guillemets', '"'],
+    ['caractères de contrôle', '\u0001'],
+  ])(
+    'un code trop long reçoit le message de taille, même gonflé par l’échappement JSON (%s)',
+    async (_cas, char) => {
+      const { status, body } = await post({ code: char.repeat(MAX_CODE_BYTES + 1) })
+
+      expect(status).toBe(400)
+      expect(body.error ?? '').toMatch(/dépasse la limite/)
+    },
+  )
 })
 
 describe('API du contenu (panne de la source)', () => {

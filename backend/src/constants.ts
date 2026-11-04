@@ -6,6 +6,9 @@ export const PISTON_LANGUAGE = 'javascript'
 
 export const MAX_CODE_BYTES = 64 * 1024
 
+// L'echappement JSON grossit un octet jusqu'a 6 (\u0001) : en dessous, un code valide est refuse en 413 avant d'atteindre son controle de taille.
+export const MAX_BODY_BYTES = 6 * MAX_CODE_BYTES + 1024
+
 // Doit rester egal a PISTON_RUN_TIMEOUT et PISTON_RUN_CPU_TIME (compose.yaml) : au-dela, Piston refuse toutes les executions en 400.
 export const RUN_TIMEOUT_MS = 5_000
 
