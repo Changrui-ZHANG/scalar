@@ -1,0 +1,195 @@
+# Scénario de démonstration de l'API Scalar, à dérouler dans l'ordre devant le jury.
+#
+# Lancement :
+#   - VS Code : extension « REST Client », puis « Send Request » au-dessus de chaque requête.
+#   - JetBrains (WebStorm, IntelliJ) : client HTTP intégré, bouton ▶ dans la marge.
+#   - Backend : `docker compose up` (PostgreSQL + Piston), ou sans base :
+#       CONTENT_SOURCE=mock npm run dev --workspace backend
+#     Les corrections et exécutions demandent Piston (PISTON_URL, port 2000 du compose).
+#
+# Les sections marquées « À VENIR » attendent leur branche : elles ne marchent pas encore.
+
+@baseUrl = http://localhost:3001/api/v1
+@track = javascript
+@chapter = conditions
+@exercise = est-pair
+
+# Remplies plus tard par les sections d'authentification et de certification.
+@email = demo@scalar.test
+@password = motdepasse-de-demo-123
+@certificateCode = A-REMPLIR
+
+### 1. Santé du service : contenu servi et état de la base
+GET {{baseUrl}}/health
+
+### 2. Parcours disponibles, avec langage et prérequis
+GET {{baseUrl}}/tracks
+
+### 3. Un parcours : chapitres numérotés, leçons et exercices
+GET {{baseUrl}}/tracks/{{track}}
+
+### 4. Une leçon
+GET {{baseUrl}}/tracks/{{track}}/chapters/variables/lessons/variables-et-types-primitifs
+
+### 5. Un exercice : consigne, code de départ, cas visibles (jamais la solution ni les cas cachés)
+GET {{baseUrl}}/tracks/{{track}}/chapters/{{chapter}}/exercises/{{exercise}}
+
+### 6. Inexistant : 404 dans l'enveloppe commune
+GET {{baseUrl}}/tracks/cobol
+
+# ---------------------------------------------------------------------------
+# Positionnement
+# ---------------------------------------------------------------------------
+
+### 7. Le questionnaire : options sans score, exercices sans solution
+GET {{baseUrl}}/questionnaire
+
+### 8. Un exercice du questionnaire, corrigé par le serveur (nom de fonction côté serveur)
+POST {{baseUrl}}/questionnaire/exercises/6/verifications
+Content-Type: application/json
+
+{
+  "code": "function ajouter(a, b) {\n  return a + b\n}"
+}
+
+### 9. Résultats : le serveur recorrige chaque exercice et propose niveau, parcours et chapitre
+POST {{baseUrl}}/questionnaire/results
+Content-Type: application/json
+
+{
+  "choices": [
+    { "questionId": 1, "optionId": 3 },
+    { "questionId": 2, "optionId": 6 },
+    { "questionId": 3, "optionId": 8 },
+    { "questionId": 4, "optionId": 14 },
+    { "questionId": 5, "optionId": 16 }
+  ],
+  "submissions": [
+    { "questionId": 6, "code": "function ajouter(a, b) { return a + b }" },
+    { "questionId": 7, "code": "function estPalindrome(s) { return s === [...s].reverse().join('') }" },
+    { "questionId": 8, "code": "function factorielle(n) { return n * 2 }" }
+  ]
+}
+
+### 10. Réponse incohérente : l'option 1 appartient à la question 1, pas à la 3 (400)
+POST {{baseUrl}}/questionnaire/results
+Content-Type: application/json
+
+{
+  "choices": [{ "questionId": 3, "optionId": 1 }]
+}
+
+# ---------------------------------------------------------------------------
+# À VENIR (feat/auth) : inscription et connexion
+# Le jeton est posé dans un cookie HttpOnly, Secure, SameSite=Strict :
+# les deux clients le renvoient d'eux-mêmes aux requêtes suivantes.
+# ---------------------------------------------------------------------------
+
+### 11. À VENIR : inscription
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### 12. À VENIR : connexion
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### 13. À VENIR : apprenant connecté
+GET {{baseUrl}}/auth/me
+
+# ---------------------------------------------------------------------------
+# Exercice corrigé
+# ---------------------------------------------------------------------------
+
+### 14. Solution juste : tous les critères passent
+POST {{baseUrl}}/tracks/{{track}}/chapters/{{chapter}}/exercises/{{exercise}}/verifications
+Content-Type: application/json
+
+{
+  "code": "function isEven(n) {\n  return n % 2 === 0\n}"
+}
+
+### 15. Solution fausse : les cas visibles montrent l'écart, les cas cachés restent muets
+POST {{baseUrl}}/tracks/{{track}}/chapters/{{chapter}}/exercises/{{exercise}}/verifications
+Content-Type: application/json
+
+{
+  "code": "function isEven(n) {\n  return true\n}"
+}
+
+### 16. Code vide : refusé avant tout appel au moteur (400)
+POST {{baseUrl}}/tracks/{{track}}/chapters/{{chapter}}/exercises/{{exercise}}/verifications
+Content-Type: application/json
+
+{
+  "code": "   "
+}
+
+# ---------------------------------------------------------------------------
+# Exécution libre (bac à sable)
+# ---------------------------------------------------------------------------
+
+### 17. Exécution JavaScript
+POST {{baseUrl}}/executions
+Content-Type: application/json
+
+{
+  "code": "console.log([1, 2, 3].map((n) => n * 2))"
+}
+
+### 18. Exécution TypeScript : types retirés côté serveur, puis exécutés
+POST {{baseUrl}}/executions
+Content-Type: application/json
+
+{
+  "programmingLanguage": "typescript",
+  "code": "const salut = (nom: string): string => `Bonjour ${nom}`\nconsole.log(salut('jury'))"
+}
+
+### 19. Boucle infinie : coupée par le moteur, statut « Temps dépassé »
+POST {{baseUrl}}/executions
+Content-Type: application/json
+
+{
+  "code": "while (true) {}"
+}
+
+# ---------------------------------------------------------------------------
+# À VENIR (feat/progress) : progression enregistrée
+# ---------------------------------------------------------------------------
+
+### 20. À VENIR : progression de l'apprenant connecté
+GET {{baseUrl}}/me/progress
+
+# ---------------------------------------------------------------------------
+# À VENIR (certification) : certificat sur demande
+# ---------------------------------------------------------------------------
+
+### 21. À VENIR : demander le certificat du parcours (400 si un exercice publié n'est pas réussi)
+POST {{baseUrl}}/tracks/{{track}}/certificates
+
+### 22. À VENIR : vérification publique d'un certificat, sans connexion
+GET {{baseUrl}}/certificats/{{certificateCode}}
+
+# ---------------------------------------------------------------------------
+# À VENIR (feat/rate-limit) : limitation de débit
+# Envoyer la requête suivante plus vite que la limite : réponse 429 dans
+# l'enveloppe commune, avec l'en-tête Retry-After.
+# ---------------------------------------------------------------------------
+
+### 23. À VENIR : à répéter rapidement jusqu'au 429
+POST {{baseUrl}}/executions
+Content-Type: application/json
+
+{
+  "code": "console.log('encore')"
+}
