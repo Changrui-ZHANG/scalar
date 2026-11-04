@@ -2,6 +2,7 @@
 *
 !package.json
 !package-lock.json
+!tsconfig.base.json
 !frontend
 !admin
 !backend
@@ -12,6 +13,7 @@
 **/.nuxt
 **/.output
 **/*.log
+backend/**/*.d.ts
 
 # Secrets locaux : les conteneurs recoivent leur configuration de compose.yaml.
 **/.env

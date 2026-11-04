@@ -1,7 +1,10 @@
 import { Router } from 'express'
 import type { Request, Response } from 'express'
-import type { TrackService } from '../services/track.service.ts'
-import { respond } from './respond.ts'
+
+import { MESSAGES } from '../constants.ts'
+import { ok, respond } from '../http/envelope.ts'
+import { contentUnavailable } from '../http/errors.ts'
+import type { TrackService } from '../service/track.service.ts'
 
 export class TrackController {
   private readonly service: TrackService
@@ -11,11 +14,15 @@ export class TrackController {
   }
 
   async listTracks(_req: Request, res: Response) {
-    await respond(res, 'Aucun parcours.', () => this.service.listTracks())
+    try {
+      ok(res, await this.service.listTracks())
+    } catch (error: unknown) {
+      contentUnavailable(res, error)
+    }
   }
 
   async getTrack(req: Request<{ track: string }>, res: Response) {
-    await respond(res, 'Parcours introuvable.', () => this.service.getTrack(req.params.track))
+    await respond(res, MESSAGES.trackNotFound, () => this.service.getTrack(req.params.track))
   }
 
   buildRouter() {

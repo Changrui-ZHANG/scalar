@@ -6,6 +6,7 @@
 .cache
 .nuxtrc
 dist
+coverage
 
 # Dependances
 node_modules
