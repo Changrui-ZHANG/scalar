@@ -3,7 +3,7 @@ import { execSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { seedDatabase } from '../../../backend/src/database/seed.ts'
+import { CONTENT, seedDatabase } from '../../../backend/src/database/seed.ts'
 import { ExerciseService } from '../../../backend/src/service/exercise.service.ts'
 import { LessonService } from '../../../backend/src/service/lesson.service.ts'
 import { TrackService } from '../../../backend/src/service/track.service.ts'
@@ -119,5 +119,14 @@ describe.skipIf(!url)('dépôts Prisma contre dépôts en mémoire', () => {
       prisma.chapter.update({ where: { id: b!.id }, data: { position: a!.position } }),
     ])
     await seedDatabase(prisma)
+  })
+
+  it('un contenu refusé laisse la base intacte', async () => {
+    const before = await prisma.exercise.count()
+    const [first] = CONTENT.exercises
+    const broken = { ...CONTENT, exercises: [{ ...first!, solutionCode: 'function (' }] }
+
+    await expect(seedDatabase(prisma, broken)).rejects.toThrow(/Contenu refusé/)
+    expect(await prisma.exercise.count()).toBe(before)
   })
 })

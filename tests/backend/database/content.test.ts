@@ -50,6 +50,34 @@ describe('contenu du dépôt : exercices', () => {
     expect(validateExercises(misplaced).some((p) => p.includes('sans langage'))).toBe(true)
   })
 
+  it.each([
+    ['erreur de syntaxe', () => 'function ('],
+    ['fonction mal nommée', () => 'function autreNom() {}'],
+  ])('le contrôle refuse une solution illisible : %s', (_cas, code) => {
+    const [first] = c.exercises
+    const unreadable: Content = { ...c, exercises: [{ ...first!, solutionCode: code() }] }
+
+    expect(validateExercises(unreadable)).toContainEqual(
+      expect.stringContaining(`${first!.slug} : solution illisible`),
+    )
+  })
+
+  it('une solution qui lève une erreur échoue à chaque cas sans interrompre le contrôle', () => {
+    const [first, second] = c.exercises
+    const throwing: Content = {
+      ...c,
+      exercises: [
+        { ...first!, solutionCode: `function ${first!.functionName}() { throw new Error('x') }` },
+        second!,
+      ],
+    }
+    const cases = c.testCases.filter((t) => t.exerciseId === first!.id)
+
+    expect(validateExercises(throwing)).toEqual(
+      cases.map((t) => `${first!.slug} : la solution échoue au cas ${t.position}`),
+    )
+  })
+
   it('chaque exercice a au moins un cas, et au plus 3 indices', () => {
     for (const e of c.exercises) {
       expect(c.testCases.some((t) => t.exerciseId === e.id)).toBe(true)
