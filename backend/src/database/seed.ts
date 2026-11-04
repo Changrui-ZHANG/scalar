@@ -102,6 +102,12 @@ export async function isContentEmpty(prisma: PrismaClient): Promise<boolean> {
   return (await prisma.track.count()) === 0
 }
 
+/** Comptes ou certificats en base : le seed effacerait leur progression et leurs certificats. */
+export async function hasLearnerData(prisma: PrismaClient): Promise<boolean> {
+  const [users, certificates] = await Promise.all([prisma.user.count(), prisma.certificate.count()])
+  return users > 0 || certificates > 0
+}
+
 export async function seedDatabase(
   prisma: PrismaClient,
   content: Content = CONTENT,
@@ -112,7 +118,8 @@ export async function seedDatabase(
   }
 
   await prisma.$transaction(async (tx) => {
-    // CASCADE vide aussi exercise_progress et certificates (cles etrangeres vers le contenu).
+    // CASCADE vide aussi exercise_progress et certificates, et RESTART IDENTITY renumerote les exercices :
+    // seed.cli.ts refuse donc de tourner s'il existe des comptes ou des certificats, sauf --force.
     await tx.$executeRawUnsafe(`TRUNCATE ${CONTENT_TABLES.join(', ')} RESTART IDENTITY CASCADE`)
 
     // Les parcours dont un autre depend passent en premier.
