@@ -182,10 +182,11 @@ export const QUESTIONNAIRE_TEST_CASES: readonly QuestionnaireTestCase[] = [
     [[''], true, false, 'chaîne vide'],
     [['kayak'], true, true],
     [['ab'], false, true],
+    [['abca'], false, false, 'mêmes première et dernière lettres'],
   ]),
   ...cases(8, [
     [[0], 1, false, 'par convention'],
-    [[1], 1],
+    [[3], 6],
     [[5], 120],
     [[10], 3628800, true],
   ]),

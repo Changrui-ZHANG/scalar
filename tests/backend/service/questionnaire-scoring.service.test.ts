@@ -1,9 +1,14 @@
+import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
+
+import { MESSAGES } from '../../../backend/src/constants.ts'
 
 import {
   QUESTIONNAIRE_OPTIONS,
   QUESTIONNAIRE_QUESTIONS,
+  QUESTIONNAIRE_TEST_CASES,
 } from '../../../backend/src/content/questionnaire.ts'
+import type { ExecutionResult } from '../../../backend/src/service/execution.service.ts'
 import type { QuestionnaireQuestionKind } from '../../../backend/src/entity/questionnaire-question.entity.ts'
 import type { ExerciseScore } from '../../../backend/src/service/questionnaire-scoring.service.ts'
 import {
@@ -11,6 +16,7 @@ import {
   toExerciseScore,
 } from '../../../backend/src/service/questionnaire-scoring.service.ts'
 import type { VerificationResult } from '../../../backend/src/service/verification.service.ts'
+import { buildHarness, readVerdict } from '../../../backend/src/service/verification.service.ts'
 
 const questions = QUESTIONNAIRE_QUESTIONS
 const options = QUESTIONNAIRE_OPTIONS
@@ -86,7 +92,18 @@ describe('scoreQuestionnaire', () => {
     const result = score({ declared: 'best', knowledge: 'best', practical: none })
 
     expect(result).toMatchObject({ score: 40, level: 'beginner' })
-    expect(result.feedback[0]).toMatch(/plus avancé que ne le montrent les exercices/)
+    expect(result.feedback[0]).toBe(MESSAGES.placementOverestimatedBeginner)
+  })
+
+  it('se surestime sans être débutant : ne lui parle pas de consolider les bases', () => {
+    const result = score({
+      declared: 'best',
+      knowledge: 'best',
+      practical: () => ({ passedCases: 4, totalCases: 5 }),
+    })
+
+    expect(result).toMatchObject({ practical: 60, level: 'advanced' })
+    expect(result.feedback).toEqual([MESSAGES.placementOverestimated])
   })
 
   it('réussit les exercices sans le déclarer : intermédiaire, et le lui dit', () => {
@@ -103,10 +120,35 @@ describe('scoreQuestionnaire', () => {
     expect(score({ ...profile, practical: only(hard!.id, all()) }).practical).toBe(50)
   })
 
-  it('compte les cas réussis au prorata', () => {
-    const half = () => ({ passedCases: 1, totalCases: 2 })
+  it('ne compte que les cas réussis au-delà de ce qu’une réponse constante obtient', () => {
+    const practical = (passedCases: number, totalCases: number) =>
+      score({
+        declared: 'worst',
+        knowledge: 'worst',
+        practical: () => ({ passedCases, totalCases }),
+      }).practical
 
-    expect(score({ declared: 'worst', knowledge: 'worst', practical: half }).practical).toBe(50)
+    expect(practical(1, 2)).toBe(0)
+    expect(practical(1, 4)).toBe(0)
+    expect(practical(3, 4)).toBe(50)
+    expect(practical(4, 4)).toBe(100)
+  })
+
+  it('compare le plancher pratique au sous-score affiché, pas à sa valeur avant arrondi', () => {
+    const [code] = ofKind('code')
+    const result = scoreQuestionnaire({
+      questions: [...ofKind('experience'), ...ofKind('knowledge'), { ...code!, weight: 1 }],
+      options,
+      answers: {
+        choices: new Map(
+          [...ofKind('experience'), ...ofKind('knowledge')].map((q) => [q.id, best(q.id).id]),
+        ),
+        // (6/10 - 0,5) / 0,5 vaut 0,19999999999999996 en virgule flottante.
+        exercises: new Map([[code!.id, { passedCases: 6, totalCases: 10 }]]),
+      },
+    })
+
+    expect(result).toMatchObject({ practical: 20, score: 52, level: 'intermediate' })
   })
 
   it('le plancher pratique impose débutant malgré un score suffisant', () => {
@@ -195,5 +237,35 @@ describe('toExerciseScore', () => {
     } as unknown as VerificationResult
 
     expect(toExerciseScore(result)).toEqual({ passedCases: 1, totalCases: 3 })
+  })
+  it.each([
+    ['la solution', (q: { solutionCode: string | null }) => q.solutionCode!, 'all'],
+    ['le code de départ', (q: { starterCode: string | null }) => q.starterCode!, 'none'],
+  ] as const)('avec le vrai readVerdict, compte chaque cas de %s', (_name, codeOf, expected) => {
+    for (const question of ofKind('code')) {
+      const cases = QUESTIONNAIRE_TEST_CASES.filter((t) => t.questionId === question.id)
+      const marker = '__scalar_test__'
+      const run = spawnSync(
+        process.execPath,
+        ['-e', buildHarness(codeOf(question), question.functionName!, cases, marker)],
+        { encoding: 'utf8' },
+      )
+      const execution: ExecutionResult = {
+        status: 'OK',
+        label: '',
+        run: {
+          stdout: run.stdout,
+          stderr: run.stderr,
+          output: run.stdout + run.stderr,
+          code: run.status,
+          signal: null,
+          status: null,
+        },
+      }
+
+      expect(
+        toExerciseScore(readVerdict(execution, question.functionName!, cases, marker)),
+      ).toEqual({ passedCases: expected === 'all' ? cases.length : 0, totalCases: cases.length })
+    }
   })
 })

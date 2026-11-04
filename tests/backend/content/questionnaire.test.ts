@@ -1,6 +1,10 @@
+import { isDeepStrictEqual } from 'node:util'
 import { describe, expect, it } from 'vitest'
 
-import { QUESTIONNAIRE_WEIGHTS } from '../../../backend/src/constants.ts'
+import {
+  QUESTIONNAIRE_CHANCE_RATIO,
+  QUESTIONNAIRE_WEIGHTS,
+} from '../../../backend/src/constants.ts'
 import {
   QUESTIONNAIRE_OPTIONS,
   QUESTIONNAIRE_QUESTIONS,
@@ -58,6 +62,25 @@ describe('contenu du questionnaire', () => {
       expect([q.functionName, q.starterCode, q.solutionCode].every((v) => v !== null)).toBe(isCode)
       expect(QUESTIONNAIRE_TEST_CASES.some((t) => t.questionId === q.id)).toBe(isCode)
       expect(optionsOf(q.id).length > 0).toBe(!isCode)
+    }
+  })
+
+  it.each([
+    ['true', () => true],
+    ['false', () => false],
+    ['0', () => 0],
+    ['1', () => 1],
+    ['""', () => ''],
+    ['null', () => null],
+    ['le premier argument', (first: unknown) => first],
+  ])('une réponse constante (%s) ne dépasse pas le hasard', (_name, guess) => {
+    for (const q of questions.filter((q) => q.kind === 'code')) {
+      const cases = QUESTIONNAIRE_TEST_CASES.filter((t) => t.questionId === q.id)
+      const passed = cases.filter((t) => isDeepStrictEqual(guess(t.arguments[0]), t.expectedResult))
+
+      expect(passed.length / cases.length, q.functionName!).toBeLessThanOrEqual(
+        QUESTIONNAIRE_CHANCE_RATIO,
+      )
     }
   })
 

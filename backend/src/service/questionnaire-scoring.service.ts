@@ -3,6 +3,8 @@
 import type { ChapterLevel } from '@scalar/shared/enums'
 
 import {
+  MESSAGES,
+  QUESTIONNAIRE_CHANCE_RATIO,
   QUESTIONNAIRE_PRACTICAL_FLOOR,
   QUESTIONNAIRE_SELF_ASSESSMENT_GAP,
   QUESTIONNAIRE_THRESHOLDS,
@@ -45,7 +47,8 @@ export interface QuestionnaireScore {
   readonly feedback: readonly string[]
 }
 
-// Les deux premiers criteres disent si le code tourne et si la fonction existe : seuls les suivants sont des cas.
+// Les deux premiers criteres de readVerdict disent si le code tourne et si la fonction existe : seuls les suivants sont des cas.
+// Un test croise avec le vrai readVerdict casse si cet ordre change.
 export function toExerciseScore(result: VerificationResult): ExerciseScore {
   const cases = result.checks.slice(2)
   return { passedCases: cases.filter((c) => c.passed).length, totalCases: cases.length }
@@ -58,6 +61,13 @@ const weightedMean = (items: readonly { readonly weight: number; readonly value:
 
 const percent = (ratio: number): number => Math.round(100 * ratio)
 
+const aboveChance = ({ passedCases, totalCases }: ExerciseScore): number =>
+  totalCases === 0
+    ? 0
+    : Math.max(0, passedCases / totalCases - QUESTIONNAIRE_CHANCE_RATIO) /
+      (1 - QUESTIONNAIRE_CHANCE_RATIO)
+
+// Sur 100, comme les seuils : le niveau ne contredit jamais les sous-scores affiches.
 function pickLevel(score: number, practical: number): PlacementLevel {
   if (practical < QUESTIONNAIRE_PRACTICAL_FLOOR || score < QUESTIONNAIRE_THRESHOLDS.intermediate) {
     return 'beginner'
@@ -84,10 +94,7 @@ export function scoreQuestionnaire(input: ScoringInput): QuestionnaireScore {
   const practical = weightedMean(
     ofKind('code').map((q) => {
       const result = answers.exercises.get(q.id)
-      return {
-        weight: q.weight,
-        value: result && result.totalCases > 0 ? result.passedCases / result.totalCases : 0,
-      }
+      return { weight: q.weight, value: result ? aboveChance(result) : 0 }
     }),
   )
 
@@ -96,17 +103,17 @@ export function scoreQuestionnaire(input: ScoringInput): QuestionnaireScore {
       QUESTIONNAIRE_WEIGHTS.knowledge * knowledge +
       QUESTIONNAIRE_WEIGHTS.practical * practical,
   )
-  const level = pickLevel(score, practical)
+  const level = pickLevel(score, percent(practical))
 
   const feedback: string[] = []
   if (declared - practical > QUESTIONNAIRE_SELF_ASSESSMENT_GAP) {
     feedback.push(
-      'Vous vous estimez plus avancé que ne le montrent les exercices : le parcours commence par consolider les bases.',
+      level === 'beginner'
+        ? MESSAGES.placementOverestimatedBeginner
+        : MESSAGES.placementOverestimated,
     )
   } else if (practical - declared > QUESTIONNAIRE_SELF_ASSESSMENT_GAP) {
-    feedback.push(
-      'Vos exercices en montrent plus que votre auto-évaluation : vous pouvez démarrer plus loin que prévu.',
-    )
+    feedback.push(MESSAGES.placementUnderestimated)
   }
 
   const languageQuestion = ofKind('language')[0]
@@ -119,9 +126,7 @@ export function scoreQuestionnaire(input: ScoringInput): QuestionnaireScore {
     null
   const prerequisite = wanted && level === 'beginner' ? input.prerequisiteOf?.(wanted) : null
   if (prerequisite) {
-    feedback.push(
-      'Ce parcours suppose des bases que le questionnaire n’a pas montrées : commencez par son prérequis.',
-    )
+    feedback.push(MESSAGES.placementPrerequisite)
   }
 
   return {
