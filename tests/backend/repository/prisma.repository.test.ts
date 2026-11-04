@@ -12,11 +12,9 @@ import type { ExerciseRepository } from '../../../backend/src/repository/exercis
 import { InMemoryExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
 import type { LessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
 import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
-import {
-  PrismaExerciseRepository,
-  PrismaLessonRepository,
-  PrismaTrackRepository,
-} from '../../../backend/src/repository/prisma.repository.ts'
+import { PrismaExerciseRepository } from '../../../backend/src/repository/prisma-exercise.repository.ts'
+import { PrismaLessonRepository } from '../../../backend/src/repository/prisma-lesson.repository.ts'
+import { PrismaTrackRepository } from '../../../backend/src/repository/prisma-track.repository.ts'
 import type { TrackRepository } from '../../../backend/src/repository/track.repository.ts'
 import { InMemoryTrackRepository } from '../../../backend/src/repository/track.repository.ts'
 

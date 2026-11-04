@@ -6,11 +6,9 @@ import { isContentEmpty, seedDatabase } from './database/seed.ts'
 import { logger } from './logger.ts'
 import { InMemoryExerciseRepository } from './repository/exercise.repository.ts'
 import { InMemoryLessonRepository } from './repository/lesson.repository.ts'
-import {
-  PrismaExerciseRepository,
-  PrismaLessonRepository,
-  PrismaTrackRepository,
-} from './repository/prisma.repository.ts'
+import { PrismaExerciseRepository } from './repository/prisma-exercise.repository.ts'
+import { PrismaLessonRepository } from './repository/prisma-lesson.repository.ts'
+import { PrismaTrackRepository } from './repository/prisma-track.repository.ts'
 import { InMemoryTrackRepository } from './repository/track.repository.ts'
 import { hasJavascriptRuntime } from './service/execution.service.ts'
 
