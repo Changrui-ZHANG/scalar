@@ -76,6 +76,8 @@ npm run db:seed --workspace backend   # remplace tout le contenu de la base
 
 Le seed vérifie d'abord chaque exercice (la solution passe ses cas, le code de
 départ non) et n'écrit rien si l'un d'eux est incohérent.
+Il refuse aussi de tourner si la base contient des comptes ou des certificats :
+il effacerait leur progression et leurs certificats. `-- --force` l'y autorise.
 
 Pour travailler sans PostgreSQL, `CONTENT_SOURCE=mock` sert les mêmes données
 depuis la mémoire. Le schéma, ses règles de nommage et ses contraintes sont
