@@ -53,6 +53,20 @@ export const CONTENT_TABLES = [
   'tracks',
 ] as const
 
+// Questionnaire de positionnement
+
+export const QUESTIONNAIRE_QUESTION_KINDS = ['experience', 'language', 'knowledge', 'code'] as const
+
+// La somme doit rester 1 : le score final est sur 100.
+export const QUESTIONNAIRE_WEIGHTS = { declared: 0.2, knowledge: 0.2, practical: 0.6 } as const
+
+export const QUESTIONNAIRE_THRESHOLDS = { intermediate: 40, advanced: 75 } as const
+
+// Exercices quasi tous echoues : debutant, quelle que soit l'auto-evaluation.
+export const QUESTIONNAIRE_PRACTICAL_FLOOR = 0.2
+
+export const QUESTIONNAIRE_SELF_ASSESSMENT_GAP = 0.35
+
 // Messages renvoyés au client
 
 export const MESSAGES = {
