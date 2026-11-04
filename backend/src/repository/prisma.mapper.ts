@@ -1,17 +1,23 @@
 import type {
+  Certificate as CertificateRow,
   Chapter as ChapterRow,
   Exercise as ExerciseRow,
+  ExerciseProgress as ExerciseProgressRow,
   ExerciseTestCase as ExerciseTestCaseRow,
   Lesson as LessonRow,
   Track as TrackRow,
+  User as UserRow,
 } from '@prisma/client'
 import type { JsonValue } from '@scalar/shared/api'
 
+import type { Certificate } from '../entity/certificate.entity.ts'
 import type { Chapter } from '../entity/chapter.entity.ts'
 import type { Exercise } from '../entity/exercise.entity.ts'
+import type { ExerciseProgress } from '../entity/exercise-progress.entity.ts'
 import type { ExerciseTestCase } from '../entity/exercise-test-case.entity.ts'
 import type { Lesson } from '../entity/lesson.entity.ts'
 import type { Track } from '../entity/track.entity.ts'
+import type { User } from '../entity/user.entity.ts'
 
 export function toTrack(row: TrackRow): Track {
   return {
@@ -97,5 +103,36 @@ export function toExerciseTestCase(row: ExerciseTestCaseRow): ExerciseTestCase {
     description: row.description,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+  }
+}
+
+export function toUser(row: UserRow): User {
+  return {
+    id: row.id,
+    email: row.email,
+    passwordHash: row.passwordHash,
+    tokenVersion: row.tokenVersion,
+    createdAt: row.createdAt,
+  }
+}
+
+export function toExerciseProgress(row: ExerciseProgressRow): ExerciseProgress {
+  return {
+    userId: row.userId,
+    exerciseId: row.exerciseId,
+    attempts: row.attempts,
+    firstPassedAt: row.firstPassedAt,
+    lastAttemptAt: row.lastAttemptAt,
+  }
+}
+
+export function toCertificate(row: CertificateRow): Certificate {
+  return {
+    id: row.id,
+    code: row.code,
+    userId: row.userId,
+    trackId: row.trackId,
+    holderName: row.holderName,
+    issuedAt: row.issuedAt,
   }
 }
