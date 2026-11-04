@@ -39,6 +39,7 @@ servis sous une origine unique derrière un reverse proxy.
 ## Documents
 
 - `Scalar_Presentation.docx` — présentation du produit
+- `backend/README.md` — architecture, routes, configuration et tests du backend
 
 ## Démarrage
 
