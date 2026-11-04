@@ -5,7 +5,7 @@ FROM ${NODE_IMAGE} AS base
 # Prisma (moteur de migration) a besoin d'OpenSSL, absent d'Alpine.
 RUN apk add --no-cache openssl
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json tsconfig.base.json ./
 COPY frontend/package.json frontend/
 COPY admin/package.json admin/
 COPY backend/package.json backend/
@@ -23,10 +23,8 @@ FROM base AS prod
 ENV NODE_ENV=production
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --workspace backend --include-workspace-root --omit=dev
-# Les tests ne partent pas en production.
-RUN find backend -name '*.test.ts' -delete
 # Fichiers à root, lisibles : l'utilisateur node n'a rien à écrire.
 USER node
 EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO /dev/null http://127.0.0.1:3001/api/v1/health || exit 1
-CMD ["node", "backend/src/index.ts"]
+CMD ["node", "backend/src/main.ts"]

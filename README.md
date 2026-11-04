@@ -23,13 +23,14 @@ Ce qui existe aujourd'hui :
 - un bac à sable `/exercices` où l'on colle un script Node.js ;
 - `POST /api/v1/executions`, qui valide la soumission, retire les types d'un
   code TypeScript, puis la délègue au moteur ;
+- la correction automatique d'un exercice (`POST …/verifications`) : un verdict
+  par cas de test, les valeurs attendues ne quittant jamais le serveur ;
 - l'exécution isolée par [Piston](https://github.com/engineer-man/piston), avec
   réseau coupé, plafond de durée et plafond de sortie.
 
-Ce qui n'existe pas encore : authentification, comptes, quotas, correction
-automatique (verdict par cas de test), vérification des types TypeScript,
-persistance des soumissions, certification. La progression de l'apprenant vit
-dans son navigateur.
+Ce qui n'existe pas encore : authentification, comptes, quotas, vérification
+des types TypeScript, persistance des soumissions, certification. La
+progression de l'apprenant vit dans son navigateur.
 
 Architecture : un monorepo npm workspaces réunissant une API Node/Express sur
 PostgreSQL, un exécuteur de code conteneurisé et isolé, et un frontend Nuxt,
@@ -42,16 +43,19 @@ servis sous une origine unique derrière un reverse proxy.
 ## Démarrage
 
 ```bash
-docker compose up -d      # frontend, backend, postgres, traefik et piston
+docker compose up -d      # frontend, admin, backend, postgres, traefik et piston
 ```
 
 Le produit est accessible sur :
+
 - Frontend : http://localhost:8080/
+- Admin : http://localhost:8080/admin
 - API Backend : http://localhost:8080/api/v1
 - Santé : http://localhost:8080/api/v1/health
 
-Au tout premier démarrage, le moteur d'exécution n'a aucun langage installé :
-voir la section « Moteur d'exécution » avant d'essayer d'exécuter quoi que ce soit.
+Au premier démarrage, le service `piston-setup` installe le runtime Node dans le
+moteur d'exécution : la première exécution n'est possible qu'une fois ce service
+terminé (voir « Moteur d'exécution »).
 
 ## Base de données
 
@@ -59,7 +63,7 @@ Le backend applique les migrations au démarrage, puis charge le contenu
 (langages, chapitres, exercices, cours) si la base est vide : `docker compose up`
 suffit sur un dépôt fraîchement cloné.
 
-Le contenu est rédigé dans le dépôt, dans `backend/src/repositories/*.mock.ts`.
+Le contenu est rédigé dans le dépôt, dans `backend/src/content/*.ts`.
 Après l'avoir modifié :
 
 ```bash
@@ -72,7 +76,7 @@ départ non) et n'écrit rien si l'un d'eux est incohérent.
 Pour travailler sans PostgreSQL, `CONTENT_SOURCE=mock` sert les mêmes données
 depuis la mémoire. Le schéma, ses règles de nommage et ses contraintes sont
 décrits dans `backend/prisma/schema.prisma` et
-`backend/prisma/migrations/0_init/migration.sql`.
+`backend/prisma/migrations/20261018014232_init/migration.sql`.
 
 > **Après l'ajout d'une dépendance npm**, un `npm install` sur la machine ne
 > suffit pas : les conteneurs montent `/app/node_modules` en volume anonyme figé
@@ -91,10 +95,13 @@ dans `compose.yaml`. Rien ne s'installe sur la machine. Le moteur n'est
 joignable que depuis le réseau du compose : Traefik ne l'expose pas, et le
 navigateur ne l'appelle jamais.
 
-**L'image Piston n'embarque aucun langage.** Après le tout premier
-`docker compose up`, le moteur démarre et ne sait rien exécuter tant que le
-runtime Node n'a pas été installé une fois. Le volume `piston-packages` le
-conserve ensuite, y compris après un `docker compose down`.
+**L'image Piston n'embarque aucun langage.** Le service `piston-setup`
+(`piston/setup.sh`) installe le runtime Node à chaque `docker compose up` s'il
+manque ; le volume `piston-packages` le conserve ensuite, y compris après un
+`docker compose down`.
+
+Si `piston-setup` échoue (`docker compose logs piston-setup`), l'installation se
+fait à la main :
 
 ```bash
 # 1. Lister les paquets disponibles. Attention : le paquet s'appelle « node »,
@@ -121,7 +128,7 @@ qu'il ne connaît pas, sans rapport apparent avec le code soumis.
 
 De même, `PISTON_RUN_TIMEOUT` et `PISTON_RUN_CPU_TIME` dans `compose.yaml`
 doivent rester alignés sur les limites que le backend demande
-(`RUN_TIMEOUT_MS` dans `backend/src/services/execution.service.ts`) : Piston
+(`RUN_TIMEOUT_MS` dans `backend/src/constants.ts`) : Piston
 refuse en `400` toute limite supérieure à sa propre configuration, il ne la
 rabote pas.
 
@@ -145,17 +152,18 @@ mise en ligne.
 
 ## Tests
 
-Les trois vérifications tournent sur les deux espaces depuis la racine, et ce
-sont exactement celles que la CI lance :
+Les trois vérifications tournent sur tous les espaces (`frontend`, `admin`,
+`backend`, `packages/*`) depuis la racine, et ce sont exactement celles que la
+CI lance :
 
 ```bash
-npm run lint        # eslint, frontend uniquement (le backend n'a pas de script lint)
-npm run typecheck   # tsc côté backend, nuxt typecheck côté frontend
-npm run test        # vitest côté frontend, node --test côté backend
+npm run lint        # eslint (frontend, admin, backend)
+npm run typecheck   # tsc, ou nuxt typecheck côté frontend et admin
+npm run test        # vitest dans chaque espace qui a des tests
 ```
 
-`.github/workflows/verification.yml` les rejoue sur chaque push vers `master` et
-chaque pull request.
+`.github/workflows/ci.yml` les rejoue sur chaque push vers `main` et chaque pull
+request, avec un PostgreSQL de service pour les tests sur base.
 
 Un espace à la fois, quand seul celui-là a bougé :
 
@@ -164,10 +172,11 @@ npm run test --workspace backend
 npm run typecheck --workspace backend
 ```
 
-Aucun test du dépôt n'a besoin d'une base de données ni d'un conteneur : la
-suite backend couvre la validation des soumissions et la traduction des réponses
-du moteur, avec un `fetch` simulé. La vérification de l'exécution réelle se fait
-à la main, pile démarrée :
+Les tests du backend sont rangés dans `tests/backend/`. Une partie d'entre eux
+tourne sur une vraie base PostgreSQL, celle du compose
+(`docker compose up -d postgres`) : voir `tests/README.md`. L'exécution réelle
+par Piston n'est pas testée automatiquement ; elle se vérifie à la main, pile
+démarrée :
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/executions \
