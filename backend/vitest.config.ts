@@ -7,7 +7,7 @@ export default defineConfig({
     include: ['**/*.test.ts'],
     env: {
       DATABASE_URL_TEST:
-        process.env.DATABASE_URL_TEST ?? 'postgres://scalar:scalar@localhost:5433/scalar_test',
+        process.env.DATABASE_URL_TEST ?? 'postgres://scalar:scalar@127.0.0.1:5433/scalar_test',
     },
   },
 })
