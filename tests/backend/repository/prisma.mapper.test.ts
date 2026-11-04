@@ -1,20 +1,26 @@
 import { Prisma } from '@prisma/client'
 import type {
+  Certificate as CertificateRow,
   Chapter as ChapterRow,
   Exercise as ExerciseRow,
+  ExerciseProgress as ExerciseProgressRow,
   ExerciseTestCase as ExerciseTestCaseRow,
   Lesson as LessonRow,
   Track as TrackRow,
+  User as UserRow,
 } from '@prisma/client'
 import { describe, expect, it } from 'vitest'
 
 import { chapter, exercise, lesson, testCase, track } from '../content.fixtures.ts'
 import {
+  toCertificate,
   toChapter,
   toExercise,
+  toExerciseProgress,
   toExerciseTestCase,
   toLesson,
   toTrack,
+  toUser,
 } from '../../../backend/src/repository/prisma.mapper.ts'
 
 const columns = (fields: Record<string, string>): string[] => Object.values(fields).toSorted()
@@ -28,6 +34,28 @@ const testCaseRow = (values: Partial<ExerciseTestCaseRow> = {}): ExerciseTestCas
   ...(testCase(6, 5, 1) as ExerciseTestCaseRow),
   ...values,
 })
+const userRow: UserRow = {
+  id: '6f1c2a3b-0000-4000-8000-000000000001',
+  email: 'ada@example.org',
+  passwordHash: '$argon2id$hash',
+  tokenVersion: 2,
+  createdAt: new Date('2026-11-01'),
+}
+const progressRow: ExerciseProgressRow = {
+  userId: userRow.id,
+  exerciseId: 5,
+  attempts: 3,
+  firstPassedAt: new Date('2026-11-02'),
+  lastAttemptAt: new Date('2026-11-03'),
+}
+const certificateRow: CertificateRow = {
+  id: 7,
+  code: 'ABC123',
+  userId: userRow.id,
+  trackId: 1,
+  holderName: 'Ada Lovelace',
+  issuedAt: new Date('2026-11-04'),
+}
 
 describe('conversion ligne Prisma → entité', () => {
   it.each([
@@ -36,6 +64,9 @@ describe('conversion ligne Prisma → entité', () => {
     ['Lesson', toLesson(lessonRow), Prisma.LessonScalarFieldEnum],
     ['Exercise', toExercise(exerciseRow), Prisma.ExerciseScalarFieldEnum],
     ['ExerciseTestCase', toExerciseTestCase(testCaseRow()), Prisma.ExerciseTestCaseScalarFieldEnum],
+    ['User', toUser(userRow), Prisma.UserScalarFieldEnum],
+    ['ExerciseProgress', toExerciseProgress(progressRow), Prisma.ExerciseProgressScalarFieldEnum],
+    ['Certificate', toCertificate(certificateRow), Prisma.CertificateScalarFieldEnum],
   ])('%s reprend chaque colonne de la table, et rien d’autre', (_, entity, fields) => {
     expect(keys(entity)).toEqual(columns(fields))
   })
@@ -45,6 +76,9 @@ describe('conversion ligne Prisma → entité', () => {
     ['Chapter', toChapter(chapterRow), chapterRow],
     ['Lesson', toLesson(lessonRow), lessonRow],
     ['Exercise', toExercise(exerciseRow), exerciseRow],
+    ['User', toUser(userRow), userRow],
+    ['ExerciseProgress', toExerciseProgress(progressRow), progressRow],
+    ['Certificate', toCertificate(certificateRow), certificateRow],
   ])('%s garde chaque valeur telle quelle', (_, entity, row) => {
     expect(entity).toEqual(row)
   })
@@ -60,6 +94,7 @@ describe('conversion ligne Prisma → entité', () => {
     const row = { ...trackRow, programmingLanguage: null, prerequisiteTrackId: null }
 
     expect(toTrack(row)).toMatchObject({ programmingLanguage: null, prerequisiteTrackId: null })
+    expect(toExerciseProgress({ ...progressRow, firstPassedAt: null }).firstPassedAt).toBeNull()
   })
 })
 

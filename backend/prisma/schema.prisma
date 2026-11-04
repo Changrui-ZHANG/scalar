@@ -7,8 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Contraintes que Prisma ne sait pas exprimer, ecrites a la main a la fin de la
-// migration `*_init` : positions uniques a controle differe, et controles CHECK.
+// Contraintes que Prisma ne sait pas exprimer, ecrites a la main a la fin des
+// migrations `*_init` (positions uniques a controle differe, controles CHECK du
+// contenu) et `*_learner_tables` (controles CHECK des tables apprenant).
 
 /// Ou en est la publication d'un contenu : seul `published` est servi.
 enum PublicationStatus {
@@ -66,6 +67,7 @@ model Track {
   createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
   chapters            Chapter[]
+  certificates        Certificate[]
 
   @@map("tracks")
 }
@@ -139,6 +141,7 @@ model Exercise {
   createdAt           DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
   testCases           ExerciseTestCase[]
+  progress            ExerciseProgress[]
 
   @@unique([chapterId, slug], name: "exercises_chapter_slug_key")
   @@map("exercises")
@@ -161,4 +164,55 @@ model ExerciseTestCase {
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("exercise_test_cases")
+}
+
+/// Un apprenant inscrit : email et mot de passe.
+model User {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Toujours en minuscules (controle CHECK) : l'unicite ne depend pas de la casse.
+  email        String             @unique
+  /// Hash argon2, jamais le mot de passe.
+  passwordHash String             @map("password_hash")
+  /// Incremente pour revoquer tous les JWT deja emis (deconnexion, mot de passe change).
+  tokenVersion Int                @default(0) @map("token_version")
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  progress     ExerciseProgress[]
+  certificates Certificate[]
+
+  @@map("users")
+}
+
+/// Ou en est un apprenant sur un exercice ; la ligne nait a sa premiere soumission.
+model ExerciseProgress {
+  userId        String    @map("user_id") @db.Uuid
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseId    Int       @map("exercise_id")
+  exercise      Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  /// Nombre de verifications soumises, au moins 1.
+  attempts      Int
+  /// Rempli a la premiere reussite, jamais efface : un exercice reussi le reste.
+  firstPassedAt DateTime? @map("first_passed_at") @db.Timestamptz(6)
+  lastAttemptAt DateTime  @map("last_attempt_at") @db.Timestamptz(6)
+
+  @@id([userId, exerciseId])
+  @@index([exerciseId])
+  @@map("exercise_progress")
+}
+
+/// Delivre sur demande, une fois tous les exercices publies du parcours reussis.
+model Certificate {
+  id         Int      @id @default(autoincrement())
+  /// Identifiant public, dans l'URL de verification.
+  code       String   @unique
+  userId     String   @map("user_id") @db.Uuid
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId    Int      @map("track_id")
+  track      Track    @relation(fields: [trackId], references: [id], onDelete: Restrict)
+  /// Nom affiche sur le certificat, fige a sa delivrance.
+  holderName String   @map("holder_name")
+  issuedAt   DateTime @map("issued_at") @db.Timestamptz(6)
+
+  @@unique([userId, trackId], name: "certificates_user_track_key")
+  @@index([trackId])
+  @@map("certificates")
 }

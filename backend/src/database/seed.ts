@@ -112,6 +112,7 @@ export async function seedDatabase(
   }
 
   await prisma.$transaction(async (tx) => {
+    // CASCADE vide aussi exercise_progress et certificates (cles etrangeres vers le contenu).
     await tx.$executeRawUnsafe(`TRUNCATE ${CONTENT_TABLES.join(', ')} RESTART IDENTITY CASCADE`)
 
     // Les parcours dont un autre depend passent en premier.
