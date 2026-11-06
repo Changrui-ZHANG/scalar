@@ -9,10 +9,18 @@ import type { Chapter } from '../entity/chapter.entity.ts'
 import type { Exercise } from '../entity/exercise.entity.ts'
 import type { ExerciseTestCase } from '../entity/exercise-test-case.entity.ts'
 import type { Lesson } from '../entity/lesson.entity.ts'
+import type { QuestionnaireOption } from '../entity/questionnaire-option.entity.ts'
+import type { QuestionnaireQuestion } from '../entity/questionnaire-question.entity.ts'
+import type { QuestionnaireTestCase } from '../entity/questionnaire-test-case.entity.ts'
 import type { Track } from '../entity/track.entity.ts'
 import { CHAPTERS } from '../content/chapters.ts'
 import { EXERCISE_TEST_CASES, EXERCISES } from '../content/exercises.ts'
 import { LESSONS } from '../content/lessons.ts'
+import {
+  QUESTIONNAIRE_OPTIONS,
+  QUESTIONNAIRE_QUESTIONS,
+  QUESTIONNAIRE_TEST_CASES,
+} from '../content/questionnaire.ts'
 import { TRACKS } from '../content/tracks.ts'
 import { toJavaScript } from '../service/execution.service.ts'
 
@@ -22,6 +30,9 @@ export interface Content {
   readonly lessons: readonly Lesson[]
   readonly exercises: readonly Exercise[]
   readonly testCases: readonly ExerciseTestCase[]
+  readonly questionnaireQuestions: readonly QuestionnaireQuestion[]
+  readonly questionnaireOptions: readonly QuestionnaireOption[]
+  readonly questionnaireTestCases: readonly QuestionnaireTestCase[]
 }
 
 export const CONTENT: Content = {
@@ -30,6 +41,9 @@ export const CONTENT: Content = {
   lessons: LESSONS,
   exercises: EXERCISES,
   testCases: EXERCISE_TEST_CASES,
+  questionnaireQuestions: QUESTIONNAIRE_QUESTIONS,
+  questionnaireOptions: QUESTIONNAIRE_OPTIONS,
+  questionnaireTestCases: QUESTIONNAIRE_TEST_CASES,
 }
 
 type Loaded = ((...args: unknown[]) => unknown) | { readonly error: string }
@@ -126,6 +140,15 @@ export async function seedDatabase(
     await tx.exercise.createMany({ data: [...content.exercises] })
     await tx.exerciseTestCase.createMany({
       data: content.testCases.map((t) => ({
+        ...t,
+        arguments: t.arguments as Prisma.InputJsonValue,
+        expectedResult: t.expectedResult as Prisma.InputJsonValue,
+      })),
+    })
+    await tx.questionnaireQuestion.createMany({ data: [...content.questionnaireQuestions] })
+    await tx.questionnaireOption.createMany({ data: [...content.questionnaireOptions] })
+    await tx.questionnaireTestCase.createMany({
+      data: content.questionnaireTestCases.map((t) => ({
         ...t,
         arguments: t.arguments as Prisma.InputJsonValue,
         expectedResult: t.expectedResult as Prisma.InputJsonValue,
