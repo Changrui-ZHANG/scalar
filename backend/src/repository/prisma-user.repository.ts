@@ -32,6 +32,10 @@ export class PrismaUserRepository implements UserRepository {
     }
   }
 
+  async createAnonymous(): Promise<User> {
+    return toUser(await this.prisma.user.create({ data: {} }))
+  }
+
   async findById(id: string): Promise<User | null> {
     if (!UUID.test(id)) {
       return null

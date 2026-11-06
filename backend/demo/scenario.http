@@ -101,7 +101,32 @@ Content-Type: application/json
 ### 16. Contenu absent : 404 au même format JSON
 GET {{base}}/tracks/python
 
-### 17. Limitation de débit : au-delà de 30 exécutions par minute, 429 avec Retry-After.
+### 17. Un apprenant anonyme : un identifiant, sans compte
+# @name learner
+POST {{base}}/learners
+
+### 18. Sa tentative ratée est enregistrée
+POST {{base}}/tracks/javascript/chapters/conditions/exercises/est-pair/verifications
+Content-Type: application/json
+X-Learner-Id: {{learner.response.body.data.id}}
+
+{ "code": "function isEven(n) {
+  return true
+}" }
+
+### 19. Puis sa réussite
+POST {{base}}/tracks/javascript/chapters/conditions/exercises/est-pair/verifications
+Content-Type: application/json
+X-Learner-Id: {{learner.response.body.data.id}}
+
+{ "code": "function isEven(n) {
+  return n % 2 === 0
+}" }
+
+### 20. Sa progression : 2 essais, exercice réussi
+GET {{base}}/learners/{{learner.response.body.data.id}}/progress
+
+### 21. Limitation de débit : au-delà de 30 exécutions par minute, 429 avec Retry-After.
 # Pour la montrer d'un coup, la boucle du README envoie 31 requêtes.
 POST {{base}}/executions
 Content-Type: application/json

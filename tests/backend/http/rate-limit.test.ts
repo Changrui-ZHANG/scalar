@@ -7,8 +7,10 @@ import { MESSAGES } from '../../../backend/src/constants.ts'
 import { InMemoryExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
 import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
 import { InMemoryPlacementRepository } from '../../../backend/src/repository/placement.repository.ts'
+import { InMemoryProgressRepository } from '../../../backend/src/repository/progress.repository.ts'
 import { InMemoryQuestionnaireRepository } from '../../../backend/src/repository/questionnaire.repository.ts'
 import { InMemoryTrackRepository } from '../../../backend/src/repository/track.repository.ts'
+import { InMemoryUserRepository } from '../../../backend/src/repository/user.repository.ts'
 
 // Corps vide : refuse en 400 avant tout appel au moteur, mais compte quand meme dans la limite.
 const EXECUTING_ROUTES = [
@@ -36,6 +38,8 @@ describe('limitation de débit des exécutions', () => {
       exercises: new InMemoryExerciseRepository(),
       questionnaire: new InMemoryQuestionnaireRepository(),
       placements: new InMemoryPlacementRepository(),
+      users: new InMemoryUserRepository(),
+      progress: new InMemoryProgressRepository(),
       contentSource: 'mock',
       executionRateLimit: 2,
       isDatabaseUp: async () => false,

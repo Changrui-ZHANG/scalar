@@ -10,10 +10,14 @@ import { InMemoryPlacementRepository } from './repository/placement.repository.t
 import { PrismaExerciseRepository } from './repository/prisma-exercise.repository.ts'
 import { PrismaLessonRepository } from './repository/prisma-lesson.repository.ts'
 import { PrismaPlacementRepository } from './repository/prisma-placement.repository.ts'
+import { PrismaProgressRepository } from './repository/prisma-progress.repository.ts'
 import { PrismaQuestionnaireRepository } from './repository/prisma-questionnaire.repository.ts'
 import { PrismaTrackRepository } from './repository/prisma-track.repository.ts'
+import { PrismaUserRepository } from './repository/prisma-user.repository.ts'
+import { InMemoryProgressRepository } from './repository/progress.repository.ts'
 import { InMemoryQuestionnaireRepository } from './repository/questionnaire.repository.ts'
 import { InMemoryTrackRepository } from './repository/track.repository.ts'
+import { InMemoryUserRepository } from './repository/user.repository.ts'
 import { hasJavascriptRuntime } from './service/execution.service.ts'
 
 if (config.CONTENT_SOURCE === 'database' && !config.DATABASE_URL) {
@@ -28,6 +32,8 @@ const repositories =
         lessons: new InMemoryLessonRepository(),
         questionnaire: new InMemoryQuestionnaireRepository(),
         placements: new InMemoryPlacementRepository(),
+        users: new InMemoryUserRepository(),
+        progress: new InMemoryProgressRepository(),
       }
     : {
         tracks: new PrismaTrackRepository(prisma),
@@ -35,6 +41,8 @@ const repositories =
         lessons: new PrismaLessonRepository(prisma),
         questionnaire: new PrismaQuestionnaireRepository(prisma),
         placements: new PrismaPlacementRepository(prisma),
+        users: new PrismaUserRepository(prisma),
+        progress: new PrismaProgressRepository(prisma),
       }
 
 async function prepareDatabase(): Promise<void> {

@@ -13,9 +13,11 @@ import {
 import { InMemoryExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
 import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
 import { InMemoryPlacementRepository } from '../../../backend/src/repository/placement.repository.ts'
+import { InMemoryProgressRepository } from '../../../backend/src/repository/progress.repository.ts'
 import type { QuestionnaireRepository } from '../../../backend/src/repository/questionnaire.repository.ts'
 import { InMemoryQuestionnaireRepository } from '../../../backend/src/repository/questionnaire.repository.ts'
 import { InMemoryTrackRepository } from '../../../backend/src/repository/track.repository.ts'
+import { InMemoryUserRepository } from '../../../backend/src/repository/user.repository.ts'
 
 interface Envelope {
   readonly success: boolean
@@ -57,6 +59,8 @@ async function start(
     exercises: new InMemoryExerciseRepository(),
     questionnaire,
     placements: new InMemoryPlacementRepository(),
+    users: new InMemoryUserRepository(),
+    progress: new InMemoryProgressRepository(),
     contentSource: 'mock',
     executionRateLimit: 1_000,
     isDatabaseUp: async () => false,

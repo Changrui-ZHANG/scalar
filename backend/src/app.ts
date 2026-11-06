@@ -5,6 +5,7 @@ import type { Config } from './config.ts'
 import { MAX_BODY_BYTES } from './constants.ts'
 import { ExecutionController } from './controller/execution.controller.ts'
 import { ExerciseController } from './controller/exercise.controller.ts'
+import { LearnerController } from './controller/learner.controller.ts'
 import { LessonController } from './controller/lesson.controller.ts'
 import { QuestionnaireController } from './controller/questionnaire.controller.ts'
 import { TrackController } from './controller/track.controller.ts'
@@ -14,9 +15,12 @@ import { secure } from './http/security.ts'
 import type { ExerciseRepository } from './repository/exercise.repository.ts'
 import type { LessonRepository } from './repository/lesson.repository.ts'
 import type { PlacementRepository } from './repository/placement.repository.ts'
+import type { ProgressRepository } from './repository/progress.repository.ts'
 import type { QuestionnaireRepository } from './repository/questionnaire.repository.ts'
 import type { TrackRepository } from './repository/track.repository.ts'
+import type { UserRepository } from './repository/user.repository.ts'
 import { ExerciseService } from './service/exercise.service.ts'
+import { LearnerService } from './service/learner.service.ts'
 import { LessonService } from './service/lesson.service.ts'
 import { QuestionnaireService } from './service/questionnaire.service.ts'
 import { TrackService } from './service/track.service.ts'
@@ -27,6 +31,8 @@ export interface AppDependencies {
   readonly exercises: ExerciseRepository
   readonly questionnaire: QuestionnaireRepository
   readonly placements: PlacementRepository
+  readonly users: UserRepository
+  readonly progress: ProgressRepository
   readonly contentSource: Config['CONTENT_SOURCE']
   /** Executions par minute et par adresse IP, toutes routes qui executent confondues. */
   readonly executionRateLimit: number
@@ -34,7 +40,8 @@ export interface AppDependencies {
 }
 
 export function buildApp(deps: AppDependencies): Express {
-  const { tracks, lessons, exercises, questionnaire, placements } = deps
+  const { tracks, lessons, exercises, questionnaire, placements, users, progress } = deps
+  const learners = new LearnerService(users, progress, tracks, exercises)
   const app = express()
   secure(app)
   app.use(express.json({ limit: MAX_BODY_BYTES }))
@@ -67,7 +74,11 @@ export function buildApp(deps: AppDependencies): Express {
     new TrackController(new TrackService(tracks, lessons, exercises)).buildRouter(),
   )
   app.use('/api/v1', new LessonController(new LessonService(tracks, lessons)).buildRouter())
-  app.use('/api/v1', new ExerciseController(new ExerciseService(tracks, exercises)).buildRouter())
+  app.use(
+    '/api/v1',
+    new ExerciseController(new ExerciseService(tracks, exercises), learners).buildRouter(),
+  )
+  app.use('/api/v1', new LearnerController(learners).buildRouter())
   app.use(
     '/api/v1',
     new QuestionnaireController(

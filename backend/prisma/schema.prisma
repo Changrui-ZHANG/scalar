@@ -169,13 +169,14 @@ model ExerciseTestCase {
   @@map("exercise_test_cases")
 }
 
-/// Un apprenant inscrit : email et mot de passe.
+/// Un apprenant : anonyme (sans email ni mot de passe) tant qu'aucun compte ne le reprend.
 model User {
   id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   /// Toujours en minuscules (controle CHECK) : l'unicite ne depend pas de la casse.
-  email        String             @unique
+  /// Nul si et seulement si passwordHash l'est (controle CHECK).
+  email        String?            @unique
   /// Hash argon2, jamais le mot de passe.
-  passwordHash String             @map("password_hash")
+  passwordHash String?            @map("password_hash")
   /// Incremente pour revoquer tous les JWT deja emis (deconnexion, mot de passe change).
   tokenVersion Int                @default(0) @map("token_version")
   createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -188,9 +189,9 @@ model User {
 
 /// Ou en est un apprenant sur un exercice ; la ligne nait a sa premiere soumission.
 model ExerciseProgress {
-  userId        String    @map("user_id") @db.Uuid
+  userId        String    @map("user") @db.Uuid
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exerciseId    Int       @map("exercise_id")
+  exerciseId    Int       @map("exercise")
   exercise      Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
   /// Nombre de verifications soumises, au moins 1.
   attempts      Int
@@ -200,7 +201,7 @@ model ExerciseProgress {
 
   @@id([userId, exerciseId])
   @@index([exerciseId])
-  @@map("exercise_progress")
+  @@map("progress")
 }
 
 /// Delivre sur demande, une fois tous les exercices publies du parcours reussis.

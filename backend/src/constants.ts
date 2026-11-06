@@ -15,6 +15,9 @@ export const RUN_TIMEOUT_MS = 5_000
 // Fenetre de EXECUTION_RATE_LIMIT : la limite se lit « par minute et par adresse IP ».
 export const RATE_LIMIT_WINDOW_MS = 60_000
 
+// Identifiant d'apprenant anonyme : sans lui, une verification n'est pas enregistree.
+export const LEARNER_HEADER = 'x-learner-id'
+
 export const PROGRAMMING_LANGUAGES = [
   'javascript',
   'typescript',
@@ -88,6 +91,7 @@ export const MESSAGES = {
   lessonNotFound: 'Cours introuvable.',
   exerciseNotFound: 'Exercice introuvable.',
   questionNotFound: 'Question introuvable.',
+  learnerNotFound: 'Apprenant introuvable.',
   placementOverestimatedBeginner:
     'Vous vous estimez plus avancé que ne le montrent les exercices : le parcours commence par consolider les bases.',
   placementOverestimated:

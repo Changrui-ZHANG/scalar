@@ -35,6 +35,7 @@ export interface PublicExercise {
 }
 
 export interface ExerciseToVerify {
+  readonly exerciseId: number
   readonly functionName: string
   readonly programmingLanguage: ProgrammingLanguage
   readonly cases: readonly VerificationCase[]
@@ -42,6 +43,11 @@ export interface ExerciseToVerify {
 
 export type Verification =
   | { readonly ok: true; readonly result: VerificationResult }
+  | { readonly ok: false; readonly error: string }
+
+/** L'id de l'exercice corrige sert a enregistrer la tentative ; il ne part pas au navigateur. */
+export type ExerciseVerification =
+  | { readonly ok: true; readonly result: VerificationResult; readonly exerciseId: number }
   | { readonly ok: false; readonly error: string }
 
 interface Located {
@@ -106,6 +112,7 @@ export class ExerciseService {
     }
     const testCases = await this.exercises.listTestCases(located.exercise.id)
     return {
+      exerciseId: located.exercise.id,
       functionName: located.exercise.functionName,
       programmingLanguage: located.programmingLanguage,
       cases: testCases.map((t) => ({
@@ -122,7 +129,7 @@ export class ExerciseService {
     chapterSlug: string,
     exerciseSlug: string,
     code: string,
-  ): Promise<Verification | null> {
+  ): Promise<ExerciseVerification | null> {
     const target = await this.findForVerification(trackSlug, chapterSlug, exerciseSlug)
     if (!target) {
       return null
@@ -134,7 +141,11 @@ export class ExerciseService {
     const marker = `__scalar_${randomUUID()}__`
     const harness = buildHarness(converted.code, target.functionName, target.cases, marker)
     const execution = await executeCode(harness)
-    return { ok: true, result: readVerdict(execution, target.functionName, target.cases, marker) }
+    return {
+      ok: true,
+      result: readVerdict(execution, target.functionName, target.cases, marker),
+      exerciseId: target.exerciseId,
+    }
   }
 
   private async locate(

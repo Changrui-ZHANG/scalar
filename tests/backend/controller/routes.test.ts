@@ -9,9 +9,11 @@ import { MAX_CODE_BYTES, MESSAGES } from '../../../backend/src/constants.ts'
 import { InMemoryExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
 import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
 import { InMemoryPlacementRepository } from '../../../backend/src/repository/placement.repository.ts'
+import { InMemoryProgressRepository } from '../../../backend/src/repository/progress.repository.ts'
 import { InMemoryQuestionnaireRepository } from '../../../backend/src/repository/questionnaire.repository.ts'
 import type { TrackRepository } from '../../../backend/src/repository/track.repository.ts'
 import { InMemoryTrackRepository } from '../../../backend/src/repository/track.repository.ts'
+import { InMemoryUserRepository } from '../../../backend/src/repository/user.repository.ts'
 
 interface TrackRow {
   readonly slug: string
@@ -38,6 +40,8 @@ async function start(
     exercises,
     questionnaire: new InMemoryQuestionnaireRepository(),
     placements: new InMemoryPlacementRepository(),
+    users: new InMemoryUserRepository(),
+    progress: new InMemoryProgressRepository(),
     contentSource: 'mock',
     executionRateLimit: 1_000,
     isDatabaseUp,
@@ -365,6 +369,92 @@ describe('API de vérification, avec le moteur', () => {
     } finally {
       failing.server.close()
     }
+  })
+})
+
+describe('progression de l’apprenant anonyme', () => {
+  let server: Server
+  let base: string
+  const IS_EVEN = '/tracks/javascript/chapters/conditions/exercises/est-pair'
+  const RIGHT = 'function isEven(n) { return n % 2 === 0 }'
+  const WRONG = 'function isEven(n) { return true }'
+  const createLearner = async (): Promise<string> => {
+    const res = await realFetch(`${base}/learners`, { method: 'POST' })
+    expect(res.status).toBe(201)
+    return ((await res.json()) as Envelope).data.id
+  }
+  const verify = (code: string, learnerId?: string) =>
+    realFetch(`${base}${IS_EVEN}/verifications`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(learnerId === undefined ? {} : { 'x-learner-id': learnerId }),
+      },
+      body: JSON.stringify({ code }),
+    })
+  const progressOf = async (learnerId: string) => {
+    const res = await realFetch(`${base}/learners/${learnerId}/progress`)
+    return { status: res.status, body: (await res.json()) as Envelope }
+  }
+
+  beforeAll(async () => {
+    ;({ server, base } = await start())
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+  afterAll(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        server.close((err) => (err ? reject(err) : resolve()))
+      }),
+  )
+
+  it('crée un apprenant sans compte, à la progression vide', async () => {
+    const id = await createLearner()
+
+    expect(id).toMatch(/^[0-9a-f-]{36}$/)
+    expect((await progressOf(id)).body.data).toEqual({ passedCount: 0, exercises: [] })
+  })
+
+  it('enregistre chaque vérification envoyée avec son identifiant, et garde la première réussite', async () => {
+    fakePiston(runInNode)
+    const id = await createLearner()
+
+    await verify(WRONG, id)
+    await verify(RIGHT, id)
+    await verify(WRONG, id)
+    await verify(RIGHT)
+
+    const { status, body } = await progressOf(id)
+    expect(status).toBe(200)
+    expect(body.data.passedCount).toBe(1)
+    expect(body.data.exercises).toEqual([
+      {
+        track: 'javascript',
+        chapter: 'conditions',
+        exercise: 'est-pair',
+        title: 'Pair ou impair',
+        attempts: 3,
+        passed: true,
+        firstPassedAt: expect.any(String),
+        lastAttemptAt: expect.any(String),
+      },
+    ])
+    expect(body.data.exercises[0].firstPassedAt < body.data.exercises[0].lastAttemptAt).toBe(true)
+  })
+
+  it('refuse en 404 un identifiant inconnu ou mal formé, sans appeler le moteur', async () => {
+    const engine = vi.fn(runInNode)
+    fakePiston(engine)
+
+    for (const id of ['00000000-0000-4000-8000-000000000000', 'pas-un-uuid']) {
+      const res = await verify(RIGHT, id)
+      expect(res.status, id).toBe(404)
+      expect(((await res.json()) as Envelope).error).toBe(MESSAGES.learnerNotFound)
+      expect((await progressOf(id)).status, id).toBe(404)
+    }
+    expect(engine).not.toHaveBeenCalled()
   })
 })
 
