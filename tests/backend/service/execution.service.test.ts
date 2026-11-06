@@ -30,11 +30,14 @@ function reponsePiston(corps: unknown, statut = 200): Response {
 }
 
 describe('parseSubmission', () => {
-  it('accepte un corps portant un script non vide', () => {
+  it('accepte un script non vide, en JavaScript par défaut pour les anciens clients', () => {
     const resultat = parseSubmission({ code: 'console.log(1)' })
 
     expect(resultat.ok).toBe(true)
-    expect(resultat.ok && resultat.submission.code).toBe('console.log(1)')
+    expect(resultat.ok && resultat.submission).toEqual({
+      code: 'console.log(1)',
+      programmingLanguage: 'javascript',
+    })
   })
 
   it('refuse un corps sans champ « code », ou d’un autre type', () => {
@@ -45,9 +48,12 @@ describe('parseSubmission', () => {
     expect(parseSubmission({ data: 'console.log(1)' }).ok).toBe(false)
   })
 
-  it('refuse une soumission vide ou faite d’espaces', () => {
-    expect(parseSubmission({ code: '' }).ok).toBe(false)
-    expect(parseSubmission({ code: '   \n\t ' }).ok).toBe(false)
+  it('refuse une soumission vide ou faite d’espaces, avec un message exploitable', () => {
+    for (const code of ['', '   \n\t ']) {
+      const resultat = parseSubmission({ code })
+      expect(resultat.ok).toBe(false)
+      expect(resultat.ok ? '' : resultat.error).toMatch(/vide/i)
+    }
   })
 
   it('refuse au-delà de la taille maximale, et accepte juste en dessous', () => {
@@ -59,33 +65,21 @@ describe('parseSubmission', () => {
     const presqueDeuxFois = '€'.repeat(MAX_CODE_BYTES / 2)
     expect(parseSubmission({ code: presqueDeuxFois }).ok).toBe(false)
   })
-
-  it('renvoie un message exploitable par le client', () => {
-    const resultat = parseSubmission({ code: '' })
-
-    expect(resultat.ok).toBe(false)
-    expect(resultat.ok === false ? resultat.error : '').toMatch(/vide/i)
-  })
 })
 
 describe('toExecutionStatus', () => {
-  it('traduit l’absence de statut en succès', () => {
-    expect(toExecutionStatus(null)).toBe('OK')
-    expect(toExecutionStatus(undefined)).toBe('OK')
-  })
-
-  it('conserve les échecs qualifiés', () => {
-    expect(toExecutionStatus('TO')).toBe('TO')
-    expect(toExecutionStatus('OL')).toBe('OL')
-    expect(toExecutionStatus('EL')).toBe('EL')
-    expect(toExecutionStatus('RE')).toBe('RE')
-    expect(toExecutionStatus('SG')).toBe('SG')
-  })
-
-  it('ne prend jamais un statut inconnu pour un succès', () => {
-    expect(toExecutionStatus('ZZ')).toBe('XX')
-    expect(toExecutionStatus('')).toBe('XX')
-    expect(toExecutionStatus('OK')).toBe('XX')
+  it('garde les échecs qualifiés et ne prend jamais un statut inconnu pour un succès', () => {
+    const attendus: ReadonlyArray<readonly [string | null | undefined, string]> = [
+      [null, 'OK'],
+      [undefined, 'OK'],
+      ...(['TO', 'OL', 'EL', 'RE', 'SG'] as const).map((s) => [s, s] as const),
+      ['ZZ', 'XX'],
+      ['', 'XX'],
+      ['OK', 'XX'],
+    ]
+    for (const [statut, attendu] of attendus) {
+      expect(toExecutionStatus(statut), String(statut)).toBe(attendu)
+    }
   })
 })
 
@@ -138,30 +132,9 @@ describe('executeCode', () => {
     expect(appels[0]!.corps.run_timeout).toBe(5000)
     expect(appels[0]!.corps.run_cpu_time).toBe(5000)
   })
-
-  it('lève quand le moteur répond une erreur HTTP', async () => {
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-      reponsePiston({ message: 'runtime is unknown' }, 400),
-    )
-
-    await expect(executeCode('console.log(1)')).rejects.toThrow(/400/)
-  })
-
-  it('lève quand la réponse ne porte pas d’étage « run »', async () => {
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-      reponsePiston({ language: 'javascript' }),
-    )
-
-    await expect(executeCode('console.log(1)')).rejects.toThrow(/run/)
-  })
 })
 
 describe('programmingLanguage des soumissions', () => {
-  it('suppose JavaScript quand le champ est absent, pour les anciens clients', () => {
-    const resultat = parseSubmission({ code: 'console.log(1)' })
-    expect(resultat.ok && resultat.submission.programmingLanguage).toBe('javascript')
-  })
-
   it('garde un langage de l’enum, et refuse toute autre valeur', () => {
     const ts = parseSubmission({ code: 'let x: number = 1', programmingLanguage: 'typescript' })
     expect(ts.ok && ts.submission.programmingLanguage).toBe('typescript')
@@ -212,16 +185,17 @@ describe('panne du moteur', () => {
   })
 
   it.each([
-    ['injoignable', () => Promise.reject(new TypeError('fetch failed'))],
-    ['erreur HTTP', async () => reponsePiston({ message: 'boom' }, 500)],
-    ['réponse hors contrat', async () => reponsePiston({})],
-  ])('%s : lève EngineUnavailableError en gardant la cause', async (_cas, reponse) => {
+    ['injoignable', () => Promise.reject(new TypeError('fetch failed')), /fetch failed/],
+    ['erreur HTTP', async () => reponsePiston({ message: 'boom' }, 400), /400/],
+    ['réponse sans étage « run »', async () => reponsePiston({ language: 'javascript' }), /run/],
+  ])('%s : lève EngineUnavailableError en gardant la cause', async (_cas, reponse, message) => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(reponse)
 
     const erreur = await executeCode('console.log(1)').catch((e: unknown) => e)
 
     expect(erreur).toBeInstanceOf(EngineUnavailableError)
     expect((erreur as Error).cause).toBeInstanceOf(Error)
+    expect((erreur as Error).message).toMatch(message)
   })
 })
 
