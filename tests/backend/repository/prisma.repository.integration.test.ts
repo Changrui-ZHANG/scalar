@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { migrateTestDatabase } from '../database.fixtures.ts'
-import { CONTENT, seedDatabase } from '../../../backend/src/database/seed.ts'
+import { CONTENT, isContentEmpty, seedDatabase } from '../../../backend/src/database/seed.ts'
 import { ExerciseService } from '../../../backend/src/service/exercise.service.ts'
 import { LessonService } from '../../../backend/src/service/lesson.service.ts'
 import { TrackService } from '../../../backend/src/service/track.service.ts'
@@ -78,7 +78,10 @@ const QUESTIONS: ReadonlyArray<readonly [string, (s: Services) => Promise<unknow
   ['questions du questionnaire', (s) => s.questionnaire.listQuestions()],
   ['options du questionnaire', (s) => s.questionnaire.listOptions(1)],
   ['cas du questionnaire', (s) => s.questionnaire.listTestCases(QUESTIONNAIRE_CODE.id)],
-  ['question inconnue', (s) => s.questionnaire.listOptions(999)],
+  [
+    'question inconnue',
+    (s) => Promise.all([s.questionnaire.listOptions(999), s.questionnaire.listTestCases(999)]),
+  ],
 ]
 
 describe.skipIf(!url)('dépôts Prisma contre dépôts en mémoire', () => {
@@ -162,5 +165,6 @@ describe.skipIf(!url)('dépôts Prisma contre dépôts en mémoire', () => {
 
     await expect(seedDatabase(prisma, broken)).rejects.toThrow(/Contenu refusé/)
     expect(await prisma.exercise.count()).toBe(before)
+    expect(await isContentEmpty(prisma)).toBe(false)
   })
 })

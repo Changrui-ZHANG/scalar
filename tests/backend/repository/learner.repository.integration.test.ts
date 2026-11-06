@@ -46,6 +46,7 @@ const UNKNOWN_ID = '00000000-0000-4000-8000-000000000000'
 const [FIRST, SECOND] = CONTENT.exercises
 const TRACK = CONTENT.tracks[0]!
 const OTHER_TRACK = CONTENT.tracks[1]!
+const THIRD_TRACK = CONTENT.tracks[2]!
 const day = (n: number): Date => new Date(`2026-11-0${n}T10:00:00Z`)
 const account = { email: 'Ada@Example.org', passwordHash: '$argon2id$v=19$hash' }
 
@@ -212,13 +213,14 @@ describe.each(BACKENDS)('dépôt des certificats (%s)', (_name, open) => {
     expect(await repos.certificates.findByCode('INCONNU')).toBeNull()
   })
 
-  it('liste les certificats d’un apprenant du plus ancien au plus récent', async () => {
-    await repos.certificates.issue(request('B', OTHER_TRACK.id, day(2)))
+  it('liste les certificats du plus ancien au plus récent, puis par délivrance', async () => {
+    await repos.certificates.issue(request('C', THIRD_TRACK.id, day(2)))
+    await repos.certificates.issue(request('B', OTHER_TRACK.id, day(1)))
     await repos.certificates.issue(request('A', TRACK.id, day(1)))
 
     const list = await repos.certificates.listCertificates(userId)
 
-    expect(list.map((c) => c.code)).toEqual(['A', 'B'])
+    expect(list.map((c) => c.code)).toEqual(['B', 'A', 'C'])
   })
 })
 
@@ -322,5 +324,17 @@ describe.skipIf(!url)('tables apprenant : base contre mémoire', () => {
     expect(await repos.users.findById(user.id)).not.toBeNull()
     expect(await repos.progress.listProgress(user.id)).toEqual([])
     expect(await repos.certificates.listCertificates(user.id)).toEqual([])
+  })
+})
+
+describe('dépôt des comptes : erreurs inattendues', () => {
+  it('ne transforme en null que l’email pris ou le compte absent, pas une panne', async () => {
+    const outage = () => Promise.reject(new Error('connexion perdue'))
+    const users = new PrismaUserRepository({
+      user: { create: outage, update: outage },
+    } as unknown as PrismaClient)
+
+    await expect(users.create(account)).rejects.toThrow('connexion perdue')
+    await expect(users.incrementTokenVersion(UNKNOWN_ID)).rejects.toThrow('connexion perdue')
   })
 })

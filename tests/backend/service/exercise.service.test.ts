@@ -68,11 +68,8 @@ describe('ExerciseService.getExercise', () => {
     })
     const beta = await service.getExercise('beta', 'boucles', 'un')
     expect(beta?.track.programmingLanguage).toBe('typescript')
-  })
-
-  it('numérote le chapitre par niveau puis position, jamais par `position`', async () => {
-    const detail = await service.getExercise('alpha', 'fin', 'dernier')
-    expect(detail?.chapter.number).toBe(3)
+    // Numero par niveau puis position, jamais `position` brute (ici 1).
+    expect((await service.getExercise('alpha', 'fin', 'dernier'))?.chapter.number).toBe(3)
   })
 
   it('suggère l’exercice suivant, en sautant brouillon, chapitre archivé et chapitre vide', async () => {
@@ -93,9 +90,6 @@ describe('ExerciseService.getExercise', () => {
     expect(await service.getExercise('alpha', 'boucles', 'cache')).toBeNull()
     expect(await service.getExercise('alpha', 'archive', 'archive')).toBeNull()
     expect(await service.getExercise('brouillon', 'cache', 'un')).toBeNull()
-  })
-
-  it('ne sert aucun exercice d’un parcours sans langage', async () => {
     expect(await service.getExercise('lecture', 'lire', 'egare')).toBeNull()
   })
 })

@@ -25,41 +25,48 @@ describe('contenu du dépôt : exercices', () => {
     expect(validateExercises(c)).toEqual([])
   })
 
-  it('le contrôle attrape une solution fausse et un code de départ qui résout déjà', () => {
+  it('le contrôle signale chaque défaut d’un exercice, sans s’arrêter au premier', () => {
     const [first] = c.exercises
-    expect(first).toBeDefined()
-    const broken: Content = {
-      ...c,
-      exercises: [
-        { ...first!, solutionCode: first!.starterCode, starterCode: first!.solutionCode },
-      ],
-    }
-    const problems = validateExercises(broken)
-
-    expect(problems.some((p) => p.includes('la solution échoue'))).toBe(true)
-    expect(problems.some((p) => p.includes('résout déjà'))).toBe(true)
-  })
-
-  it('le contrôle refuse un exercice dans un parcours sans langage', () => {
-    const [first] = c.exercises
-    const withoutLanguage = c.tracks.find((t) => t.programmingLanguage === null)
-    const chapter = c.chapters.find((ch) => ch.trackId === withoutLanguage?.id)
-    expect(first && chapter).toBeTruthy()
-    const misplaced: Content = { ...c, exercises: [{ ...first!, chapterId: chapter!.id }] }
-
-    expect(validateExercises(misplaced).some((p) => p.includes('sans langage'))).toBe(true)
-  })
-
-  it.each([
-    ['erreur de syntaxe', () => 'function ('],
-    ['fonction mal nommée', () => 'function autreNom() {}'],
-  ])('le contrôle refuse une solution illisible : %s', (_cas, code) => {
-    const [first] = c.exercises
-    const unreadable: Content = { ...c, exercises: [{ ...first!, solutionCode: code() }] }
-
-    expect(validateExercises(unreadable)).toContainEqual(
-      expect.stringContaining(`${first!.slug} : solution illisible`),
+    const typescript = c.exercises.find(
+      (e) =>
+        c.tracks.find((t) => t.id === c.chapters.find((ch) => ch.id === e.chapterId)?.trackId)
+          ?.programmingLanguage === 'typescript',
     )
+    const withoutLanguage = c.tracks.find((t) => t.programmingLanguage === null)
+    const readingChapter = c.chapters.find((ch) => ch.trackId === withoutLanguage?.id)
+    expect(first && typescript && readingChapter).toBeTruthy()
+
+    const defects: ReadonlyArray<readonly [Content, string]> = [
+      [
+        {
+          ...c,
+          exercises: [
+            { ...first!, solutionCode: first!.starterCode, starterCode: first!.solutionCode },
+          ],
+        },
+        'la solution échoue',
+      ],
+      [
+        { ...c, exercises: [{ ...first!, solutionCode: first!.starterCode }] },
+        'la solution échoue',
+      ],
+      [{ ...c, exercises: [{ ...first!, starterCode: first!.solutionCode }] }, 'résout déjà'],
+      [{ ...c, exercises: [{ ...first!, chapterId: 999_999 }] }, 'parcours introuvable'],
+      [{ ...c, exercises: [{ ...first!, chapterId: readingChapter!.id }] }, 'sans langage'],
+      [{ ...c, exercises: [first!], testCases: [] }, 'aucun cas de test'],
+      [{ ...c, exercises: [{ ...first!, solutionCode: 'function (' }] }, 'solution illisible'],
+      [
+        { ...c, exercises: [{ ...first!, solutionCode: 'function autreNom() {}' }] },
+        'solution illisible',
+      ],
+      [
+        { ...c, exercises: [{ ...typescript!, solutionCode: 'enum A { X }' }] },
+        'solution illisible',
+      ],
+    ]
+    for (const [content, problem] of defects) {
+      expect(validateExercises(content), problem).toContainEqual(expect.stringContaining(problem))
+    }
   })
 
   it('une solution qui lève une erreur échoue à chaque cas sans interrompre le contrôle', () => {
@@ -78,16 +85,12 @@ describe('contenu du dépôt : exercices', () => {
     )
   })
 
-  it('chaque exercice a au moins un cas, et au plus 3 indices', () => {
+  it('chaque exercice respecte les contraintes de la base : indices, arguments', () => {
     for (const e of c.exercises) {
-      expect(c.testCases.some((t) => t.exerciseId === e.id)).toBe(true)
-      expect(e.hints.length <= 3).toBe(true)
+      expect(e.hints.length <= 3, e.slug).toBe(true)
     }
-  })
-
-  it('les arguments de chaque cas forment un tableau', () => {
     for (const t of c.testCases) {
-      expect(Array.isArray(t.arguments)).toBe(true)
+      expect(Array.isArray(t.arguments), `cas ${t.id}`).toBe(true)
     }
   })
 })

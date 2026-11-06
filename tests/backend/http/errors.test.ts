@@ -13,9 +13,6 @@ describe('gestionnaire d’erreurs', () => {
 
   beforeAll(async () => {
     const app = express()
-    app.get('/panne', () => {
-      throw new Error('secret interne : postgres:5432')
-    })
     app.get('/trop-gros', () => {
       throw Object.assign(new Error('request entity too large'), { status: 413 })
     })
@@ -33,26 +30,10 @@ describe('gestionnaire d’erreurs', () => {
       }),
   )
 
-  it('répond 500 en JSON, sans le détail de l’erreur', async () => {
-    const res = await fetch(`${base}/panne`)
-    const text = await res.text()
-
-    expect(res.status).toBe(500)
-    expect(JSON.parse(text)).toEqual({ success: false, data: null, error: MESSAGES.internalError })
-    expect(text.includes('postgres')).toBe(false)
-  })
-
   it('garde le statut 4xx d’une erreur client', async () => {
     const res = await fetch(`${base}/trop-gros`)
 
     expect(res.status).toBe(413)
     expect(await res.json()).toEqual({ success: false, data: null, error: MESSAGES.invalidRequest })
-  })
-
-  it('répond 404 en JSON sur une route inconnue', async () => {
-    const res = await fetch(`${base}/nulle-part`)
-
-    expect(res.status).toBe(404)
-    expect(await res.json()).toEqual({ success: false, data: null, error: MESSAGES.routeNotFound })
   })
 })

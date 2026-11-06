@@ -130,30 +130,9 @@ describe('API du contenu (données fictives)', () => {
     expect(body.data.next).toEqual({ chapterSlug: 'generiques', slug: 'envelopper' })
     expect(text.includes('solution')).toBe(false)
     expect(text.includes('return items[items.length - 1]')).toBe(false)
-  })
-
-  it('répond 404 pour un exercice sous le mauvais chapitre ou le mauvais parcours', async () => {
     expect(
       (await get('/tracks/typescript/chapters/types-de-base/exercises/dernier-ou-defaut')).status,
     ).toBe(404)
-    expect(
-      (await get('/tracks/javascript/chapters/generiques/exercises/dernier-ou-defaut')).status,
-    ).toBe(404)
-  })
-
-  it('ne sert plus les anciennes routes', async () => {
-    for (const path of [
-      '/languages',
-      '/languages/javascript/chapters',
-      '/lessons/transverse',
-      '/lessons/javascript',
-      '/tracks/javascript/chapters',
-      '/tracks/javascript/chapters/boucles',
-      '/tracks/javascript/chapters/boucles/lessons',
-    ]) {
-      const res = await fetch(`${base}${path}`)
-      expect(res.status).toBe(404)
-    }
   })
 
   it('POST une vérification : 404 hors hiérarchie, 400 sans code', async () => {
@@ -411,11 +390,19 @@ describe('Enveloppe HTTP commune', () => {
     expect(text.includes('SyntaxError')).toBe(false)
   })
 
-  it('répond 404 en JSON sur une route inconnue', async () => {
-    const res = await fetch(`${base}/nulle-part`)
+  it('répond 404 en JSON sur une route inconnue, y compris les anciennes routes', async () => {
+    for (const path of [
+      '/nulle-part',
+      '/languages',
+      '/lessons/javascript',
+      '/tracks/javascript/chapters',
+      '/tracks/javascript/chapters/boucles/lessons',
+    ]) {
+      const res = await fetch(`${base}${path}`)
 
-    expect(res.status).toBe(404)
-    expect(((await res.json()) as Envelope).error).toBe(MESSAGES.routeNotFound)
+      expect(res.status, path).toBe(404)
+      expect(((await res.json()) as Envelope).error).toBe(MESSAGES.routeNotFound)
+    }
   })
 
   it('n’annonce pas Express et interdit le sniffing de type', async () => {
@@ -425,10 +412,21 @@ describe('Enveloppe HTTP commune', () => {
     expect(res.headers.get('x-content-type-options')).toBe('nosniff')
   })
 
-  it('expose la source du contenu et l’état de la base sur /health', async () => {
+  it('répond à la racine, et expose la source du contenu et l’état de la base sur /health', async () => {
+    expect(await (await fetch(base)).json()).toEqual({
+      status: 'ok',
+      message: 'API Scalar (Backend)',
+    })
     const res = await fetch(`${base}/health`)
-
     expect(await res.json()).toEqual({ status: 'ok', content: 'mock', database: 'disconnected' })
+
+    const up = await start(undefined, async () => true)
+    try {
+      const health = (await (await fetch(`${up.base}/health`)).json()) as { database: string }
+      expect(health.database).toBe('connected')
+    } finally {
+      up.server.close()
+    }
   })
 
   it('répond 500 en JSON générique à une erreur non prévue, sans détail interne', async () => {

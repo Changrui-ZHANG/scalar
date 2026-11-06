@@ -6,6 +6,8 @@ import type {
   ExerciseProgress as ExerciseProgressRow,
   ExerciseTestCase as ExerciseTestCaseRow,
   Lesson as LessonRow,
+  Placement as PlacementRow,
+  QuestionnaireTestCase as QuestionnaireTestCaseRow,
   Track as TrackRow,
   User as UserRow,
 } from '@prisma/client'
@@ -13,12 +15,21 @@ import { describe, expect, it } from 'vitest'
 
 import { chapter, exercise, lesson, testCase, track } from '../content.fixtures.ts'
 import {
+  QUESTIONNAIRE_OPTIONS,
+  QUESTIONNAIRE_QUESTIONS,
+  QUESTIONNAIRE_TEST_CASES,
+} from '../../../backend/src/content/questionnaire.ts'
+import {
   toCertificate,
   toChapter,
   toExercise,
   toExerciseProgress,
   toExerciseTestCase,
   toLesson,
+  toPlacement,
+  toQuestionnaireOption,
+  toQuestionnaireQuestion,
+  toQuestionnaireTestCase,
   toTrack,
   toUser,
 } from '../../../backend/src/repository/prisma.mapper.ts'
@@ -57,30 +68,73 @@ const certificateRow: CertificateRow = {
   issuedAt: new Date('2026-11-04'),
 }
 
+const questionRow = QUESTIONNAIRE_QUESTIONS[0]!
+const optionRow = QUESTIONNAIRE_OPTIONS[0]!
+const questionnaireCaseRow = QUESTIONNAIRE_TEST_CASES[0]! as QuestionnaireTestCaseRow
+const placementRow: PlacementRow = {
+  id: 8,
+  score: 74,
+  level: 'intermediate',
+  trackId: 1,
+  declared: 1 / 3,
+  knowledge: 1,
+  practical: 0.9,
+  userId: null,
+  createdAt: new Date('2026-11-06'),
+}
+
+// [nom, entite convertie, ligne d'origine, colonnes de la table]
+const MAPPINGS: ReadonlyArray<readonly [string, object, object, Record<string, string>]> = [
+  ['Track', toTrack(trackRow), trackRow, Prisma.TrackScalarFieldEnum],
+  ['Chapter', toChapter(chapterRow), chapterRow, Prisma.ChapterScalarFieldEnum],
+  ['Lesson', toLesson(lessonRow), lessonRow, Prisma.LessonScalarFieldEnum],
+  ['Exercise', toExercise(exerciseRow), exerciseRow, Prisma.ExerciseScalarFieldEnum],
+  [
+    'ExerciseTestCase',
+    toExerciseTestCase(testCaseRow()),
+    testCaseRow(),
+    Prisma.ExerciseTestCaseScalarFieldEnum,
+  ],
+  ['User', toUser(userRow), userRow, Prisma.UserScalarFieldEnum],
+  [
+    'ExerciseProgress',
+    toExerciseProgress(progressRow),
+    progressRow,
+    Prisma.ExerciseProgressScalarFieldEnum,
+  ],
+  ['Certificate', toCertificate(certificateRow), certificateRow, Prisma.CertificateScalarFieldEnum],
+  [
+    'QuestionnaireQuestion',
+    toQuestionnaireQuestion(questionRow),
+    questionRow,
+    Prisma.QuestionnaireQuestionScalarFieldEnum,
+  ],
+  [
+    'QuestionnaireOption',
+    toQuestionnaireOption(optionRow),
+    optionRow,
+    Prisma.QuestionnaireOptionScalarFieldEnum,
+  ],
+  [
+    'QuestionnaireTestCase',
+    toQuestionnaireTestCase(questionnaireCaseRow),
+    questionnaireCaseRow,
+    Prisma.QuestionnaireTestCaseScalarFieldEnum,
+  ],
+  ['Placement', toPlacement(placementRow), placementRow, Prisma.PlacementScalarFieldEnum],
+]
+
 describe('conversion ligne Prisma → entité', () => {
-  it.each([
-    ['Track', toTrack(trackRow), Prisma.TrackScalarFieldEnum],
-    ['Chapter', toChapter(chapterRow), Prisma.ChapterScalarFieldEnum],
-    ['Lesson', toLesson(lessonRow), Prisma.LessonScalarFieldEnum],
-    ['Exercise', toExercise(exerciseRow), Prisma.ExerciseScalarFieldEnum],
-    ['ExerciseTestCase', toExerciseTestCase(testCaseRow()), Prisma.ExerciseTestCaseScalarFieldEnum],
-    ['User', toUser(userRow), Prisma.UserScalarFieldEnum],
-    ['ExerciseProgress', toExerciseProgress(progressRow), Prisma.ExerciseProgressScalarFieldEnum],
-    ['Certificate', toCertificate(certificateRow), Prisma.CertificateScalarFieldEnum],
-  ])('%s reprend chaque colonne de la table, et rien d’autre', (_, entity, fields) => {
-    expect(keys(entity)).toEqual(columns(fields))
+  it('chaque entité reprend chaque colonne de sa table, et rien d’autre', () => {
+    for (const [name, entity, , fields] of MAPPINGS) {
+      expect(keys(entity), name).toEqual(columns(fields))
+    }
   })
 
-  it.each([
-    ['Track', toTrack(trackRow), trackRow],
-    ['Chapter', toChapter(chapterRow), chapterRow],
-    ['Lesson', toLesson(lessonRow), lessonRow],
-    ['Exercise', toExercise(exerciseRow), exerciseRow],
-    ['User', toUser(userRow), userRow],
-    ['ExerciseProgress', toExerciseProgress(progressRow), progressRow],
-    ['Certificate', toCertificate(certificateRow), certificateRow],
-  ])('%s garde chaque valeur telle quelle', (_, entity, row) => {
-    expect(entity).toEqual(row)
+  it('chaque entité garde chaque valeur telle quelle', () => {
+    for (const [name, entity, row] of MAPPINGS) {
+      expect(entity, name).toEqual(row)
+    }
   })
 
   it('laisse de côté les relations chargées avec la ligne', () => {
@@ -99,7 +153,7 @@ describe('conversion ligne Prisma → entité', () => {
 })
 
 describe('conversion d’un cas de test', () => {
-  it('garde les arguments et le résultat JSON, même imbriqués ou nuls', () => {
+  it('garde les arguments et le résultat JSON, même imbriqués, nuls ou vides', () => {
     const row = testCaseRow({
       arguments: [[1, 2], { a: null }, 'x'],
       expectedResult: null,
@@ -111,20 +165,18 @@ describe('conversion d’un cas de test', () => {
       expectedResult: null,
       description: null,
     })
-  })
-
-  it('accepte une liste d’arguments vide', () => {
     expect(toExerciseTestCase(testCaseRow({ arguments: [] })).arguments).toEqual([])
   })
 
-  it.each([
-    ['un objet', { a: 1 }],
-    ['un nombre', 42],
-    ['une chaîne', '[1, 2]'],
-    ['null', null],
-  ])('refuse des arguments qui sont %s', (_, value) => {
-    expect(() => toExerciseTestCase(testCaseRow({ id: 9, arguments: value }))).toThrow(
-      /Cas de test 9/,
-    )
+  it('refuse une ligne que l’entité ne peut pas représenter', () => {
+    for (const value of [{ a: 1 }, 42, '[1, 2]', null]) {
+      expect(() => toExerciseTestCase(testCaseRow({ id: 9, arguments: value }))).toThrow(
+        /Cas de test 9/,
+      )
+      expect(() =>
+        toQuestionnaireTestCase({ ...questionnaireCaseRow, id: 9, arguments: value }),
+      ).toThrow(/Cas de test 9/)
+    }
+    expect(() => toPlacement({ ...placementRow, level: 'ecosystem' })).toThrow(/ecosystem/)
   })
 })
