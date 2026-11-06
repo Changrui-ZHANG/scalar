@@ -1,19 +1,22 @@
 import { Router } from 'express'
 import type { Request, Response } from 'express'
 
-import { MESSAGES } from '../constants.ts'
+import { LEARNER_HEADER, MESSAGES } from '../constants.ts'
 import { badRequest, notFound, ok, respond } from '../http/envelope.ts'
 import { contentUnavailable, engineUnavailable } from '../http/errors.ts'
 import { EngineUnavailableError, parseSubmission } from '../service/execution.service.ts'
 import type { ExerciseService } from '../service/exercise.service.ts'
+import type { LearnerService } from '../service/learner.service.ts'
 
 type ExerciseParams = { track: string; chapter: string; exercise: string }
 
 export class ExerciseController {
   private readonly service: ExerciseService
+  private readonly learners: LearnerService
 
-  constructor(service: ExerciseService) {
+  constructor(service: ExerciseService, learners: LearnerService) {
     this.service = service
+    this.learners = learners
   }
 
   async getExercise(req: Request<ExerciseParams>, res: Response) {
@@ -30,7 +33,13 @@ export class ExerciseController {
       return
     }
     const { track, chapter, exercise } = req.params
+    const learnerId = req.get(LEARNER_HEADER)
     try {
+      // Avant l'execution : un identifiant inconnu ne doit pas couter un appel au moteur.
+      if (learnerId !== undefined && !(await this.learners.exists(learnerId))) {
+        notFound(res, MESSAGES.learnerNotFound)
+        return
+      }
       const verification = await this.service.verify(
         track,
         chapter,
@@ -42,6 +51,13 @@ export class ExerciseController {
       } else if (!verification.ok) {
         badRequest(res, verification.error)
       } else {
+        if (learnerId !== undefined) {
+          await this.learners.recordAttempt(
+            learnerId,
+            verification.exerciseId,
+            verification.result.passed,
+          )
+        }
         ok(res, verification.result)
       }
     } catch (error: unknown) {

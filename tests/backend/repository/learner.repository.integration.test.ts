@@ -110,6 +110,14 @@ describe.each(BACKENDS)('dépôt des comptes (%s)', (_name, open) => {
     expect(await users.findByEmail('personne@example.org')).toBeNull()
   })
 
+  it('crée un apprenant anonyme, sans email ni mot de passe, retrouvable par son id', async () => {
+    const learner = await users.createAnonymous()
+
+    expect(learner).toMatchObject({ email: null, passwordHash: null, tokenVersion: 0 })
+    expect(learner.id).toMatch(UUID)
+    expect(await users.findById(learner.id)).toEqual(learner)
+  })
+
   it('incrémente la version de jeton à chaque révocation', async () => {
     const user = await users.create(account)
 
@@ -261,6 +269,11 @@ describe.skipIf(!url)('tables apprenant : base contre mémoire', () => {
     await expect(
       prisma.user.create({ data: { email: 'Ada@example.org', passwordHash: 'x' } }),
     ).rejects.toThrow()
+  })
+
+  it('la base refuse un email sans mot de passe, et l’inverse', async () => {
+    await expect(prisma.user.create({ data: { email: 'ada@example.org' } })).rejects.toThrow()
+    await expect(prisma.user.create({ data: { passwordHash: 'x' } })).rejects.toThrow()
   })
 
   it('la base refuse une version de jeton négative', async () => {

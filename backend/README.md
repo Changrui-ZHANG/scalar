@@ -40,14 +40,19 @@ docker compose up -d --build --renew-anon-volumes backend
 | GET     | `/questionnaire`                                       | questionnaire de positionnement                                |
 | POST    | `/questionnaire/exercises/:questionId/verifications`   | essaie un exercice du questionnaire                            |
 | POST    | `/questionnaire/results`                               | calcule le niveau, propose un parcours, enregistre le résultat |
+| POST    | `/learners`                                            | crée un apprenant anonyme et renvoie son `id`                  |
+| GET     | `/learners/:id/progress`                               | exercices tentés : essais, réussite, dates                     |
 
 Les quatre routes `POST` qui exécutent du code partagent une limite : `EXECUTION_RATE_LIMIT`
 requêtes par minute et par adresse IP (30 par défaut), puis `429` avec `Retry-After`.
 
+Une vérification envoyée avec l'en-tête `X-Learner-Id: <id>` est enregistrée dans la
+progression de cet apprenant ; sans l'en-tête, rien n'est enregistré.
+
 ## Démonstration
 
 `demo/scenario.http` rejoue l'API dans l'ordre de la démo : contenu, correction d'un
-exercice, isolation du moteur, questionnaire, erreurs. Il s'ouvre avec l'extension VS Code
+exercice, isolation du moteur, questionnaire, erreurs, progression d'un apprenant. Il s'ouvre avec l'extension VS Code
 « REST Client » ou le client HTTP de JetBrains (« Send Request » au-dessus de chaque requête).
 
 Limitation de débit, en une commande (30 fois `200`, puis `429`) :

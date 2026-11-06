@@ -12,8 +12,10 @@ import { seedDatabase } from '../../../backend/src/database/seed.ts'
 import { PrismaExerciseRepository } from '../../../backend/src/repository/prisma-exercise.repository.ts'
 import { PrismaLessonRepository } from '../../../backend/src/repository/prisma-lesson.repository.ts'
 import { PrismaPlacementRepository } from '../../../backend/src/repository/prisma-placement.repository.ts'
+import { PrismaProgressRepository } from '../../../backend/src/repository/prisma-progress.repository.ts'
 import { PrismaQuestionnaireRepository } from '../../../backend/src/repository/prisma-questionnaire.repository.ts'
 import { PrismaTrackRepository } from '../../../backend/src/repository/prisma-track.repository.ts'
+import { PrismaUserRepository } from '../../../backend/src/repository/prisma-user.repository.ts'
 
 // L'application telle que main.ts la monte en CONTENT_SOURCE=database ; seul Piston est simule.
 // Vide la base : jamais DATABASE_URL, toujours la base de test.
@@ -74,6 +76,8 @@ describe.skipIf(!url)('API sur la vraie base', () => {
       exercises: new PrismaExerciseRepository(prisma),
       questionnaire: new PrismaQuestionnaireRepository(prisma),
       placements: new PrismaPlacementRepository(prisma),
+      users: new PrismaUserRepository(prisma),
+      progress: new PrismaProgressRepository(prisma),
       contentSource: 'database',
       executionRateLimit: 1_000,
       isDatabaseUp: async () => (await prisma.$queryRaw`SELECT 1`) !== null,
@@ -133,6 +137,30 @@ describe.skipIf(!url)('API sur la vraie base', () => {
     expect(right.data.passed).toBe(true)
     expect(right.data.passedCount).toBe(right.data.total)
     expect(wrong.data.passed).toBe(false)
+  })
+
+  it('enregistre en base la progression d’un apprenant anonyme', async () => {
+    fakePiston()
+    const created = await realFetch(`${base}/learners`, { method: 'POST' })
+    const { id } = ((await created.json()) as { data: { id: string } }).data
+    const attempt = (code: string) =>
+      realFetch(`${base}${IS_EVEN}/verifications`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-learner-id': id },
+        body: JSON.stringify({ code }),
+      })
+
+    await attempt('function isEven(n) { return true }')
+    await attempt('function isEven(n) { return n % 2 === 0 }')
+
+    expect(created.status).toBe(201)
+    expect((await get(`/learners/${id}/progress`)).data).toMatchObject({
+      passedCount: 1,
+      exercises: [{ exercise: 'est-pair', attempts: 2, passed: true }],
+    })
+    const row = await prisma.exerciseProgress.findFirstOrThrow({ where: { userId: id } })
+    expect(row).toMatchObject({ attempts: 2, firstPassedAt: expect.any(Date) })
+    expect(await prisma.user.findUniqueOrThrow({ where: { id } })).toMatchObject({ email: null })
   })
 
   it('suit la base : un exercice repassé en brouillon n’est plus servi ni corrigé', async () => {

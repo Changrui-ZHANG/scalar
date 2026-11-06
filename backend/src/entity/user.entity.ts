@@ -1,7 +1,8 @@
 export interface User {
   id: string
-  email: string
-  passwordHash: string
+  // Nuls ensemble : apprenant anonyme.
+  email: string | null
+  passwordHash: string | null
   tokenVersion: number
   createdAt: Date
 }
