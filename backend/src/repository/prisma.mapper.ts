@@ -5,6 +5,7 @@ import type {
   ExerciseProgress as ExerciseProgressRow,
   ExerciseTestCase as ExerciseTestCaseRow,
   Lesson as LessonRow,
+  Placement as PlacementRow,
   QuestionnaireOption as QuestionnaireOptionRow,
   QuestionnaireQuestion as QuestionnaireQuestionRow,
   QuestionnaireTestCase as QuestionnaireTestCaseRow,
@@ -19,6 +20,7 @@ import type { Exercise } from '../entity/exercise.entity.ts'
 import type { ExerciseProgress } from '../entity/exercise-progress.entity.ts'
 import type { ExerciseTestCase } from '../entity/exercise-test-case.entity.ts'
 import type { Lesson } from '../entity/lesson.entity.ts'
+import type { Placement, PlacementLevel } from '../entity/placement.entity.ts'
 import type { QuestionnaireOption } from '../entity/questionnaire-option.entity.ts'
 import type { QuestionnaireQuestion } from '../entity/questionnaire-question.entity.ts'
 import type { QuestionnaireTestCase } from '../entity/questionnaire-test-case.entity.ts'
@@ -187,5 +189,22 @@ export function toQuestionnaireTestCase(row: QuestionnaireTestCaseRow): Question
     description: row.description,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+  }
+}
+
+export function toPlacement(row: PlacementRow): Placement {
+  if (row.level === 'ecosystem') {
+    throw new TypeError(`Positionnement ${row.id} : niveau ecosystem impossible`)
+  }
+  return {
+    id: row.id,
+    score: row.score,
+    level: row.level satisfies PlacementLevel,
+    trackId: row.trackId,
+    declared: row.declared,
+    knowledge: row.knowledge,
+    practical: row.practical,
+    userId: row.userId,
+    createdAt: row.createdAt,
   }
 }

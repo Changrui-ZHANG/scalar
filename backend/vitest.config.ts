@@ -4,6 +4,7 @@ import { defineConfig } from 'vitest/config'
 const DATABASE_TESTS = [
   'repository/prisma.repository.test.ts',
   'repository/learner.repository.test.ts',
+  'repository/placement.repository.test.ts',
 ]
 
 export default defineConfig({
