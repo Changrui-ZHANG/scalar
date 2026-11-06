@@ -1,11 +1,7 @@
 import { defineConfig } from 'vitest/config'
 
-// Ces fichiers partagent scalar_test : un seed (TRUNCATE ... CASCADE) vide les tables apprenant d'un autre fichier en cours.
-const DATABASE_TESTS = [
-  'repository/prisma.repository.test.ts',
-  'repository/learner.repository.test.ts',
-  'repository/placement.repository.test.ts',
-]
+// Les *.integration.test.ts partagent scalar_test : un seed (TRUNCATE ... CASCADE) viderait les tables d'un autre fichier en cours.
+const INTEGRATION_TESTS = '**/*.integration.test.ts'
 
 export default defineConfig({
   test: {
@@ -18,11 +14,11 @@ export default defineConfig({
     projects: [
       {
         extends: true,
-        test: { name: 'unit', include: ['**/*.test.ts'], exclude: DATABASE_TESTS },
+        test: { name: 'unit', include: ['**/*.test.ts'], exclude: [INTEGRATION_TESTS] },
       },
       {
         extends: true,
-        test: { name: 'database', include: DATABASE_TESTS, fileParallelism: false },
+        test: { name: 'integration', include: [INTEGRATION_TESTS], fileParallelism: false },
       },
     ],
   },
