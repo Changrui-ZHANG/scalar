@@ -10,6 +10,7 @@ const schema = z.object({
   SEED_ON_EMPTY: z.stringbool().default(true),
   PISTON_URL: z.url().default('http://piston:2000/api/v2'),
   PISTON_NODE_VERSION: z.string().default('20.11.1'),
+  EXECUTION_RATE_LIMIT: z.coerce.number().int().positive().default(30),
 })
 
 export type Config = z.infer<typeof schema>

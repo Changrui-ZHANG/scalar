@@ -12,6 +12,9 @@ export const MAX_BODY_BYTES = 6 * MAX_CODE_BYTES + 1024
 // Doit rester egal a PISTON_RUN_TIMEOUT et PISTON_RUN_CPU_TIME (compose.yaml) : au-dela, Piston refuse toutes les executions en 400.
 export const RUN_TIMEOUT_MS = 5_000
 
+// Fenetre de EXECUTION_RATE_LIMIT : la limite se lit « par minute et par adresse IP ».
+export const RATE_LIMIT_WINDOW_MS = 60_000
+
 export const PROGRAMMING_LANGUAGES = [
   'javascript',
   'typescript',
@@ -77,6 +80,7 @@ export const CONTENT_TABLES = [
 export const MESSAGES = {
   contentUnavailable: 'Le contenu est momentanément indisponible.',
   engineUnavailable: 'Le moteur d’exécution est momentanément indisponible.',
+  tooManyExecutions: 'Trop d’exécutions : réessayez dans une minute.',
   invalidRequest: 'Requête invalide.',
   internalError: 'Erreur interne du serveur.',
   routeNotFound: 'Route introuvable.',

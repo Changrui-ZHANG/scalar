@@ -58,6 +58,7 @@ async function start(
     questionnaire,
     placements: new InMemoryPlacementRepository(),
     contentSource: 'mock',
+    executionRateLimit: 1_000,
     isDatabaseUp: async () => false,
   })
   const server = await new Promise<Server>((resolve) => {

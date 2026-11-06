@@ -75,6 +75,7 @@ describe.skipIf(!url)('API sur la vraie base', () => {
       questionnaire: new PrismaQuestionnaireRepository(prisma),
       placements: new PrismaPlacementRepository(prisma),
       contentSource: 'database',
+      executionRateLimit: 1_000,
       isDatabaseUp: async () => (await prisma.$queryRaw`SELECT 1`) !== null,
     })
     server = await new Promise<Server>((resolve) => {
