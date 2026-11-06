@@ -1,24 +1,30 @@
 import { describe, expect, it } from 'vitest'
 
+import { InMemoryCertificateRepository } from '../../../backend/src/repository/certificate.repository.ts'
 import { InMemoryExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
 import { InMemoryPlacementRepository } from '../../../backend/src/repository/placement.repository.ts'
 import { InMemoryProgressRepository } from '../../../backend/src/repository/progress.repository.ts'
 import { InMemoryTrackRepository } from '../../../backend/src/repository/track.repository.ts'
 import { InMemoryUserRepository } from '../../../backend/src/repository/user.repository.ts'
 import { EXERCISES } from '../../../backend/src/content/exercises.ts'
+import { CertificateService } from '../../../backend/src/service/certificate.service.ts'
 import { LearnerService } from '../../../backend/src/service/learner.service.ts'
 
 describe('LearnerService.getProgress', () => {
   const open = () => {
+    const users = new InMemoryUserRepository()
     const progress = new InMemoryProgressRepository()
     const placements = new InMemoryPlacementRepository()
-    const service = new LearnerService(
-      new InMemoryUserRepository(),
+    const tracks = new InMemoryTrackRepository()
+    const exercises = new InMemoryExerciseRepository()
+    const certificates = new CertificateService(
+      new InMemoryCertificateRepository(),
+      users,
       progress,
-      new InMemoryTrackRepository(),
-      new InMemoryExerciseRepository(),
-      placements,
+      tracks,
+      exercises,
     )
+    const service = new LearnerService(users, progress, tracks, exercises, placements, certificates)
     return { service, progress, placements }
   }
 

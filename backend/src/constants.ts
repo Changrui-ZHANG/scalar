@@ -93,6 +93,8 @@ export const MESSAGES = {
   exerciseNotFound: 'Exercice introuvable.',
   questionNotFound: 'Question introuvable.',
   learnerNotFound: 'Apprenant introuvable.',
+  certificateNotFound: 'Certificat introuvable.',
+  trackNotCompleted: 'Parcours pas encore terminé : tous ses exercices doivent être réussis.',
   placementOverestimatedBeginner:
     'Vous vous estimez plus avancé que ne le montrent les exercices : le parcours commence par consolider les bases.',
   placementOverestimated:

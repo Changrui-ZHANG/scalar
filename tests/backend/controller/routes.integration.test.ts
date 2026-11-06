@@ -8,7 +8,8 @@ import { migrateTestDatabase } from '../database.fixtures.ts'
 import { buildApp } from '../../../backend/src/app.ts'
 import { config } from '../../../backend/src/config.ts'
 import { MESSAGES } from '../../../backend/src/constants.ts'
-import { seedDatabase } from '../../../backend/src/database/seed.ts'
+import { CONTENT, seedDatabase } from '../../../backend/src/database/seed.ts'
+import { PrismaCertificateRepository } from '../../../backend/src/repository/prisma-certificate.repository.ts'
 import { PrismaExerciseRepository } from '../../../backend/src/repository/prisma-exercise.repository.ts'
 import { PrismaLessonRepository } from '../../../backend/src/repository/prisma-lesson.repository.ts'
 import { PrismaPlacementRepository } from '../../../backend/src/repository/prisma-placement.repository.ts'
@@ -78,6 +79,7 @@ describe.skipIf(!url)('API sur la vraie base', () => {
       placements: new PrismaPlacementRepository(prisma),
       users: new PrismaUserRepository(prisma),
       progress: new PrismaProgressRepository(prisma),
+      certificates: new PrismaCertificateRepository(prisma),
       contentSource: 'database',
       executionRateLimit: 1_000,
       learnerCreationRateLimit: 1_000,
@@ -176,6 +178,52 @@ describe.skipIf(!url)('API sur la vraie base', () => {
     expect((await get(`/learners/${id}/progress`)).data.placement).toMatchObject({
       track: { slug: 'javascript' },
     })
+  })
+
+  it('délivre un certificat vérifiable une fois tout le parcours JavaScript réussi', async () => {
+    fakePiston()
+    const created = await realFetch(`${base}/learners`, { method: 'POST' })
+    const { id } = ((await created.json()) as { data: { id: string } }).data
+    const javascript = CONTENT.tracks.find((t) => t.slug === 'javascript')!
+    const chapters = CONTENT.chapters.filter((c) => c.trackId === javascript.id)
+    for (const exercise of CONTENT.exercises.filter((e) =>
+      chapters.some((c) => c.id === e.chapterId),
+    )) {
+      const chapter = chapters.find((c) => c.id === exercise.chapterId)!
+      const res = await realFetch(
+        `${base}/tracks/javascript/chapters/${chapter.slug}/exercises/${exercise.slug}/verifications`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-learner-id': id },
+          body: JSON.stringify({ code: exercise.solutionCode }),
+        },
+      )
+      expect(((await res.json()) as { data: { passed: boolean } }).data.passed, exercise.slug).toBe(
+        true,
+      )
+    }
+    const ask = () =>
+      realFetch(`${base}/learners/${id}/certificates`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ track: 'javascript', holderName: 'Ada Lovelace' }),
+      })
+
+    const issued = await ask()
+    const again = await ask()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- charge utile de la route
+    const certificate = ((await issued.json()) as { data: any }).data
+
+    expect(issued.status).toBe(201)
+    expect(again.status).toBe(200)
+    expect((await get(`/certificates/${certificate.code}`)).data).toEqual({
+      code: certificate.code,
+      holderName: 'Ada Lovelace',
+      track: { slug: 'javascript', name: 'JavaScript' },
+      issuedAt: certificate.issuedAt,
+    })
+    expect((await get(`/learners/${id}/progress`)).data.certificates).toEqual([certificate])
+    expect(await prisma.certificate.count({ where: { userId: id } })).toBe(1)
   })
 
   it('suit la base : un exercice repassé en brouillon n’est plus servi ni corrigé', async () => {

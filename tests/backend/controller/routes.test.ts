@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import { buildApp } from '../../../backend/src/app.ts'
 import { config } from '../../../backend/src/config.ts'
 import { MAX_CODE_BYTES, MESSAGES } from '../../../backend/src/constants.ts'
+import { InMemoryCertificateRepository } from '../../../backend/src/repository/certificate.repository.ts'
 import { InMemoryExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
 import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
 import { InMemoryPlacementRepository } from '../../../backend/src/repository/placement.repository.ts'
@@ -42,6 +43,7 @@ async function start(
     placements: new InMemoryPlacementRepository(),
     users: new InMemoryUserRepository(),
     progress: new InMemoryProgressRepository(),
+    certificates: new InMemoryCertificateRepository(),
     contentSource: 'mock',
     executionRateLimit: 1_000,
     learnerCreationRateLimit: 1_000,
@@ -419,6 +421,7 @@ describe('progression de l’apprenant anonyme', () => {
       placement: null,
       passedCount: 0,
       exercises: [],
+      certificates: [],
     })
   })
 
@@ -447,6 +450,37 @@ describe('progression de l’apprenant anonyme', () => {
       },
     ])
     expect(body.data.exercises[0].firstPassedAt < body.data.exercises[0].lastAttemptAt).toBe(true)
+  })
+
+  it('certificat : refuse une demande invalide, un inconnu ou un parcours pas terminé', async () => {
+    const id = await createLearner()
+    const ask = async (learnerId: string, body: unknown) => {
+      const res = await realFetch(`${base}/learners/${learnerId}/certificates`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      return { status: res.status, error: ((await res.json()) as Envelope).error }
+    }
+    const valid = { track: 'javascript', holderName: 'Ada' }
+
+    expect(await ask(id, { track: 'javascript', holderName: '   ' })).toEqual({
+      status: 400,
+      error: 'Le nom affiché sur le certificat est vide.',
+    })
+    expect(await ask('pas-un-uuid', valid)).toEqual({
+      status: 404,
+      error: MESSAGES.learnerNotFound,
+    })
+    expect(await ask(id, { ...valid, track: 'python' })).toEqual({
+      status: 404,
+      error: MESSAGES.trackNotFound,
+    })
+    expect(await ask(id, valid)).toEqual({ status: 403, error: MESSAGES.trackNotCompleted })
+
+    const unknown = await realFetch(`${base}/certificates/AAAAA-AAAAA`)
+    expect(unknown.status).toBe(404)
+    expect(((await unknown.json()) as Envelope).error).toBe(MESSAGES.certificateNotFound)
   })
 
   it('refuse en 404 un identifiant inconnu ou mal formé, sans appeler le moteur', async () => {
