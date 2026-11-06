@@ -9,8 +9,9 @@ datasource db {
 
 // Contraintes que Prisma ne sait pas exprimer, ecrites a la main a la fin des
 // migrations `*_init` (positions uniques a controle differe, controles CHECK du
-// contenu), `*_learner_tables` (controles CHECK des tables apprenant) et
-// `*_questionnaire_tables` (positions uniques et controles CHECK du questionnaire).
+// contenu), `*_learner_tables` (controles CHECK des tables apprenant),
+// `*_questionnaire_tables` (positions uniques et controles CHECK du questionnaire)
+// et `*_placement_table` (controles CHECK des resultats du questionnaire).
 
 /// Ou en est la publication d'un contenu : seul `published` est servi.
 enum PublicationStatus {
@@ -69,6 +70,7 @@ model Track {
   updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
   chapters            Chapter[]
   certificates        Certificate[]
+  placements          Placement[]
 
   @@map("tracks")
 }
@@ -179,6 +181,7 @@ model User {
   createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   progress     ExerciseProgress[]
   certificates Certificate[]
+  placements   Placement[]
 
   @@map("users")
 }
@@ -286,4 +289,27 @@ model QuestionnaireTestCase {
   updatedAt      DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("testCase")
+}
+
+/// Resultat d'un questionnaire de positionnement ; anonyme tant qu'aucun compte ne le reprend.
+model Placement {
+  id        Int          @id @default(autoincrement())
+  /// Sur 100.
+  score     Int
+  /// Jamais `ecosystem` (controle CHECK) : le questionnaire ne place pas si loin.
+  level     ChapterLevel
+  /// Parcours conseille.
+  trackId   Int          @map("track")
+  track     Track        @relation(fields: [trackId], references: [id], onDelete: Restrict)
+  /// Sous-scores entre 0 et 1 : auto-evaluation, connaissances, exercices.
+  declared  Float
+  knowledge Float
+  practical Float
+  userId    String?      @map("user") @db.Uuid
+  user      User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([trackId])
+  @@index([userId])
+  @@map("placement")
 }
