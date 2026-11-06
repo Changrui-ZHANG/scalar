@@ -4,6 +4,7 @@ import type { PlacementRepository } from '../repository/placement.repository.ts'
 import type { ProgressRepository } from '../repository/progress.repository.ts'
 import type { TrackRepository } from '../repository/track.repository.ts'
 import type { UserRepository } from '../repository/user.repository.ts'
+import type { CertificateService, CertificateView } from './certificate.service.ts'
 import type { TrackLink } from './track.service.ts'
 import { toTrackLink } from './track.service.ts'
 
@@ -30,6 +31,7 @@ export interface LearnerProgress {
   readonly placement: PlacementView | null
   readonly passedCount: number
   readonly exercises: readonly ExerciseProgressView[]
+  readonly certificates: readonly CertificateView[]
 }
 
 interface ExerciseLink {
@@ -45,6 +47,7 @@ export class LearnerService {
   private readonly tracks: TrackRepository
   private readonly exercises: ExerciseRepository
   private readonly placements: PlacementRepository
+  private readonly certificates: CertificateService
 
   constructor(
     users: UserRepository,
@@ -52,12 +55,14 @@ export class LearnerService {
     tracks: TrackRepository,
     exercises: ExerciseRepository,
     placements: PlacementRepository,
+    certificates: CertificateService,
   ) {
     this.users = users
     this.progress = progress
     this.tracks = tracks
     this.exercises = exercises
     this.placements = placements
+    this.certificates = certificates
   }
 
   async createLearner(): Promise<{ readonly id: string }> {
@@ -97,6 +102,7 @@ export class LearnerService {
       placement: await this.latestPlacement(learnerId),
       passedCount: exercises.filter((e) => e.passed).length,
       exercises,
+      certificates: await this.certificates.listForLearner(learnerId),
     }
   }
 
