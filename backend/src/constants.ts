@@ -45,7 +45,13 @@ export const CHAPTER_LEVELS: readonly ChapterLevel[] = [
   'ecosystem',
 ]
 
+export const QUESTIONNAIRE_QUESTION_KINDS = ['experience', 'language', 'knowledge', 'code'] as const
+
+// Noms SQL bruts : "testCase" a une majuscule, sans guillemets PostgreSQL chercherait testcase.
 export const CONTENT_TABLES = [
+  '"testCase"',
+  'option',
+  'question',
   'exercise_test_cases',
   'exercises',
   'lessons',

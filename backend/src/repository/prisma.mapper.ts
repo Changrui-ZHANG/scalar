@@ -5,6 +5,9 @@ import type {
   ExerciseProgress as ExerciseProgressRow,
   ExerciseTestCase as ExerciseTestCaseRow,
   Lesson as LessonRow,
+  QuestionnaireOption as QuestionnaireOptionRow,
+  QuestionnaireQuestion as QuestionnaireQuestionRow,
+  QuestionnaireTestCase as QuestionnaireTestCaseRow,
   Track as TrackRow,
   User as UserRow,
 } from '@prisma/client'
@@ -16,6 +19,9 @@ import type { Exercise } from '../entity/exercise.entity.ts'
 import type { ExerciseProgress } from '../entity/exercise-progress.entity.ts'
 import type { ExerciseTestCase } from '../entity/exercise-test-case.entity.ts'
 import type { Lesson } from '../entity/lesson.entity.ts'
+import type { QuestionnaireOption } from '../entity/questionnaire-option.entity.ts'
+import type { QuestionnaireQuestion } from '../entity/questionnaire-question.entity.ts'
+import type { QuestionnaireTestCase } from '../entity/questionnaire-test-case.entity.ts'
 import type { Track } from '../entity/track.entity.ts'
 import type { User } from '../entity/user.entity.ts'
 
@@ -134,5 +140,52 @@ export function toCertificate(row: CertificateRow): Certificate {
     trackId: row.trackId,
     holderName: row.holderName,
     issuedAt: row.issuedAt,
+  }
+}
+
+export function toQuestionnaireQuestion(row: QuestionnaireQuestionRow): QuestionnaireQuestion {
+  return {
+    id: row.id,
+    position: row.position,
+    kind: row.kind,
+    title: row.title,
+    description: row.description,
+    weight: row.weight,
+    functionName: row.functionName,
+    starterCode: row.starterCode,
+    solutionCode: row.solutionCode,
+    status: row.status,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }
+}
+
+export function toQuestionnaireOption(row: QuestionnaireOptionRow): QuestionnaireOption {
+  return {
+    id: row.id,
+    questionId: row.questionId,
+    position: row.position,
+    label: row.label,
+    score: row.score,
+    trackSlug: row.trackSlug,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }
+}
+
+export function toQuestionnaireTestCase(row: QuestionnaireTestCaseRow): QuestionnaireTestCase {
+  if (!Array.isArray(row.arguments)) {
+    throw new TypeError(`Cas de test ${row.id} : arguments n'est pas un tableau JSON`)
+  }
+  return {
+    id: row.id,
+    questionId: row.questionId,
+    position: row.position,
+    arguments: row.arguments as readonly JsonValue[],
+    expectedResult: row.expectedResult as JsonValue,
+    isHidden: row.isHidden,
+    description: row.description,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   }
 }
