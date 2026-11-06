@@ -11,6 +11,8 @@ import { MESSAGES } from '../../../backend/src/constants.ts'
 import { seedDatabase } from '../../../backend/src/database/seed.ts'
 import { PrismaExerciseRepository } from '../../../backend/src/repository/prisma-exercise.repository.ts'
 import { PrismaLessonRepository } from '../../../backend/src/repository/prisma-lesson.repository.ts'
+import { PrismaPlacementRepository } from '../../../backend/src/repository/prisma-placement.repository.ts'
+import { PrismaQuestionnaireRepository } from '../../../backend/src/repository/prisma-questionnaire.repository.ts'
 import { PrismaTrackRepository } from '../../../backend/src/repository/prisma-track.repository.ts'
 
 // L'application telle que main.ts la monte en CONTENT_SOURCE=database ; seul Piston est simule.
@@ -70,6 +72,8 @@ describe.skipIf(!url)('API sur la vraie base', () => {
       tracks: new PrismaTrackRepository(prisma),
       lessons: new PrismaLessonRepository(prisma),
       exercises: new PrismaExerciseRepository(prisma),
+      questionnaire: new PrismaQuestionnaireRepository(prisma),
+      placements: new PrismaPlacementRepository(prisma),
       contentSource: 'database',
       isDatabaseUp: async () => (await prisma.$queryRaw`SELECT 1`) !== null,
     })
@@ -140,6 +144,45 @@ describe.skipIf(!url)('API sur la vraie base', () => {
     } finally {
       await seedDatabase(prisma)
     }
+  })
+
+  it('positionne un visiteur à partir du questionnaire en base, et enregistre son résultat', async () => {
+    fakePiston()
+    const questions = (await get('/questionnaire')).data as {
+      id: number
+      kind: string
+      functionName: string | null
+      options: { id: number; label: string }[]
+    }[]
+    const rows = await prisma.questionnaireOption.findMany()
+    const best = (questionId: number) =>
+      rows.filter((o) => o.questionId === questionId).reduce((a, b) => (b.score > a.score ? b : a))
+        .id
+    const solutions: Record<string, string> = {
+      ajouter: 'function ajouter(a, b) { return a + b }',
+      estPalindrome: 'function estPalindrome(s) { return s === [...s].reverse().join("") }',
+      factorielle: 'function factorielle(n) { return n <= 1 ? 1 : n * factorielle(n - 1) }',
+    }
+
+    const res = await realFetch(`${base}/questionnaire/results`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        choices: questions
+          .filter((q) => q.kind !== 'code')
+          .map((q) => ({ questionId: q.id, optionId: best(q.id) })),
+        submissions: questions
+          .filter((q) => q.kind === 'code')
+          .map((q) => ({ questionId: q.id, code: solutions[q.functionName!] })),
+      }),
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- charge utile de la route
+    const { data } = (await res.json()) as { data: any }
+
+    expect(res.status).toBe(200)
+    expect(data).toMatchObject({ score: 100, level: 'advanced', track: { slug: 'javascript' } })
+    const saved = await prisma.placement.findUniqueOrThrow({ where: { id: data.placementId } })
+    expect(saved).toMatchObject({ score: 100, level: 'advanced', userId: null, practical: 1 })
   })
 
   it('répond 404 JSON pour un contenu absent de la base', async () => {

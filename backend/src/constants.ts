@@ -47,6 +47,19 @@ export const CHAPTER_LEVELS: readonly ChapterLevel[] = [
 
 export const QUESTIONNAIRE_QUESTION_KINDS = ['experience', 'language', 'knowledge', 'code'] as const
 
+// La somme doit rester 1 : le score final est sur 100.
+export const QUESTIONNAIRE_WEIGHTS = { declared: 0.2, knowledge: 0.2, practical: 0.6 } as const
+
+export const QUESTIONNAIRE_THRESHOLDS = { intermediate: 40, advanced: 75 } as const
+
+// Exercices quasi tous echoues : debutant, quelle que soit l'auto-evaluation. Sur 100, compare au sous-score arrondi affiche.
+export const QUESTIONNAIRE_PRACTICAL_FLOOR = 20
+
+// Part des cas qu'une reponse constante peut atteindre (verifie par le test du contenu) : seuls les cas au-dela rapportent des points.
+export const QUESTIONNAIRE_CHANCE_RATIO = 0.5
+
+export const QUESTIONNAIRE_SELF_ASSESSMENT_GAP = 0.35
+
 // Noms SQL bruts : "testCase" a une majuscule, sans guillemets PostgreSQL chercherait testcase.
 export const CONTENT_TABLES = [
   '"testCase"',
@@ -70,4 +83,13 @@ export const MESSAGES = {
   trackNotFound: 'Parcours introuvable.',
   lessonNotFound: 'Cours introuvable.',
   exerciseNotFound: 'Exercice introuvable.',
+  questionNotFound: 'Question introuvable.',
+  placementOverestimatedBeginner:
+    'Vous vous estimez plus avancé que ne le montrent les exercices : le parcours commence par consolider les bases.',
+  placementOverestimated:
+    'Vous vous estimez plus avancé que ne le montrent les exercices : le niveau proposé s’appuie d’abord sur eux.',
+  placementUnderestimated:
+    'Vos exercices en montrent plus que votre auto-évaluation : vous pouvez démarrer plus loin que prévu.',
+  placementPrerequisite:
+    'Ce parcours suppose des bases que le questionnaire n’a pas montrées : commencez par son prérequis.',
 } as const
