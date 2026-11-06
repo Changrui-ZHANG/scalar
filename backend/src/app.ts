@@ -2,7 +2,7 @@ import express from 'express'
 import type { Express } from 'express'
 
 import type { Config } from './config.ts'
-import { MAX_BODY_BYTES } from './constants.ts'
+import { MAX_BODY_BYTES, MESSAGES } from './constants.ts'
 import { ExecutionController } from './controller/execution.controller.ts'
 import { ExerciseController } from './controller/exercise.controller.ts'
 import { LearnerController } from './controller/learner.controller.ts'
@@ -10,7 +10,7 @@ import { LessonController } from './controller/lesson.controller.ts'
 import { QuestionnaireController } from './controller/questionnaire.controller.ts'
 import { TrackController } from './controller/track.controller.ts'
 import { errorHandler, routeNotFound } from './http/errors.ts'
-import { executionLimiter } from './http/rate-limit.ts'
+import { perMinuteLimiter } from './http/rate-limit.ts'
 import { secure } from './http/security.ts'
 import type { ExerciseRepository } from './repository/exercise.repository.ts'
 import type { LessonRepository } from './repository/lesson.repository.ts'
@@ -36,12 +36,14 @@ export interface AppDependencies {
   readonly contentSource: Config['CONTENT_SOURCE']
   /** Executions par minute et par adresse IP, toutes routes qui executent confondues. */
   readonly executionRateLimit: number
+  /** Apprenants anonymes crees par minute et par adresse IP. */
+  readonly learnerCreationRateLimit: number
   readonly isDatabaseUp: () => Promise<boolean>
 }
 
 export function buildApp(deps: AppDependencies): Express {
   const { tracks, lessons, exercises, questionnaire, placements, users, progress } = deps
-  const learners = new LearnerService(users, progress, tracks, exercises)
+  const learners = new LearnerService(users, progress, tracks, exercises, placements)
   const app = express()
   secure(app)
   app.use(express.json({ limit: MAX_BODY_BYTES }))
@@ -53,7 +55,11 @@ export function buildApp(deps: AppDependencies): Express {
       '/api/v1/questionnaire/exercises/:questionId/verifications',
       '/api/v1/questionnaire/results',
     ],
-    executionLimiter(deps.executionRateLimit),
+    perMinuteLimiter(deps.executionRateLimit, MESSAGES.tooManyExecutions),
+  )
+  app.post(
+    '/api/v1/learners',
+    perMinuteLimiter(deps.learnerCreationRateLimit, MESSAGES.tooManyLearners),
   )
 
   app.get('/api/v1', (_req, res) => {
@@ -83,6 +89,7 @@ export function buildApp(deps: AppDependencies): Express {
     '/api/v1',
     new QuestionnaireController(
       new QuestionnaireService(questionnaire, tracks, placements),
+      learners,
     ).buildRouter(),
   )
 

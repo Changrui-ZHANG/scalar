@@ -8,6 +8,8 @@ export interface PlacementRepository {
   findById(id: number): Promise<Placement | null>
   /** Null si le resultat est inconnu ou deja rattache a un autre compte. */
   assignToUser(id: number, userId: string): Promise<Placement | null>
+  /** Le plus recent : un apprenant peut repasser le questionnaire. */
+  findLatestByUser(userId: string): Promise<Placement | null>
 }
 
 export class InMemoryPlacementRepository implements PlacementRepository {
@@ -31,5 +33,10 @@ export class InMemoryPlacementRepository implements PlacementRepository {
     }
     found.userId = userId
     return { ...found }
+  }
+
+  async findLatestByUser(userId: string): Promise<Placement | null> {
+    const latest = this.placements.findLast((p) => p.userId === userId)
+    return latest ? { ...latest } : null
   }
 }

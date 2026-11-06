@@ -28,4 +28,13 @@ export class PrismaPlacementRepository implements PlacementRepository {
     })
     return count === 0 ? null : this.findById(id)
   }
+
+  async findLatestByUser(userId: string): Promise<Placement | null> {
+    // L'id departage deux resultats enregistres dans la meme milliseconde.
+    const row = await this.prisma.placement.findFirst({
+      where: { userId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    })
+    return row && toPlacement(row)
+  }
 }

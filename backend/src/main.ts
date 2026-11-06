@@ -79,6 +79,7 @@ export const viteNodeApp = buildApp({
   ...repositories,
   contentSource: config.CONTENT_SOURCE,
   executionRateLimit: config.EXECUTION_RATE_LIMIT,
+  learnerCreationRateLimit: config.LEARNER_CREATION_RATE_LIMIT,
   isDatabaseUp,
 })
 

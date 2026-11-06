@@ -87,6 +87,21 @@ describe.each(BACKENDS)('dépôt des positionnements (%s)', (_name, open) => {
     expect(await placements.assignToUser(saved.id, bob)).toBeNull()
     expect((await placements.findById(saved.id))?.userId).toBe(ada)
   })
+
+  it('retrouve le résultat le plus récent d’un apprenant, sans ceux des autres', async () => {
+    const ada = await newUser('ada@example.org')
+    const bob = await newUser('bob@example.org')
+    expect(await placements.findLatestByUser(ada)).toBeNull()
+
+    const first = await placements.save(result)
+    const retaken = await placements.save({ ...result, score: 90, createdAt: new Date(+AT + 1) })
+    const others = await placements.save({ ...result, createdAt: new Date(+AT + 2) })
+    await placements.assignToUser(first.id, ada)
+    await placements.assignToUser(retaken.id, ada)
+    await placements.assignToUser(others.id, bob)
+
+    expect(await placements.findLatestByUser(ada)).toEqual({ ...retaken, userId: ada })
+  })
 })
 
 describe.skipIf(!url)('table placement', () => {

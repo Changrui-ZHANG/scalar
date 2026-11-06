@@ -20,7 +20,7 @@ const EXECUTING_ROUTES = [
   '/questionnaire/results',
 ]
 
-describe('limitation de débit des exécutions', () => {
+describe('limitation de débit', () => {
   let server: Server
   let base: string
   const post = (path: string, ip = '203.0.113.1') =>
@@ -42,6 +42,7 @@ describe('limitation de débit des exécutions', () => {
       progress: new InMemoryProgressRepository(),
       contentSource: 'mock',
       executionRateLimit: 2,
+      learnerCreationRateLimit: 2,
       isDatabaseUp: async () => false,
     })
     server = await new Promise<Server>((resolve) => {
@@ -85,6 +86,17 @@ describe('limitation de débit des exécutions', () => {
     for (let i = 0; i < 5; i++) {
       expect((await fetch(`${base}/tracks`)).status).toBe(200)
     }
+  })
+
+  it('limite la création d’apprenants avec son propre compteur', async () => {
+    expect((await post('/learners')).status).toBe(201)
+    expect((await post('/learners')).status).toBe(201)
+
+    const refused = await post('/learners')
+
+    expect(refused.status).toBe(429)
+    expect(((await refused.json()) as { error: string }).error).toBe(MESSAGES.tooManyLearners)
+    expect((await post('/executions')).status).toBe(400)
   })
 
   it('donne à chaque adresse IP son propre compteur, derrière le proxy', async () => {

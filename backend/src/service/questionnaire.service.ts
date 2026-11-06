@@ -133,7 +133,8 @@ export class QuestionnaireService {
     return this.grade(question, code, programmingLanguage)
   }
 
-  async submitResults(input: ResultsInput): Promise<ResultsOutcome> {
+  /** `learnerId` doit exister : le controleur le verifie avant toute execution. */
+  async submitResults(input: ResultsInput, learnerId?: string): Promise<ResultsOutcome> {
     const questions = await this.questionnaire.listQuestions()
     const options = (
       await Promise.all(questions.map((q) => this.questionnaire.listOptions(q.id)))
@@ -201,6 +202,9 @@ export class QuestionnaireService {
         practical: score.practical / 100,
         createdAt: new Date(),
       }))
+    if (placement && learnerId !== undefined) {
+      await this.placements.assignToUser(placement.id, learnerId)
+    }
     return {
       ok: true,
       result: {
