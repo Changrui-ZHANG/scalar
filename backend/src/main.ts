@@ -70,6 +70,7 @@ await prepare()
 export const viteNodeApp = buildApp({
   ...repositories,
   contentSource: config.CONTENT_SOURCE,
+  executionRateLimit: config.EXECUTION_RATE_LIMIT,
   isDatabaseUp,
 })
 

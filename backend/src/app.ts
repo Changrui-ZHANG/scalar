@@ -9,6 +9,7 @@ import { LessonController } from './controller/lesson.controller.ts'
 import { QuestionnaireController } from './controller/questionnaire.controller.ts'
 import { TrackController } from './controller/track.controller.ts'
 import { errorHandler, routeNotFound } from './http/errors.ts'
+import { executionLimiter } from './http/rate-limit.ts'
 import { secure } from './http/security.ts'
 import type { ExerciseRepository } from './repository/exercise.repository.ts'
 import type { LessonRepository } from './repository/lesson.repository.ts'
@@ -27,6 +28,8 @@ export interface AppDependencies {
   readonly questionnaire: QuestionnaireRepository
   readonly placements: PlacementRepository
   readonly contentSource: Config['CONTENT_SOURCE']
+  /** Executions par minute et par adresse IP, toutes routes qui executent confondues. */
+  readonly executionRateLimit: number
   readonly isDatabaseUp: () => Promise<boolean>
 }
 
@@ -35,6 +38,16 @@ export function buildApp(deps: AppDependencies): Express {
   const app = express()
   secure(app)
   app.use(express.json({ limit: MAX_BODY_BYTES }))
+  // Seules ces routes appellent le moteur : les lectures ne sont pas limitees.
+  app.post(
+    [
+      '/api/v1/executions',
+      '/api/v1/tracks/:track/chapters/:chapter/exercises/:exercise/verifications',
+      '/api/v1/questionnaire/exercises/:questionId/verifications',
+      '/api/v1/questionnaire/results',
+    ],
+    executionLimiter(deps.executionRateLimit),
+  )
 
   app.get('/api/v1', (_req, res) => {
     res.json({ status: 'ok', message: 'API Scalar (Backend)' })
