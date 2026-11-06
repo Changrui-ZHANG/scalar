@@ -22,16 +22,12 @@ describe('LessonService.getLesson', () => {
     })
   })
 
-  it('numérote le chapitre par niveau puis position', async () => {
-    const detail = await service.getLesson('javascript', 'dotenv', 'dotenv')
-    expect(detail?.chapter.number).toBe(12)
-  })
-
   it('expose la date de relecture en ISO, ou null', async () => {
     const reviewed = await service.getLesson('javascript', 'dotenv', 'dotenv')
     const fresh = await service.getLesson('javascript', 'boucles', 'boucles')
 
     expect(reviewed?.lastReviewedAt).toBe('2026-09-01T00:00:00.000Z')
+    expect(reviewed?.chapter.number).toBe(12)
     expect(fresh?.lastReviewedAt).toBeNull()
   })
 
