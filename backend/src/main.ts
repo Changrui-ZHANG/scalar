@@ -6,9 +6,13 @@ import { isContentEmpty, seedDatabase } from './database/seed.ts'
 import { logger } from './logger.ts'
 import { InMemoryExerciseRepository } from './repository/exercise.repository.ts'
 import { InMemoryLessonRepository } from './repository/lesson.repository.ts'
+import { InMemoryPlacementRepository } from './repository/placement.repository.ts'
 import { PrismaExerciseRepository } from './repository/prisma-exercise.repository.ts'
 import { PrismaLessonRepository } from './repository/prisma-lesson.repository.ts'
+import { PrismaPlacementRepository } from './repository/prisma-placement.repository.ts'
+import { PrismaQuestionnaireRepository } from './repository/prisma-questionnaire.repository.ts'
 import { PrismaTrackRepository } from './repository/prisma-track.repository.ts'
+import { InMemoryQuestionnaireRepository } from './repository/questionnaire.repository.ts'
 import { InMemoryTrackRepository } from './repository/track.repository.ts'
 import { hasJavascriptRuntime } from './service/execution.service.ts'
 
@@ -22,11 +26,15 @@ const repositories =
         tracks: new InMemoryTrackRepository(),
         exercises: new InMemoryExerciseRepository(),
         lessons: new InMemoryLessonRepository(),
+        questionnaire: new InMemoryQuestionnaireRepository(),
+        placements: new InMemoryPlacementRepository(),
       }
     : {
         tracks: new PrismaTrackRepository(prisma),
         exercises: new PrismaExerciseRepository(prisma),
         lessons: new PrismaLessonRepository(prisma),
+        questionnaire: new PrismaQuestionnaireRepository(prisma),
+        placements: new PrismaPlacementRepository(prisma),
       }
 
 async function prepareDatabase(): Promise<void> {
