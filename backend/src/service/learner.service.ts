@@ -1,7 +1,11 @@
+import type { PlacementLevel } from '../entity/placement.entity.ts'
 import type { ExerciseRepository } from '../repository/exercise.repository.ts'
+import type { PlacementRepository } from '../repository/placement.repository.ts'
 import type { ProgressRepository } from '../repository/progress.repository.ts'
 import type { TrackRepository } from '../repository/track.repository.ts'
 import type { UserRepository } from '../repository/user.repository.ts'
+import type { TrackLink } from './track.service.ts'
+import { toTrackLink } from './track.service.ts'
 
 export interface ExerciseProgressView {
   readonly track: string
@@ -14,7 +18,16 @@ export interface ExerciseProgressView {
   readonly lastAttemptAt: Date
 }
 
+export interface PlacementView {
+  readonly score: number
+  readonly level: PlacementLevel
+  readonly track: TrackLink | null
+  readonly createdAt: Date
+}
+
 export interface LearnerProgress {
+  /** Dernier questionnaire passe avec cet identifiant, null s'il n'en a passe aucun. */
+  readonly placement: PlacementView | null
   readonly passedCount: number
   readonly exercises: readonly ExerciseProgressView[]
 }
@@ -31,17 +44,20 @@ export class LearnerService {
   private readonly progress: ProgressRepository
   private readonly tracks: TrackRepository
   private readonly exercises: ExerciseRepository
+  private readonly placements: PlacementRepository
 
   constructor(
     users: UserRepository,
     progress: ProgressRepository,
     tracks: TrackRepository,
     exercises: ExerciseRepository,
+    placements: PlacementRepository,
   ) {
     this.users = users
     this.progress = progress
     this.tracks = tracks
     this.exercises = exercises
+    this.placements = placements
   }
 
   async createLearner(): Promise<{ readonly id: string }> {
@@ -77,7 +93,26 @@ export class LearnerService {
           ]
         : []
     })
-    return { passedCount: exercises.filter((e) => e.passed).length, exercises }
+    return {
+      placement: await this.latestPlacement(learnerId),
+      passedCount: exercises.filter((e) => e.passed).length,
+      exercises,
+    }
+  }
+
+  private async latestPlacement(learnerId: string): Promise<PlacementView | null> {
+    const placement = await this.placements.findLatestByUser(learnerId)
+    if (!placement) {
+      return null
+    }
+    const track = (await this.tracks.listTracks()).find((t) => t.id === placement.trackId)
+    return {
+      score: placement.score,
+      level: placement.level,
+      // Parcours depublie depuis le questionnaire : le niveau reste utile sans lui.
+      track: track ? toTrackLink(track) : null,
+      createdAt: placement.createdAt,
+    }
   }
 
   private async linkExercises(): Promise<ReadonlyMap<number, ExerciseLink>> {

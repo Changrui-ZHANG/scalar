@@ -80,6 +80,7 @@ describe.skipIf(!url)('API sur la vraie base', () => {
       progress: new PrismaProgressRepository(prisma),
       contentSource: 'database',
       executionRateLimit: 1_000,
+      learnerCreationRateLimit: 1_000,
       isDatabaseUp: async () => (await prisma.$queryRaw`SELECT 1`) !== null,
     })
     server = await new Promise<Server>((resolve) => {
@@ -139,7 +140,7 @@ describe.skipIf(!url)('API sur la vraie base', () => {
     expect(wrong.data.passed).toBe(false)
   })
 
-  it('enregistre en base la progression d’un apprenant anonyme', async () => {
+  it('enregistre en base la progression et le positionnement d’un apprenant anonyme', async () => {
     fakePiston()
     const created = await realFetch(`${base}/learners`, { method: 'POST' })
     const { id } = ((await created.json()) as { data: { id: string } }).data
@@ -161,6 +162,20 @@ describe.skipIf(!url)('API sur la vraie base', () => {
     const row = await prisma.exerciseProgress.findFirstOrThrow({ where: { userId: id } })
     expect(row).toMatchObject({ attempts: 2, firstPassedAt: expect.any(Date) })
     expect(await prisma.user.findUniqueOrThrow({ where: { id } })).toMatchObject({ email: null })
+
+    // Question 2 : choix du langage, option 5 : JavaScript (ids fixes du contenu).
+    const results = await realFetch(`${base}/questionnaire/results`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-learner-id': id },
+      body: JSON.stringify({ choices: [{ questionId: 2, optionId: 5 }] }),
+    })
+    const { placementId } = ((await results.json()) as { data: { placementId: number } }).data
+    expect(await prisma.placement.findUniqueOrThrow({ where: { id: placementId } })).toMatchObject({
+      userId: id,
+    })
+    expect((await get(`/learners/${id}/progress`)).data.placement).toMatchObject({
+      track: { slug: 'javascript' },
+    })
   })
 
   it('suit la base : un exercice repassé en brouillon n’est plus servi ni corrigé', async () => {

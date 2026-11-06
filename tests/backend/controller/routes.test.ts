@@ -44,6 +44,7 @@ async function start(
     progress: new InMemoryProgressRepository(),
     contentSource: 'mock',
     executionRateLimit: 1_000,
+    learnerCreationRateLimit: 1_000,
     isDatabaseUp,
   })
   const server = await new Promise<Server>((resolve) => {
@@ -414,7 +415,11 @@ describe('progression de l’apprenant anonyme', () => {
     const id = await createLearner()
 
     expect(id).toMatch(/^[0-9a-f-]{36}$/)
-    expect((await progressOf(id)).body.data).toEqual({ passedCount: 0, exercises: [] })
+    expect((await progressOf(id)).body.data).toEqual({
+      placement: null,
+      passedCount: 0,
+      exercises: [],
+    })
   })
 
   it('enregistre chaque vérification envoyée avec son identifiant, et garde la première réussite', async () => {

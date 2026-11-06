@@ -63,6 +63,7 @@ async function start(
     progress: new InMemoryProgressRepository(),
     contentSource: 'mock',
     executionRateLimit: 1_000,
+    learnerCreationRateLimit: 1_000,
     isDatabaseUp: async () => false,
   })
   const server = await new Promise<Server>((resolve) => {
@@ -91,10 +92,13 @@ const bestChoices = QUESTIONNAIRE_QUESTIONS.filter((q) =>
 describe('API du questionnaire', () => {
   let server: Server
   let base: string
-  const post = async (path: string, body: unknown) => {
+  const post = async (path: string, body: unknown, learnerId?: string) => {
     const res = await realFetch(`${base}${path}`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        'content-type': 'application/json',
+        ...(learnerId === undefined ? {} : { 'x-learner-id': learnerId }),
+      },
       body: JSON.stringify(body),
     })
     const text = await res.text()
@@ -228,6 +232,37 @@ describe('API du questionnaire', () => {
 
     expect(status).toBe(400)
     expect(body.error).toMatch(message)
+  })
+
+  it('résultats : rattache le positionnement à l’apprenant, qui le retrouve dans sa progression', async () => {
+    const learner = await realFetch(`${base}/learners`, { method: 'POST' })
+    const { id } = ((await learner.json()) as Envelope).data
+
+    const { status, body } = await post('/questionnaire/results', { choices: bestChoices }, id)
+    const progress = (await (await realFetch(`${base}/learners/${id}/progress`)).json()) as Envelope
+
+    expect(status).toBe(200)
+    expect(progress.data.placement).toEqual({
+      score: body.data.score,
+      level: body.data.level,
+      track: { slug: 'javascript', name: 'JavaScript' },
+      createdAt: expect.any(String),
+    })
+  })
+
+  it('résultats : 404 pour un apprenant inconnu, sans corriger les exercices', async () => {
+    const engine = vi.fn(runInNode)
+    fakePiston(engine)
+
+    const { status, body } = await post(
+      '/questionnaire/results',
+      { submissions: [{ questionId: easy!.id, code: 'function ajouter() {}' }] },
+      '00000000-0000-4000-8000-000000000000',
+    )
+
+    expect(status).toBe(404)
+    expect(body.error).toBe(MESSAGES.learnerNotFound)
+    expect(engine).not.toHaveBeenCalled()
   })
 
   it('résultats : 503 quand le moteur est en panne', async () => {
