@@ -4,6 +4,7 @@ import type { Express } from 'express'
 import type { Config } from './config.ts'
 import { MAX_BODY_BYTES, MESSAGES } from './constants.ts'
 import { ExecutionController } from './controller/execution.controller.ts'
+import { AdminContentController } from './controller/admin-content.controller.ts'
 import { AuthController } from './controller/auth.controller.ts'
 import { CertificateController } from './controller/certificate.controller.ts'
 import { ExerciseController } from './controller/exercise.controller.ts'
@@ -13,9 +14,11 @@ import { QuestionnaireController } from './controller/questionnaire.controller.t
 import { TrackController } from './controller/track.controller.ts'
 import { errorHandler, routeNotFound } from './http/errors.ts'
 import { learnerAccess } from './http/learner-access.ts'
+import { requireAdmin } from './http/require-admin.ts'
 import { perMinuteLimiter } from './http/rate-limit.ts'
 import type { SessionSettings } from './http/require-auth.ts'
 import { secure } from './http/security.ts'
+import type { AdminContentRepository } from './repository/admin-content.repository.ts'
 import type { CertificateRepository } from './repository/certificate.repository.ts'
 import type { ExerciseRepository } from './repository/exercise.repository.ts'
 import type { LessonRepository } from './repository/lesson.repository.ts'
@@ -24,6 +27,7 @@ import type { ProgressRepository } from './repository/progress.repository.ts'
 import type { QuestionnaireRepository } from './repository/questionnaire.repository.ts'
 import type { TrackRepository } from './repository/track.repository.ts'
 import type { UserRepository } from './repository/user.repository.ts'
+import { AdminContentService } from './service/admin-content.service.ts'
 import { AuthService } from './service/auth.service.ts'
 import { CertificateService } from './service/certificate.service.ts'
 import { ExerciseService } from './service/exercise.service.ts'
@@ -43,6 +47,8 @@ export interface AppDependencies {
   readonly users: UserRepository
   readonly progress: ProgressRepository
   readonly certificates: CertificateRepository
+  /** Tout le contenu, brouillons compris : servi sous /api/v1/admin seulement. */
+  readonly adminContent: AdminContentRepository
   readonly contentSource: Config['CONTENT_SOURCE']
   /** Executions par minute et par adresse IP, toutes routes qui executent confondues. */
   readonly executionRateLimit: number
@@ -108,6 +114,12 @@ export function buildApp(deps: AppDependencies): Express {
     })
   })
 
+  // Avant tout routeur admin : aucune route d'administration n'echappe au controle du role.
+  app.use('/api/v1/admin', requireAdmin(session))
+  app.use(
+    '/api/v1/admin',
+    new AdminContentController(new AdminContentService(deps.adminContent)).buildRouter(),
+  )
   app.use('/api/v1', new AuthController(session, deps.authAttemptsLimit).buildRouter())
   app.use('/api/v1/executions', new ExecutionController().buildRouter())
   app.use(

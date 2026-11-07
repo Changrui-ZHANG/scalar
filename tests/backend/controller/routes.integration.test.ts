@@ -10,6 +10,7 @@ import { buildApp } from '../../../backend/src/app.ts'
 import { config } from '../../../backend/src/config.ts'
 import { MESSAGES } from '../../../backend/src/constants.ts'
 import { CONTENT, seedDatabase } from '../../../backend/src/database/seed.ts'
+import { PrismaAdminContentRepository } from '../../../backend/src/repository/prisma-admin-content.repository.ts'
 import { PrismaCertificateRepository } from '../../../backend/src/repository/prisma-certificate.repository.ts'
 import { PrismaExerciseRepository } from '../../../backend/src/repository/prisma-exercise.repository.ts'
 import { PrismaLessonRepository } from '../../../backend/src/repository/prisma-lesson.repository.ts'
@@ -81,6 +82,7 @@ describe.skipIf(!url)('API sur la vraie base', () => {
       users: new PrismaUserRepository(prisma),
       progress: new PrismaProgressRepository(prisma),
       certificates: new PrismaCertificateRepository(prisma),
+      adminContent: new PrismaAdminContentRepository(prisma),
       contentSource: 'database',
       executionRateLimit: 1_000,
       learnerCreationRateLimit: 1_000,

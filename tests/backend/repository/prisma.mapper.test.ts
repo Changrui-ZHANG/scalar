@@ -50,6 +50,7 @@ const userRow: UserRow = {
   email: 'ada@example.org',
   passwordHash: '$argon2id$hash',
   tokenVersion: 2,
+  role: 'learner',
   createdAt: new Date('2026-11-01'),
 }
 const progressRow: ExerciseProgressRow = {

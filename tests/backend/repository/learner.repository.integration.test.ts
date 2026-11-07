@@ -81,6 +81,7 @@ describe.each(BACKENDS)('dépôt des comptes (%s)', (_name, open) => {
       email: 'ada@example.org',
       passwordHash: account.passwordHash,
       tokenVersion: 0,
+      role: 'learner',
       createdAt: expect.any(Date),
     })
   })

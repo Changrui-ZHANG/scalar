@@ -120,6 +120,7 @@ export function toUser(row: UserRow): User {
     email: row.email,
     passwordHash: row.passwordHash,
     tokenVersion: row.tokenVersion,
+    role: row.role,
     createdAt: row.createdAt,
   }
 }

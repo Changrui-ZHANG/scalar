@@ -7,6 +7,7 @@ import { AUTH_DEPENDENCIES } from '../auth.fixtures.ts'
 import { buildApp } from '../../../backend/src/app.ts'
 import { config } from '../../../backend/src/config.ts'
 import { MAX_CODE_BYTES, MESSAGES } from '../../../backend/src/constants.ts'
+import { InMemoryAdminContentRepository } from '../../../backend/src/repository/admin-content.repository.ts'
 import { InMemoryCertificateRepository } from '../../../backend/src/repository/certificate.repository.ts'
 import { InMemoryExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
 import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
@@ -45,6 +46,7 @@ async function start(
     users: new InMemoryUserRepository(),
     progress: new InMemoryProgressRepository(),
     certificates: new InMemoryCertificateRepository(),
+    adminContent: new InMemoryAdminContentRepository(),
     contentSource: 'mock',
     executionRateLimit: 1_000,
     learnerCreationRateLimit: 1_000,
@@ -635,7 +637,12 @@ describe('compte : inscription, connexion, accès protégé', () => {
     const { status, body, res } = await register(email)
 
     expect(status).toBe(201)
-    expect(body.data).toEqual({ id: expect.any(String), email, createdAt: expect.any(String) })
+    expect(body.data).toEqual({
+      id: expect.any(String),
+      email,
+      role: 'learner',
+      createdAt: expect.any(String),
+    })
     expect(JSON.stringify(body)).not.toContain('hash')
     const setCookie = res.headers.getSetCookie()[0]
     expect(setCookie).toMatch(/^scalar_session=[^;]+;/)

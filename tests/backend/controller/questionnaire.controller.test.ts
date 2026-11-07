@@ -11,6 +11,7 @@ import {
   QUESTIONNAIRE_OPTIONS,
   QUESTIONNAIRE_QUESTIONS,
 } from '../../../backend/src/content/questionnaire.ts'
+import { InMemoryAdminContentRepository } from '../../../backend/src/repository/admin-content.repository.ts'
 import { InMemoryCertificateRepository } from '../../../backend/src/repository/certificate.repository.ts'
 import { InMemoryExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
 import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
@@ -64,6 +65,7 @@ async function start(
     users: new InMemoryUserRepository(),
     progress: new InMemoryProgressRepository(),
     certificates: new InMemoryCertificateRepository(),
+    adminContent: new InMemoryAdminContentRepository(),
     contentSource: 'mock',
     executionRateLimit: 1_000,
     learnerCreationRateLimit: 1_000,
