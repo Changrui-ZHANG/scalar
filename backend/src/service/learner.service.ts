@@ -34,6 +34,8 @@ export interface LearnerProgress {
   readonly certificates: readonly CertificateView[]
 }
 
+export type LearnerAccess = 'allowed' | 'not-found' | 'unauthenticated' | 'forbidden'
+
 interface ExerciseLink {
   readonly track: string
   readonly chapter: string
@@ -72,6 +74,18 @@ export class LearnerService {
 
   async exists(learnerId: string): Promise<boolean> {
     return (await this.users.findById(learnerId)) !== null
+  }
+
+  /** Un anonyme reste accessible par son seul identifiant ; un compte inscrit, par sa session seulement. */
+  async access(learnerId: string, sessionUserId: string | null): Promise<LearnerAccess> {
+    const learner = await this.users.findById(learnerId)
+    if (!learner) {
+      return 'not-found'
+    }
+    if (learner.email === null || learner.id === sessionUserId) {
+      return 'allowed'
+    }
+    return sessionUserId === null ? 'unauthenticated' : 'forbidden'
   }
 
   async recordAttempt(learnerId: string, exerciseId: number, passed: boolean): Promise<void> {

@@ -64,3 +64,41 @@ describe('LearnerService.getProgress', () => {
     })
   })
 })
+
+describe('LearnerService.access', () => {
+  const users = new InMemoryUserRepository()
+  const progress = new InMemoryProgressRepository()
+  const tracks = new InMemoryTrackRepository()
+  const exercises = new InMemoryExerciseRepository()
+  const service = new LearnerService(
+    users,
+    progress,
+    tracks,
+    exercises,
+    new InMemoryPlacementRepository(),
+    new CertificateService(new InMemoryCertificateRepository(), users, progress, tracks, exercises),
+  )
+  const account = { email: 'ada@example.org', passwordHash: 'hash' }
+
+  it('ouvre un apprenant anonyme à qui connaît son identifiant, avec ou sans session', async () => {
+    const { id } = await users.createAnonymous()
+    const other = await users.create({ ...account, email: 'autre@example.org' })
+
+    expect(await service.access(id, null)).toBe('allowed')
+    expect(await service.access(id, other!.id)).toBe('allowed')
+  })
+
+  it('n’ouvre un compte inscrit qu’à sa propre session', async () => {
+    const ada = (await users.create(account))!
+    const other = (await users.create({ ...account, email: 'eve@example.org' }))!
+
+    expect(await service.access(ada.id, ada.id)).toBe('allowed')
+    expect(await service.access(ada.id, null)).toBe('unauthenticated')
+    expect(await service.access(ada.id, other.id)).toBe('forbidden')
+  })
+
+  it('signale un identifiant inconnu ou mal formé', async () => {
+    expect(await service.access('00000000-0000-4000-8000-000000000000', null)).toBe('not-found')
+    expect(await service.access('pas-un-uuid', null)).toBe('not-found')
+  })
+})

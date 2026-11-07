@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { migrateTestDatabase } from '../database.fixtures.ts'
+import { AUTH_DEPENDENCIES } from '../auth.fixtures.ts'
 import { buildApp } from '../../../backend/src/app.ts'
 import { config } from '../../../backend/src/config.ts'
 import { MESSAGES } from '../../../backend/src/constants.ts'
@@ -83,6 +84,7 @@ describe.skipIf(!url)('API sur la vraie base', () => {
       contentSource: 'database',
       executionRateLimit: 1_000,
       learnerCreationRateLimit: 1_000,
+      ...AUTH_DEPENDENCIES,
       isDatabaseUp: async () => (await prisma.$queryRaw`SELECT 1`) !== null,
     })
     server = await new Promise<Server>((resolve) => {

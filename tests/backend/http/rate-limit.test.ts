@@ -2,6 +2,7 @@ import type { Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { AUTH_DEPENDENCIES } from '../auth.fixtures.ts'
 import { buildApp } from '../../../backend/src/app.ts'
 import { MESSAGES } from '../../../backend/src/constants.ts'
 import { InMemoryCertificateRepository } from '../../../backend/src/repository/certificate.repository.ts'
@@ -45,6 +46,8 @@ describe('limitation de débit', () => {
       contentSource: 'mock',
       executionRateLimit: 2,
       learnerCreationRateLimit: 2,
+      ...AUTH_DEPENDENCIES,
+      authAttemptsLimit: 2,
       isDatabaseUp: async () => false,
     })
     server = await new Promise<Server>((resolve) => {
@@ -107,5 +110,40 @@ describe('limitation de débit', () => {
 
     expect((await post('/executions', '203.0.113.1')).status).toBe(429)
     expect((await post('/executions', '198.51.100.7')).status).toBe(400)
+  })
+
+  describe('connexion et inscription', () => {
+    const login = (email: string, password: string) =>
+      fetch(`${base}/auth/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.1' },
+        body: JSON.stringify({ email, password }),
+      })
+    const register = (email: string) =>
+      fetch(`${base}/auth/register`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.1' },
+        body: JSON.stringify({ email, password: 'correct horse' }),
+      })
+
+    it('bloque en 429 les essais ratés en rafale sur un même email', async () => {
+      await register('ada@example.org')
+      expect((await login('ada@example.org', 'mauvais 1')).status).toBe(401)
+      expect((await login('ada@example.org', 'mauvais 2')).status).toBe(401)
+
+      const refused = await login('ada@example.org', 'correct horse')
+
+      expect(refused.status).toBe(429)
+      expect(((await refused.json()) as { error: string }).error).toBe(MESSAGES.tooManyAuthAttempts)
+      expect((await login('eve@example.org', 'mauvais 1')).status).toBe(401)
+    })
+
+    it('ne compte pas les essais réussis', async () => {
+      await register('ada@example.org')
+
+      for (let i = 0; i < 4; i++) {
+        expect((await login('ada@example.org', 'correct horse')).status).toBe(200)
+      }
+    })
   })
 })

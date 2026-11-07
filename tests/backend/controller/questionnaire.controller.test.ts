@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net'
 import { spawnSync } from 'node:child_process'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
+import { AUTH_DEPENDENCIES } from '../auth.fixtures.ts'
 import { buildApp } from '../../../backend/src/app.ts'
 import { config } from '../../../backend/src/config.ts'
 import { MESSAGES } from '../../../backend/src/constants.ts'
@@ -66,6 +67,7 @@ async function start(
     contentSource: 'mock',
     executionRateLimit: 1_000,
     learnerCreationRateLimit: 1_000,
+    ...AUTH_DEPENDENCIES,
     isDatabaseUp: async () => false,
   })
   const server = await new Promise<Server>((resolve) => {

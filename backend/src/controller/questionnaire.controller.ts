@@ -1,11 +1,11 @@
 import { Router } from 'express'
 import type { Request, Response } from 'express'
 
-import { LEARNER_HEADER, MESSAGES } from '../constants.ts'
+import { MESSAGES } from '../constants.ts'
 import { badRequest, notFound, ok } from '../http/envelope.ts'
 import { contentUnavailable, engineUnavailable } from '../http/errors.ts'
+import { currentLearnerId } from '../http/learner-access.ts'
 import { EngineUnavailableError, parseSubmission } from '../service/execution.service.ts'
-import type { LearnerService } from '../service/learner.service.ts'
 import type { QuestionnaireService } from '../service/questionnaire.service.ts'
 import { resultsSchema } from '../service/questionnaire.service.ts'
 
@@ -19,11 +19,9 @@ function failed(res: Response, error: unknown): void {
 
 export class QuestionnaireController {
   private readonly service: QuestionnaireService
-  private readonly learners: LearnerService
 
-  constructor(service: QuestionnaireService, learners: LearnerService) {
+  constructor(service: QuestionnaireService) {
     this.service = service
-    this.learners = learners
   }
 
   async getQuestionnaire(_req: Request, res: Response) {
@@ -66,13 +64,8 @@ export class QuestionnaireController {
       badRequest(res, parsed.error.issues[0]?.message ?? MESSAGES.invalidRequest)
       return
     }
-    const learnerId = req.get(LEARNER_HEADER)
+    const learnerId = currentLearnerId(res)
     try {
-      // Avant la correction des exercices : un identifiant inconnu ne doit pas couter d'appel au moteur.
-      if (learnerId !== undefined && !(await this.learners.exists(learnerId))) {
-        notFound(res, MESSAGES.learnerNotFound)
-        return
-      }
       const outcome = await this.service.submitResults(parsed.data, learnerId)
       if (outcome.ok) {
         ok(res, outcome.result)

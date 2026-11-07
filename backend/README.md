@@ -44,13 +44,38 @@ docker compose up -d --build --renew-anon-volumes backend
 | GET     | `/learners/:id/progress`                               | dernier positionnement, exercices tentés, certificats          |
 | POST    | `/learners/:id/certificates`                           | délivre le certificat d'un parcours entièrement réussi         |
 | GET     | `/certificates/:code`                                  | vérification publique d'un certificat                          |
+| POST    | `/auth/register`                                       | crée un compte (reprend l'apprenant de `X-Learner-Id`)         |
+| POST    | `/auth/login`                                          | ouvre une session (cookie)                                     |
+| POST    | `/auth/logout`                                         | ferme la session et révoque tous les jetons du compte          |
+| GET     | `/auth/me`                                             | le compte de la session                                        |
 
 Les quatre routes `POST` qui exécutent du code partagent une limite : `EXECUTION_RATE_LIMIT`
 requêtes par minute et par adresse IP (30 par défaut), puis `429` avec `Retry-After`.
 `POST /learners` a son propre compteur : `LEARNER_CREATION_RATE_LIMIT` (10 par défaut).
 
 Une vérification ou un questionnaire envoyé avec l'en-tête `X-Learner-Id: <id>` est
-enregistré pour cet apprenant ; sans l'en-tête, rien ne lui est rattaché.
+enregistré pour cet apprenant ; sans l'en-tête, il l'est pour le compte connecté, sinon pour
+personne.
+
+### Compte
+
+La session est un JWT dans un cookie `HttpOnly` (illisible par le JavaScript de la page, donc
+pas volé par un XSS) et `SameSite=Strict` (jamais envoyé depuis un autre site, donc pas de
+CSRF). Mot de passe haché avec argon2id. Le jeton dure une heure et se renouvelle à mi-vie ;
+`POST /auth/logout` incrémente `tokenVersion`, ce qui révoque tous les jetons déjà émis.
+
+`POST /auth/register` avec `X-Learner-Id` donne un email et un mot de passe à cet apprenant
+anonyme : même identifiant, progression, positionnement et certificats conservés.
+
+Un apprenant anonyme reste accessible par son seul identifiant. Une fois inscrit, ses routes
+(`/learners/:id/…`, `X-Learner-Id`) exigent sa session : `401` sans session, `403` avec
+celle d'un autre compte.
+
+Connexions et inscriptions ratées : `AUTH_ATTEMPTS_LIMIT` par adresse IP et par email sur
+15 minutes (10 par défaut), puis `429`. Une réussite ne compte pas.
+
+Variables : `JWT_SECRET` (obligatoire, 32 caractères au moins), `AUTH_COOKIE_SECURE`
+(`true` par défaut ; `false` pour un site servi en http, comme le compose).
 
 Un certificat n'est délivré (`201`) que si tous les exercices publiés du parcours sont réussis
 (`403` sinon). Redemandé, il est renvoyé tel quel (`200`) : le nom affiché est figé.
@@ -58,9 +83,9 @@ Un certificat n'est délivré (`201`) que si tous les exercices publiés du parc
 ## Démonstration
 
 `demo/scenario.http` rejoue l'API dans l'ordre de la démo : contenu, correction d'un
-exercice, isolation du moteur, questionnaire, erreurs, progression d'un apprenant, certificat.
-Il s'ouvre avec l'extension VS Code « REST Client » (« Send Request » au-dessus de chaque
-requête) : les requêtes 18 à 29 réutilisent l'apprenant créé en 17.
+exercice, isolation du moteur, questionnaire, erreurs, progression d'un apprenant, certificat,
+compte. Il s'ouvre avec l'extension VS Code « REST Client » (« Send Request » au-dessus de
+chaque requête) : les requêtes 18 à 29 et 31 à 38 réutilisent l'apprenant créé en 17.
 
 Limitation de débit, en une commande (30 fois `200`, puis `429`) :
 

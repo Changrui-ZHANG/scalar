@@ -196,3 +196,40 @@ POST {{base}}/executions
 Content-Type: application/json
 
 { "code": "console.log('encore une')" }
+
+### 31. Ada crée son compte depuis son apprenant anonyme : 201, même id, cookie de session posé
+# L'email change à chaque envoi : rejouer la démo ne bute pas sur « email déjà pris ».
+# @name account
+POST {{base}}/auth/register
+Content-Type: application/json
+X-Learner-Id: {{learner.response.body.data.id}}
+
+{ "email": "ada-{{$timestamp}}@example.org", "password": "correct horse battery" }
+
+### 32. Le compte de la session (le client renvoie le cookie tout seul, comme un navigateur)
+GET {{base}}/auth/me
+
+### 33. Sa progression est conservée : positionnement, exercices, certificat
+GET {{base}}/learners/{{learner.response.body.data.id}}/progress
+
+### 34. Sans session, son identifiant ne suffit plus : 401
+# @no-cookie-jar
+GET {{base}}/learners/{{learner.response.body.data.id}}/progress
+
+### 35. Mauvais mot de passe : 401, même message qu'un email inconnu
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{account.response.body.data.email}}", "password": "mauvais mot de passe" }
+
+### 36. Déconnexion : cookie effacé, et tous ses jetons révoqués
+POST {{base}}/auth/logout
+
+### 37. Après la déconnexion : 401
+GET {{base}}/auth/me
+
+### 38. Reconnexion : 200, nouveau cookie
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{account.response.body.data.email}}", "password": "correct horse battery" }

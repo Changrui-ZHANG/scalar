@@ -78,6 +78,20 @@ export const CONTENT_TABLES = [
   'tracks',
 ] as const
 
+// Compte
+
+export const SESSION_COOKIE = 'scalar_session'
+
+// Renouvele a mi-vie a chaque requete authentifiee : seule une heure d'inactivite deconnecte.
+export const SESSION_TTL_SECONDS = 60 * 60
+
+export const PASSWORD_MIN_LENGTH = 8
+
+// argon2 hache toute la chaine : sans plafond, un mot de passe geant coute cher a chaque connexion.
+export const PASSWORD_MAX_LENGTH = 128
+
+export const AUTH_ATTEMPTS_WINDOW_MS = 15 * 60 * 1000
+
 // Messages renvoyés au client
 
 export const MESSAGES = {
@@ -95,6 +109,14 @@ export const MESSAGES = {
   learnerNotFound: 'Apprenant introuvable.',
   certificateNotFound: 'Certificat introuvable.',
   trackNotCompleted: 'Parcours pas encore terminé : tous ses exercices doivent être réussis.',
+  invalidEmail: 'Adresse email invalide.',
+  invalidPassword: `Le mot de passe doit contenir entre ${PASSWORD_MIN_LENGTH} et ${PASSWORD_MAX_LENGTH} caractères.`,
+  emailTaken: 'Un compte existe déjà avec cette adresse email.',
+  learnerAlreadyRegistered: 'Cet apprenant a déjà un compte : connectez-vous.',
+  invalidCredentials: 'Email ou mot de passe incorrect.',
+  unauthenticated: 'Authentification requise.',
+  forbidden: 'Accès refusé.',
+  tooManyAuthAttempts: 'Trop de tentatives : réessayez dans quelques minutes.',
   placementOverestimatedBeginner:
     'Vous vous estimez plus avancé que ne le montrent les exercices : le parcours commence par consolider les bases.',
   placementOverestimated:

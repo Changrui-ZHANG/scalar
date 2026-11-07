@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net'
 import { spawnSync } from 'node:child_process'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
+import { AUTH_DEPENDENCIES } from '../auth.fixtures.ts'
 import { buildApp } from '../../../backend/src/app.ts'
 import { config } from '../../../backend/src/config.ts'
 import { MAX_CODE_BYTES, MESSAGES } from '../../../backend/src/constants.ts'
@@ -47,6 +48,7 @@ async function start(
     contentSource: 'mock',
     executionRateLimit: 1_000,
     learnerCreationRateLimit: 1_000,
+    ...AUTH_DEPENDENCIES,
     isDatabaseUp,
   })
   const server = await new Promise<Server>((resolve) => {
@@ -582,5 +584,188 @@ describe('Enveloppe HTTP commune', () => {
     } finally {
       crashing.server.close()
     }
+  })
+})
+
+describe('compte : inscription, connexion, accès protégé', () => {
+  let server: Server
+  let base: string
+  const IS_EVEN = '/tracks/javascript/chapters/conditions/exercises/est-pair'
+  const RIGHT = 'function isEven(n) { return n % 2 === 0 }'
+  const PASSWORD = 'correct horse'
+  let emails = 0
+  const freshEmail = () => `apprenant${++emails}@example.org`
+
+  const call = async (
+    method: string,
+    path: string,
+    options: { body?: unknown; cookie?: string; learnerId?: string } = {},
+  ) => {
+    const res = await realFetch(`${base}${path}`, {
+      method,
+      headers: {
+        'content-type': 'application/json',
+        ...(options.cookie === undefined ? {} : { cookie: options.cookie }),
+        ...(options.learnerId === undefined ? {} : { 'x-learner-id': options.learnerId }),
+      },
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    })
+    // Le navigateur renverrait ce cookie tout seul ; ici on garde « nom=valeur » pour le recopier.
+    const cookie = res.headers.getSetCookie()[0]?.split(';')[0]
+    return { status: res.status, body: (await res.json()) as Envelope, cookie, res }
+  }
+  const register = (email = freshEmail(), learnerId?: string) =>
+    call('POST', '/auth/register', { body: { email, password: PASSWORD }, learnerId })
+
+  beforeAll(async () => {
+    ;({ server, base } = await start())
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+  afterAll(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        server.close((err) => (err ? reject(err) : resolve()))
+      }),
+  )
+
+  it('inscrit, pose un cookie HttpOnly SameSite=Strict, sans jamais renvoyer le hash', async () => {
+    const email = freshEmail()
+    const { status, body, res } = await register(email)
+
+    expect(status).toBe(201)
+    expect(body.data).toEqual({ id: expect.any(String), email, createdAt: expect.any(String) })
+    expect(JSON.stringify(body)).not.toContain('hash')
+    const setCookie = res.headers.getSetCookie()[0]
+    expect(setCookie).toMatch(/^scalar_session=[^;]+;/)
+    expect(setCookie).toMatch(/HttpOnly/)
+    expect(setCookie).toMatch(/SameSite=Strict/)
+  })
+
+  it('refuse en 400 des identifiants invalides, en 409 un email déjà pris', async () => {
+    const email = freshEmail()
+    await register(email)
+
+    const invalid = await call('POST', '/auth/register', {
+      body: { email: 'ada', password: PASSWORD },
+    })
+    const short = await call('POST', '/auth/register', { body: { email, password: '1234' } })
+    const taken = await register(email.toUpperCase())
+
+    expect(invalid).toMatchObject({ status: 400, body: { error: MESSAGES.invalidEmail } })
+    expect(short).toMatchObject({ status: 400, body: { error: MESSAGES.invalidPassword } })
+    expect(taken).toMatchObject({ status: 409, body: { error: MESSAGES.emailTaken } })
+  })
+
+  it('connecte, puis /auth/me renvoie le compte de la session', async () => {
+    const email = freshEmail()
+    const registered = await register(email)
+
+    const login = await call('POST', '/auth/login', { body: { email, password: PASSWORD } })
+    const me = await call('GET', '/auth/me', { cookie: login.cookie })
+
+    expect(login.status).toBe(200)
+    expect(me.status).toBe(200)
+    expect(me.body.data).toEqual(registered.body.data)
+    expect((await call('GET', '/auth/me')).status).toBe(401)
+  })
+
+  it('refuse en 401 un mauvais mot de passe, avec le même message qu’un email inconnu', async () => {
+    const email = freshEmail()
+    await register(email)
+
+    const wrong = await call('POST', '/auth/login', { body: { email, password: 'mauvais mdp' } })
+    const unknown = await call('POST', '/auth/login', {
+      body: { email: 'personne@example.org', password: PASSWORD },
+    })
+
+    expect(wrong).toMatchObject({ status: 401, body: { error: MESSAGES.invalidCredentials } })
+    expect(unknown).toMatchObject({ status: 401, body: { error: MESSAGES.invalidCredentials } })
+    expect(wrong.cookie).toBeUndefined()
+  })
+
+  it('la déconnexion efface le cookie et révoque le jeton, même recopié ailleurs', async () => {
+    const { cookie } = await register()
+
+    const logout = await call('POST', '/auth/logout', { cookie })
+
+    expect(logout.status).toBe(200)
+    expect(logout.res.headers.getSetCookie()[0]).toMatch(/^scalar_session=;/)
+    expect((await call('GET', '/auth/me', { cookie })).status).toBe(401)
+    expect((await call('POST', '/auth/logout')).status).toBe(200)
+  })
+
+  it('reprend l’apprenant anonyme : même id, progression conservée', async () => {
+    fakePiston(runInNode)
+    const id = (await call('POST', '/learners')).body.data.id as string
+    await call('POST', `${IS_EVEN}/verifications`, { body: { code: RIGHT }, learnerId: id })
+
+    const { status, body, cookie } = await register(freshEmail(), id)
+    const progress = await call('GET', `/learners/${id}/progress`, { cookie })
+
+    expect(status).toBe(201)
+    expect(body.data.id).toBe(id)
+    expect(progress.status).toBe(200)
+    expect(progress.body.data.passedCount).toBe(1)
+  })
+
+  it('refuse la reprise d’un apprenant inconnu (404) ou déjà inscrit (409)', async () => {
+    const { body } = await register()
+
+    const unknown = await register(freshEmail(), '00000000-0000-4000-8000-000000000000')
+    const again = await register(freshEmail(), body.data.id)
+
+    expect(unknown).toMatchObject({ status: 404, body: { error: MESSAGES.learnerNotFound } })
+    expect(again).toMatchObject({
+      status: 409,
+      body: { error: MESSAGES.learnerAlreadyRegistered },
+    })
+  })
+
+  it('protège les routes d’un compte inscrit : 401 sans session, 403 avec celle d’un autre', async () => {
+    const engine = vi.fn(runInNode)
+    fakePiston(engine)
+    const ada = await register()
+    const eve = await register()
+    const id = ada.body.data.id as string
+    const certificate = { track: 'javascript', holderName: 'Ada' }
+
+    for (const [cookie, status, error] of [
+      [undefined, 401, MESSAGES.unauthenticated],
+      [eve.cookie, 403, MESSAGES.forbidden],
+    ] as const) {
+      const attempts = [
+        await call('GET', `/learners/${id}/progress`, { cookie }),
+        await call('POST', `/learners/${id}/certificates`, { body: certificate, cookie }),
+        await call('POST', `${IS_EVEN}/verifications`, {
+          body: { code: RIGHT },
+          cookie,
+          learnerId: id,
+        }),
+        await call('POST', '/questionnaire/results', { body: {}, cookie, learnerId: id }),
+      ]
+      for (const attempt of attempts) {
+        expect(attempt).toMatchObject({ status, body: { error } })
+      }
+    }
+    expect(engine).not.toHaveBeenCalled()
+    expect((await call('GET', `/learners/${id}/progress`, { cookie: ada.cookie })).status).toBe(200)
+  })
+
+  it('enregistre la vérification d’un compte connecté sans X-Learner-Id', async () => {
+    fakePiston(runInNode)
+    const { body, cookie } = await register()
+
+    await call('POST', `${IS_EVEN}/verifications`, { body: { code: RIGHT }, cookie })
+    const progress = await call('GET', `/learners/${body.data.id}/progress`, { cookie })
+
+    expect(progress.body.data.passedCount).toBe(1)
+  })
+
+  it('laisse un apprenant anonyme accessible par son seul identifiant', async () => {
+    const id = (await call('POST', '/learners')).body.data.id as string
+
+    expect((await call('GET', `/learners/${id}/progress`)).status).toBe(200)
   })
 })
