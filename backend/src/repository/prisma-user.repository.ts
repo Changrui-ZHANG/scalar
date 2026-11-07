@@ -3,7 +3,7 @@ import type { PrismaClient } from '@prisma/client'
 
 import type { User } from '../entity/user.entity.ts'
 import { toUser } from './prisma.mapper.ts'
-import type { NewUser, UserRepository } from './user.repository.ts'
+import type { ClaimOutcome, NewUser, UserRepository } from './user.repository.ts'
 
 // Prisma leve sur un id mal forme pour une colonne UUID, la ou le depot en memoire repond null.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -27,6 +27,31 @@ export class PrismaUserRepository implements UserRepository {
     } catch (error: unknown) {
       if (isKnownError(error, 'P2002')) {
         return null
+      }
+      throw error
+    }
+  }
+
+  async claimAnonymous(id: string, user: NewUser): Promise<ClaimOutcome> {
+    if (!UUID.test(id)) {
+      return { status: 'not-anonymous' }
+    }
+    try {
+      // email: null dans le filtre : deux inscriptions simultanees ne reprennent pas deux fois le meme apprenant.
+      // AND, car Prisma n'accepte que des valeurs non nulles pour un champ unique (email) a la racine du where.
+      const row = await this.prisma.user.update({
+        where: { id, AND: { email: null } },
+        data: { email: user.email.toLowerCase(), passwordHash: user.passwordHash },
+      })
+      return { status: 'claimed', user: toUser(row) }
+    } catch (error: unknown) {
+      // P2002 : contrainte d'unicite violee (email deja pris).
+      if (isKnownError(error, 'P2002')) {
+        return { status: 'email-taken' }
+      }
+      // P2025 : aucune ligne ne correspond au filtre (inconnu ou deja inscrit).
+      if (isKnownError(error, 'P2025')) {
+        return { status: 'not-anonymous' }
       }
       throw error
     }

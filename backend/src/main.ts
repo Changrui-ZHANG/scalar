@@ -21,6 +21,7 @@ import { InMemoryQuestionnaireRepository } from './repository/questionnaire.repo
 import { InMemoryTrackRepository } from './repository/track.repository.ts'
 import { InMemoryUserRepository } from './repository/user.repository.ts'
 import { hasJavascriptRuntime } from './service/execution.service.ts'
+import { Argon2PasswordHasher } from './service/password-hasher.service.ts'
 
 if (config.CONTENT_SOURCE === 'database' && !config.DATABASE_URL) {
   throw new Error('DATABASE_URL est obligatoire quand CONTENT_SOURCE=database.')
@@ -84,6 +85,10 @@ export const viteNodeApp = buildApp({
   contentSource: config.CONTENT_SOURCE,
   executionRateLimit: config.EXECUTION_RATE_LIMIT,
   learnerCreationRateLimit: config.LEARNER_CREATION_RATE_LIMIT,
+  authAttemptsLimit: config.AUTH_ATTEMPTS_LIMIT,
+  jwtSecret: config.JWT_SECRET,
+  secureCookie: config.AUTH_COOKIE_SECURE,
+  hasher: new Argon2PasswordHasher(),
   isDatabaseUp,
 })
 

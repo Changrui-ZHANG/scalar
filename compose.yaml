@@ -96,6 +96,10 @@ services:
       PISTON_URL: http://piston:2000/api/v2
       # Doit correspondre exactement au paquet installé dans Piston.
       PISTON_NODE_VERSION: '20.11.1'
+      # Secret de développement seulement : jamais celui d'un serveur public.
+      JWT_SECRET: dev-secret-scalar-a-ne-jamais-utiliser-en-production
+      # Le site du compose est servi en http.
+      AUTH_COOKIE_SECURE: 'false'
     ports:
       - '127.0.0.1:3001:3001'
     volumes:

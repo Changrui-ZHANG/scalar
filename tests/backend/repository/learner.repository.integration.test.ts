@@ -351,3 +351,46 @@ describe('dépôt des comptes : erreurs inattendues', () => {
     await expect(users.incrementTokenVersion(UNKNOWN_ID)).rejects.toThrow('connexion perdue')
   })
 })
+
+describe.each(BACKENDS)('reprise d’un apprenant anonyme (%s)', (_name, open) => {
+  let users: UserRepository
+  beforeEach(() => {
+    users = open().users
+  })
+
+  it('donne email et mot de passe à la même ligne, email en minuscules', async () => {
+    const learner = await users.createAnonymous()
+
+    const outcome = await users.claimAnonymous(learner.id, account)
+
+    expect(outcome).toEqual({
+      status: 'claimed',
+      user: { ...learner, email: 'ada@example.org', passwordHash: account.passwordHash },
+    })
+    expect(await users.findByEmail('ada@example.org')).toEqual({
+      ...learner,
+      email: 'ada@example.org',
+      passwordHash: account.passwordHash,
+    })
+  })
+
+  it('refuse un email déjà pris, quelle que soit sa casse, et laisse l’apprenant anonyme', async () => {
+    await users.create(account)
+    const learner = await users.createAnonymous()
+
+    expect(
+      await users.claimAnonymous(learner.id, { ...account, email: 'ADA@example.org' }),
+    ).toEqual({ status: 'email-taken' })
+    expect(await users.findById(learner.id)).toEqual(learner)
+  })
+
+  it('refuse un apprenant déjà inscrit, inconnu ou mal formé', async () => {
+    const registered = (await users.create(account))!
+    const other = { ...account, email: 'eve@example.org' }
+
+    for (const id of [registered.id, UNKNOWN_ID, 'pas-un-uuid']) {
+      expect(await users.claimAnonymous(id, other), id).toEqual({ status: 'not-anonymous' })
+    }
+    expect(await users.findById(registered.id)).toEqual(registered)
+  })
+})
