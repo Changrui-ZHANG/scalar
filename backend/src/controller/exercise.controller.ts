@@ -1,9 +1,10 @@
 import { Router } from 'express'
 import type { Request, Response } from 'express'
 
-import { LEARNER_HEADER, MESSAGES } from '../constants.ts'
+import { MESSAGES } from '../constants.ts'
 import { badRequest, notFound, ok, respond } from '../http/envelope.ts'
 import { contentUnavailable, engineUnavailable } from '../http/errors.ts'
+import { currentLearnerId } from '../http/learner-access.ts'
 import { EngineUnavailableError, parseSubmission } from '../service/execution.service.ts'
 import type { ExerciseService } from '../service/exercise.service.ts'
 import type { LearnerService } from '../service/learner.service.ts'
@@ -33,13 +34,8 @@ export class ExerciseController {
       return
     }
     const { track, chapter, exercise } = req.params
-    const learnerId = req.get(LEARNER_HEADER)
+    const learnerId = currentLearnerId(res)
     try {
-      // Avant l'execution : un identifiant inconnu ne doit pas couter un appel au moteur.
-      if (learnerId !== undefined && !(await this.learners.exists(learnerId))) {
-        notFound(res, MESSAGES.learnerNotFound)
-        return
-      }
       const verification = await this.service.verify(
         track,
         chapter,
