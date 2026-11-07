@@ -11,7 +11,8 @@ datasource db {
 // migrations `*_init` (positions uniques a controle differe, controles CHECK du
 // contenu), `*_learner_tables` (controles CHECK des tables apprenant),
 // `*_questionnaire_tables` (positions uniques et controles CHECK du questionnaire)
-// et `*_placement_table` (controles CHECK des resultats du questionnaire).
+// `*_placement_table` (controles CHECK des resultats du questionnaire) et
+// `*_user_role` (un admin a toujours un compte).
 
 /// Ou en est la publication d'un contenu : seul `published` est servi.
 enum PublicationStatus {
@@ -169,6 +170,14 @@ model ExerciseTestCase {
   @@map("exercise_test_cases")
 }
 
+/// Ce qu'un compte a le droit de faire : seul `admin` ouvre `/api/v1/admin/*`.
+enum UserRole {
+  learner
+  admin
+
+  @@map("user_role")
+}
+
 /// Un apprenant : anonyme (sans email ni mot de passe) tant qu'aucun compte ne le reprend.
 model User {
   id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -179,6 +188,8 @@ model User {
   passwordHash String?            @map("password_hash")
   /// Incremente pour revoquer tous les JWT deja emis (deconnexion, mot de passe change).
   tokenVersion Int                @default(0) @map("token_version")
+  /// Jamais `admin` sans email (controle CHECK) ; donne par `npm run admin:promote`, jamais par l'API.
+  role         UserRole           @default(learner)
   createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   progress     ExerciseProgress[]
   certificates Certificate[]

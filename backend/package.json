@@ -18,7 +18,8 @@
     "format": "prettier --write . ../tests/backend",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
-    "db:seed": "node src/database/seed.cli.ts"
+    "db:seed": "node src/database/seed.cli.ts",
+    "admin:promote": "node src/database/promote-admin.cli.ts"
   },
   "license": "UNLICENSED",
   "type": "module",

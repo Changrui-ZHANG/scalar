@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { AUTH_DEPENDENCIES } from '../auth.fixtures.ts'
 import { buildApp } from '../../../backend/src/app.ts'
 import { MESSAGES } from '../../../backend/src/constants.ts'
+import { InMemoryAdminContentRepository } from '../../../backend/src/repository/admin-content.repository.ts'
 import { InMemoryCertificateRepository } from '../../../backend/src/repository/certificate.repository.ts'
 import { InMemoryExerciseRepository } from '../../../backend/src/repository/exercise.repository.ts'
 import { InMemoryLessonRepository } from '../../../backend/src/repository/lesson.repository.ts'
@@ -43,6 +44,7 @@ describe('limitation de débit', () => {
       users: new InMemoryUserRepository(),
       progress: new InMemoryProgressRepository(),
       certificates: new InMemoryCertificateRepository(),
+      adminContent: new InMemoryAdminContentRepository(),
       contentSource: 'mock',
       executionRateLimit: 2,
       learnerCreationRateLimit: 2,

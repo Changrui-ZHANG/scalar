@@ -91,4 +91,12 @@ export class PrismaUserRepository implements UserRepository {
       throw error
     }
   }
+
+  async promoteToAdmin(email: string): Promise<User | null> {
+    const rows = await this.prisma.user.updateManyAndReturn({
+      where: { email: email.toLowerCase() },
+      data: { role: 'admin' },
+    })
+    return rows[0] ? toUser(rows[0]) : null
+  }
 }

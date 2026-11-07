@@ -51,6 +51,9 @@ export const CHAPTER_LEVELS: readonly ChapterLevel[] = [
   'ecosystem',
 ]
 
+// Minuscules, chiffres et tirets isoles : le slug finit dans l'URL publique.
+export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
 export const QUESTIONNAIRE_QUESTION_KINDS = ['experience', 'language', 'knowledge', 'code'] as const
 
 // La somme doit rester 1 : le score final est sur 100.
@@ -117,6 +120,14 @@ export const MESSAGES = {
   unauthenticated: 'Authentification requise.',
   forbidden: 'Accès refusé.',
   tooManyAuthAttempts: 'Trop de tentatives : réessayez dans quelques minutes.',
+  invalidField: 'Champ invalide ou inconnu :',
+  chapterNotFound: 'Chapitre introuvable.',
+  slugTaken: 'Ce slug est déjà utilisé.',
+  slugLocked: 'Slug figé : ce contenu a déjà été publié, son URL ne doit plus changer.',
+  prerequisiteNotFound: 'Parcours prérequis introuvable.',
+  ownPrerequisite: 'Un parcours ne peut pas être son propre prérequis.',
+  publishedNotDeletable: 'Déjà publié : archivez-le plutôt que de le supprimer.',
+  contentInUse: 'Encore utilisé : supprimez d’abord ce qui en dépend.',
   placementOverestimatedBeginner:
     'Vous vous estimez plus avancé que ne le montrent les exercices : le parcours commence par consolider les bases.',
   placementOverestimated:

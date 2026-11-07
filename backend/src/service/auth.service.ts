@@ -1,3 +1,4 @@
+import type { UserRole } from '@scalar/shared/enums'
 import { z } from 'zod'
 
 import { MESSAGES, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '../constants.ts'
@@ -14,6 +15,7 @@ export interface Credentials {
 export interface PublicUser {
   readonly id: string
   readonly email: string
+  readonly role: UserRole
   readonly createdAt: Date
 }
 
@@ -59,9 +61,10 @@ export function parseCredentials(
 const normalizeEmail = (email: string): string => email.trim().toLowerCase()
 
 // Seul appel sur un compte inscrit : email n'y est jamais nul.
-const toPublicUser = ({ id, email, createdAt }: User): PublicUser => ({
+const toPublicUser = ({ id, email, role, createdAt }: User): PublicUser => ({
   id,
   email: email ?? '',
+  role,
   createdAt,
 })
 

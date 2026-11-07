@@ -4,10 +4,12 @@ import { isDatabaseUp, prisma } from './database/client.ts'
 import { migrateDatabase } from './database/migrate.ts'
 import { isContentEmpty, seedDatabase } from './database/seed.ts'
 import { logger } from './logger.ts'
+import { InMemoryAdminContentRepository } from './repository/admin-content.repository.ts'
 import { InMemoryCertificateRepository } from './repository/certificate.repository.ts'
 import { InMemoryExerciseRepository } from './repository/exercise.repository.ts'
 import { InMemoryLessonRepository } from './repository/lesson.repository.ts'
 import { InMemoryPlacementRepository } from './repository/placement.repository.ts'
+import { PrismaAdminContentRepository } from './repository/prisma-admin-content.repository.ts'
 import { PrismaCertificateRepository } from './repository/prisma-certificate.repository.ts'
 import { PrismaExerciseRepository } from './repository/prisma-exercise.repository.ts'
 import { PrismaLessonRepository } from './repository/prisma-lesson.repository.ts'
@@ -38,6 +40,8 @@ const repositories =
         users: new InMemoryUserRepository(),
         progress: new InMemoryProgressRepository(),
         certificates: new InMemoryCertificateRepository(),
+        // Ses modifications restent invisibles de l'API publique : chaque depot a sa copie du contenu.
+        adminContent: new InMemoryAdminContentRepository(),
       }
     : {
         tracks: new PrismaTrackRepository(prisma),
@@ -48,6 +52,7 @@ const repositories =
         users: new PrismaUserRepository(prisma),
         progress: new PrismaProgressRepository(prisma),
         certificates: new PrismaCertificateRepository(prisma),
+        adminContent: new PrismaAdminContentRepository(prisma),
       }
 
 async function prepareDatabase(): Promise<void> {

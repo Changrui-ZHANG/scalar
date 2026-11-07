@@ -233,3 +233,60 @@ POST {{base}}/auth/login
 Content-Type: application/json
 
 { "email": "{{account.response.body.data.email}}", "password": "correct horse battery" }
+
+### 39. Ada n'est pas admin : 403
+GET {{base}}/admin/tracks
+
+### 40. Compte admin : 201 la première fois, 409 ensuite (déjà créé)
+# Puis, dans un terminal : docker compose exec backend npm run admin:promote --workspace backend -- admin@scalar.local
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{ "email": "admin@scalar.local", "password": "admin scalar demo" }
+
+### 41. Connexion admin : rôle « admin »
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin@scalar.local", "password": "admin scalar demo" }
+
+### 42. Tous les parcours, brouillons compris
+GET {{base}}/admin/tracks
+
+### 43. Nouveau parcours : 201, en brouillon, placé à la fin
+# @name adminTrack
+POST {{base}}/admin/tracks
+Content-Type: application/json
+
+{ "slug": "python-{{$timestamp}}", "name": "Python", "summary": "Le langage au serpent." }
+
+### 44. Absent de l'API publique tant qu'il est en brouillon
+GET {{base}}/tracks
+
+### 45. Un chapitre dans ce parcours : 201, en brouillon
+# @name adminChapter
+POST {{base}}/admin/tracks/{{adminTrack.response.body.data.id}}/chapters
+Content-Type: application/json
+
+{ "slug": "listes", "level": "beginner", "title": "Les listes", "summary": "Ranger plusieurs valeurs." }
+
+### 46. Publication du chapitre : firstPublishedAt est posé
+PATCH {{base}}/admin/tracks/{{adminTrack.response.body.data.id}}/chapters/{{adminChapter.response.body.data.id}}
+Content-Type: application/json
+
+{ "status": "published" }
+
+### 47. Slug figé d'un parcours publié : 409
+PATCH {{base}}/admin/tracks/1
+Content-Type: application/json
+
+{ "slug": "js" }
+
+### 48. Champ inconnu : 400 qui le nomme
+PATCH {{base}}/admin/tracks/{{adminTrack.response.body.data.id}}
+Content-Type: application/json
+
+{ "titre": "Python 3" }
+
+### 49. Suppression d'un parcours qui a encore un chapitre : 409
+DELETE {{base}}/admin/tracks/{{adminTrack.response.body.data.id}}

@@ -48,6 +48,16 @@ docker compose up -d --build --renew-anon-volumes backend
 | POST    | `/auth/login`                                          | ouvre une session (cookie)                                     |
 | POST    | `/auth/logout`                                         | ferme la session et révoque tous les jetons du compte          |
 | GET     | `/auth/me`                                             | le compte de la session                                        |
+| GET     | `/admin/tracks`                                        | admin : tous les parcours, brouillons compris                  |
+| POST    | `/admin/tracks`                                        | admin : crée un parcours (en brouillon)                        |
+| GET     | `/admin/tracks/:trackId`                               | admin : un parcours                                            |
+| PATCH   | `/admin/tracks/:trackId`                               | admin : modifie ou publie un parcours                          |
+| DELETE  | `/admin/tracks/:trackId`                               | admin : supprime un parcours jamais publié et vide             |
+| GET     | `/admin/tracks/:trackId/chapters`                      | admin : ses chapitres, brouillons compris                      |
+| POST    | `/admin/tracks/:trackId/chapters`                      | admin : crée un chapitre (en brouillon)                        |
+| GET     | `/admin/tracks/:trackId/chapters/:chapterId`           | admin : un chapitre                                            |
+| PATCH   | `/admin/tracks/:trackId/chapters/:chapterId`           | admin : modifie, change de niveau ou publie un chapitre        |
+| DELETE  | `/admin/tracks/:trackId/chapters/:chapterId`           | admin : supprime un chapitre jamais publié et vide             |
 
 Les quatre routes `POST` qui exécutent du code partagent une limite : `EXECUTION_RATE_LIMIT`
 requêtes par minute et par adresse IP (30 par défaut), puis `429` avec `Retry-After`.
@@ -80,12 +90,36 @@ Variables : `JWT_SECRET` (obligatoire, 32 caractères au moins), `AUTH_COOKIE_SE
 Un certificat n'est délivré (`201`) que si tous les exercices publiés du parcours sont réussis
 (`403` sinon). Redemandé, il est renvoyé tel quel (`200`) : le nom affiché est figé.
 
+### Administration
+
+Toute route `/admin/*` exige la session d'un compte `admin` : `401` sans session, `403` pour
+un apprenant. L'API ne donne jamais ce rôle ; on promeut un compte déjà inscrit :
+
+```bash
+docker compose exec backend npm run admin:promote --workspace backend -- admin@scalar.local
+```
+
+Les routes admin désignent parcours et chapitres par leur `id` (le slug peut changer tant que
+le contenu n'est pas publié). Règles :
+
+- création toujours en brouillon, placée à la fin (des parcours, ou du niveau du chapitre) ;
+- un chapitre qui change de niveau passe à la fin de son nouveau niveau ;
+- `"status": "published"` date la première publication ; dès lors le slug est figé (`409`)
+  et la suppression interdite (`409` : on archive) ;
+- suppression refusée tant que du contenu, un certificat ou un positionnement en dépend
+  (`409`) ;
+- champ invalide ou inconnu : `400` qui le nomme ; slug déjà pris : `409`.
+
+`npm run db:seed` remplace tout le contenu, modifications de l'admin comprises.
+
 ## Démonstration
 
 `demo/scenario.http` rejoue l'API dans l'ordre de la démo : contenu, correction d'un
 exercice, isolation du moteur, questionnaire, erreurs, progression d'un apprenant, certificat,
-compte. Il s'ouvre avec l'extension VS Code « REST Client » (« Send Request » au-dessus de
-chaque requête) : les requêtes 18 à 29 et 31 à 38 réutilisent l'apprenant créé en 17.
+compte, administration. Il s'ouvre avec l'extension VS Code « REST Client » (« Send Request »
+au-dessus de chaque requête) : les requêtes 18 à 29 et 31 à 39 réutilisent l'apprenant créé
+en 17. Avant la requête 41, promouvoir le compte admin (commande de la section
+Administration).
 
 Limitation de débit, en une commande (30 fois `200`, puis `429`) :
 

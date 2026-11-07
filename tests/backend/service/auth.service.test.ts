@@ -72,6 +72,7 @@ describe('AuthService', () => {
     expect(session.user).toEqual({
       id: expect.any(String),
       email: ADA.email,
+      role: 'learner',
       createdAt: expect.any(Date),
     })
     expect((await users.findByEmail(ADA.email))?.passwordHash).toBe('hash:correct horse')
