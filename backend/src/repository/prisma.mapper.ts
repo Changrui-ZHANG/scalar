@@ -14,6 +14,7 @@ import type {
 } from '@prisma/client'
 import type { JsonValue } from '@scalar/shared/api'
 
+import type { AdminExercise } from '../entity/admin-exercise.entity.ts'
 import type { Certificate } from '../entity/certificate.entity.ts'
 import type { Chapter } from '../entity/chapter.entity.ts'
 import type { Exercise } from '../entity/exercise.entity.ts'
@@ -95,6 +96,12 @@ export function toExercise(row: ExerciseRow): Exercise {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }
+}
+
+export function toAdminExercise(
+  row: ExerciseRow & { testCases: ExerciseTestCaseRow[] },
+): AdminExercise {
+  return { ...toExercise(row), testCases: row.testCases.map(toExerciseTestCase) }
 }
 
 export function toExerciseTestCase(row: ExerciseTestCaseRow): ExerciseTestCase {

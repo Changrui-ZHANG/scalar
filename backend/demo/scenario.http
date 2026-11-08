@@ -110,18 +110,14 @@ POST {{base}}/tracks/javascript/chapters/conditions/exercises/est-pair/verificat
 Content-Type: application/json
 X-Learner-Id: {{learner.response.body.data.id}}
 
-{ "code": "function isEven(n) {
-  return true
-}" }
+{ "code": "function isEven(n) {\n  return true\n}" }
 
 ### 19. Puis sa réussite
 POST {{base}}/tracks/javascript/chapters/conditions/exercises/est-pair/verifications
 Content-Type: application/json
 X-Learner-Id: {{learner.response.body.data.id}}
 
-{ "code": "function isEven(n) {
-  return n % 2 === 0
-}" }
+{ "code": "function isEven(n) {\n  return n % 2 === 0\n}" }
 
 ### 20. Il passe le questionnaire : le résultat lui est rattaché
 POST {{base}}/questionnaire/results
@@ -290,3 +286,58 @@ Content-Type: application/json
 
 ### 49. Suppression d'un parcours qui a encore un chapitre : 409
 DELETE {{base}}/admin/tracks/{{adminTrack.response.body.data.id}}
+
+### 50. Nouvel exercice avec un cas caché : 201, brouillon, solution non vérifiée
+# @name adminExercise
+POST {{base}}/admin/chapters/1/exercises
+Content-Type: application/json
+
+{
+  "slug": "double-{{$timestamp}}",
+  "title": "Le double",
+  "instructions": "Écris une fonction `double(n)` qui renvoie le double de `n`.",
+  "functionName": "double",
+  "starterCode": "function double(n) {\n  \n}\n",
+  "solutionCode": "function double(n) {\n  return n * 2\n}\n",
+  "hints": ["Multiplie `n` par 2."],
+  "testCases": [
+    { "arguments": [2], "expectedResult": 4 },
+    { "arguments": [0], "expectedResult": 0, "isHidden": true, "description": "zéro" }
+  ]
+}
+
+### 51. Publication refusée : la solution n'est pas vérifiée (409)
+PATCH {{base}}/admin/exercises/{{adminExercise.response.body.data.id}}
+Content-Type: application/json
+
+{ "status": "published" }
+
+### 52. Vérification par le moteur : passed, détail par cas (cas caché compris)
+POST {{base}}/admin/exercises/{{adminExercise.response.body.data.id}}/solution-check
+
+### 53. Publication acceptée : firstPublishedAt est posé
+PATCH {{base}}/admin/exercises/{{adminExercise.response.body.data.id}}
+Content-Type: application/json
+
+{ "status": "published" }
+
+### 54. Code d'un exercice publié : figé (409)
+PATCH {{base}}/admin/exercises/{{adminExercise.response.body.data.id}}
+Content-Type: application/json
+
+{ "solutionCode": "function double(n) {\n  return n\n}\n" }
+
+### 55. Repassé en brouillon avec une solution fausse : statut remis à not_checked
+PATCH {{base}}/admin/exercises/{{adminExercise.response.body.data.id}}
+Content-Type: application/json
+
+{ "status": "draft", "solutionCode": "function double(n) {\n  return n\n}\n" }
+
+### 56. Le moteur la refuse : passed à false, statut failed, valeur obtenue affichée
+POST {{base}}/admin/exercises/{{adminExercise.response.body.data.id}}/solution-check
+
+### 57. Republication refusée tant que la solution est fausse (409)
+PATCH {{base}}/admin/exercises/{{adminExercise.response.body.data.id}}
+Content-Type: application/json
+
+{ "status": "published" }

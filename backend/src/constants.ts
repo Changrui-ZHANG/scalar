@@ -128,6 +128,12 @@ export const MESSAGES = {
   ownPrerequisite: 'Un parcours ne peut pas être son propre prérequis.',
   publishedNotDeletable: 'Déjà publié : archivez-le plutôt que de le supprimer.',
   contentInUse: 'Encore utilisé : supprimez d’abord ce qui en dépend.',
+  exerciseLocked:
+    'Exercice publié : repassez-le en brouillon pour modifier son code ou ses cas de test.',
+  solutionNotChecked: 'Publication refusée : la solution doit d’abord réussir la vérification.',
+  trackWithoutLanguage: 'Ce parcours n’a pas de langage : il ne peut pas avoir d’exercice.',
+  noTestCases: 'Aucun cas de test : ajoutez-en avant de vérifier la solution.',
+  solutionCheckOutdated: 'L’exercice a changé pendant la vérification : relancez-la.',
   placementOverestimatedBeginner:
     'Vous vous estimez plus avancé que ne le montrent les exercices : le parcours commence par consolider les bases.',
   placementOverestimated:

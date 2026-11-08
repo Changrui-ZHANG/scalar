@@ -58,8 +58,14 @@ docker compose up -d --build --renew-anon-volumes backend
 | GET     | `/admin/tracks/:trackId/chapters/:chapterId`           | admin : un chapitre                                            |
 | PATCH   | `/admin/tracks/:trackId/chapters/:chapterId`           | admin : modifie, change de niveau ou publie un chapitre        |
 | DELETE  | `/admin/tracks/:trackId/chapters/:chapterId`           | admin : supprime un chapitre jamais publié et vide             |
+| GET     | `/admin/chapters/:chapterId/exercises`                 | admin : ses exercices, avec solution et cas cachés             |
+| POST    | `/admin/chapters/:chapterId/exercises`                 | admin : crée un exercice (en brouillon) et ses cas de test     |
+| GET     | `/admin/exercises/:exerciseId`                         | admin : un exercice                                            |
+| PATCH   | `/admin/exercises/:exerciseId`                         | admin : modifie ou publie un exercice                          |
+| DELETE  | `/admin/exercises/:exerciseId`                         | admin : supprime un exercice jamais publié                     |
+| POST    | `/admin/exercises/:exerciseId/solution-check`          | admin : passe la solution dans ses cas de test                 |
 
-Les quatre routes `POST` qui exécutent du code partagent une limite : `EXECUTION_RATE_LIMIT`
+Les cinq routes `POST` qui exécutent du code partagent une limite : `EXECUTION_RATE_LIMIT`
 requêtes par minute et par adresse IP (30 par défaut), puis `429` avec `Retry-After`.
 `POST /learners` a son propre compteur : `LEARNER_CREATION_RATE_LIMIT` (10 par défaut).
 
@@ -109,6 +115,20 @@ le contenu n'est pas publié). Règles :
 - suppression refusée tant que du contenu, un certificat ou un positionnement en dépend
   (`409`) ;
 - champ invalide ou inconnu : `400` qui le nomme ; slug déjà pris : `409`.
+
+Exercices, en plus de ces règles :
+
+- `testCases` fait partie de l'exercice : la liste envoyée remplace toute la liste, son ordre
+  donne les positions ;
+- changer `functionName`, `starterCode`, `solutionCode` ou `testCases` remet
+  `solutionCheckStatus` à `not_checked` ; renvoyer les mêmes valeurs ne change rien ;
+- ces champs sont figés tant que l'exercice est publié (`409`) : on le repasse en brouillon
+  d'abord, le titre, la consigne et les indices restent modifiables ;
+- `POST …/solution-check` répond `200` avec `passed` et le détail par cas, cas cachés compris,
+  et enregistre `passed` ou `failed` ; `409` sans cas de test, `503` si le moteur est
+  indisponible (statut inchangé) ;
+- publication refusée (`409`) tant que le statut n'est pas `passed` ;
+- un parcours sans `programmingLanguage` ne peut pas avoir d'exercice (`409`).
 
 `npm run db:seed` remplace tout le contenu, modifications de l'admin comprises.
 

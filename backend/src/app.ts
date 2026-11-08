@@ -82,6 +82,7 @@ export function buildApp(deps: AppDependencies): Express {
       '/api/v1/tracks/:track/chapters/:chapter/exercises/:exercise/verifications',
       '/api/v1/questionnaire/exercises/:questionId/verifications',
       '/api/v1/questionnaire/results',
+      '/api/v1/admin/exercises/:exerciseId/solution-check',
     ],
     perMinuteLimiter(deps.executionRateLimit, MESSAGES.tooManyExecutions),
   )

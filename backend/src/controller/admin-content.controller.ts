@@ -3,14 +3,15 @@ import type { Request, Response } from 'express'
 
 import { MESSAGES } from '../constants.ts'
 import { badRequest, fail, notFound, ok } from '../http/envelope.ts'
-import { contentUnavailable } from '../http/errors.ts'
+import { contentUnavailable, engineUnavailable } from '../http/errors.ts'
 import type {
   AdminContentService,
   AdminOutcome,
   Refusal,
 } from '../service/admin-content.service.ts'
+import { EngineUnavailableError } from '../service/execution.service.ts'
 
-type Params = { trackId?: string; chapterId?: string }
+type Params = { trackId?: string; chapterId?: string; exerciseId?: string }
 
 // Plafond d'une colonne INT PostgreSQL : au-dela, Prisma leverait au lieu de ne rien trouver.
 const MAX_ID = 2_147_483_647
@@ -28,6 +29,11 @@ const REFUSALS: Record<Exclude<Refusal, 'not-found'>, readonly [number, string]>
   'in-use': [409, MESSAGES.contentInUse],
   'prerequisite-not-found': [400, MESSAGES.prerequisiteNotFound],
   'own-prerequisite': [400, MESSAGES.ownPrerequisite],
+  'exercise-locked': [409, MESSAGES.exerciseLocked],
+  'solution-not-checked': [409, MESSAGES.solutionNotChecked],
+  'no-language': [409, MESSAGES.trackWithoutLanguage],
+  'no-test-cases': [409, MESSAGES.noTestCases],
+  'check-outdated': [409, MESSAGES.solutionCheckOutdated],
 }
 
 export class AdminContentController {
@@ -94,6 +100,41 @@ export class AdminContentController {
         ),
       ),
     )
+    router.get('/chapters/:chapterId/exercises', (req: Request<Params>, res) =>
+      this.withIds(req, res, MESSAGES.chapterNotFound, ([chapterId]) =>
+        this.read(res, MESSAGES.chapterNotFound, () => this.service.listExercises(chapterId)),
+      ),
+    )
+    router.post('/chapters/:chapterId/exercises', (req: Request<Params>, res) =>
+      this.withIds(req, res, MESSAGES.chapterNotFound, ([chapterId]) =>
+        this.write(
+          res,
+          MESSAGES.chapterNotFound,
+          () => this.service.createExercise(chapterId, req.body),
+          201,
+        ),
+      ),
+    )
+    router.get('/exercises/:exerciseId', (req: Request<Params>, res) =>
+      this.withIds(req, res, MESSAGES.exerciseNotFound, ([id]) =>
+        this.read(res, MESSAGES.exerciseNotFound, () => this.service.findExercise(id)),
+      ),
+    )
+    router.patch('/exercises/:exerciseId', (req: Request<Params>, res) =>
+      this.withIds(req, res, MESSAGES.exerciseNotFound, ([id]) =>
+        this.write(res, MESSAGES.exerciseNotFound, () => this.service.updateExercise(id, req.body)),
+      ),
+    )
+    router.delete('/exercises/:exerciseId', (req: Request<Params>, res) =>
+      this.withIds(req, res, MESSAGES.exerciseNotFound, ([id]) =>
+        this.write(res, MESSAGES.exerciseNotFound, () => this.service.deleteExercise(id)),
+      ),
+    )
+    router.post('/exercises/:exerciseId/solution-check', (req: Request<Params>, res) =>
+      this.withIds(req, res, MESSAGES.exerciseNotFound, ([id]) =>
+        this.write(res, MESSAGES.exerciseNotFound, () => this.service.checkSolution(id)),
+      ),
+    )
     return router
   }
 
@@ -104,7 +145,8 @@ export class AdminContentController {
     notFoundMessage: string,
     handle: (ids: [number, number?]) => Promise<void>,
   ): Promise<void> {
-    const raw = [req.params.trackId, req.params.chapterId].filter((p) => p !== undefined)
+    const { trackId, chapterId, exerciseId } = req.params
+    const raw = [trackId, chapterId, exerciseId].filter((p) => p !== undefined)
     const ids = raw.map(toId)
     if (ids.some((id) => id === null)) {
       notFound(res, notFoundMessage)
@@ -158,7 +200,11 @@ export class AdminContentController {
         }
       }
     } catch (error: unknown) {
-      contentUnavailable(res, error)
+      if (error instanceof EngineUnavailableError) {
+        engineUnavailable(res, error)
+      } else {
+        contentUnavailable(res, error)
+      }
     }
   }
 }

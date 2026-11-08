@@ -1,10 +1,19 @@
-import type { ChapterLevel, ProgrammingLanguage, PublicationStatus } from '@scalar/shared/enums'
+import type { JsonValue } from '@scalar/shared/api'
+import type {
+  ChapterLevel,
+  ProgrammingLanguage,
+  PublicationStatus,
+  SolutionCheckStatus,
+} from '@scalar/shared/enums'
 
 import { CHAPTER_LEVELS } from '../constants.ts'
+import type { AdminExercise } from '../entity/admin-exercise.entity.ts'
 import type { Chapter } from '../entity/chapter.entity.ts'
+import type { Exercise } from '../entity/exercise.entity.ts'
+import type { ExerciseTestCase } from '../entity/exercise-test-case.entity.ts'
 import type { Track } from '../entity/track.entity.ts'
 import { CHAPTERS } from '../content/chapters.ts'
-import { EXERCISES } from '../content/exercises.ts'
+import { EXERCISES, EXERCISE_TEST_CASES } from '../content/exercises.ts'
 import { LESSONS } from '../content/lessons.ts'
 import { TRACKS } from '../content/tracks.ts'
 
@@ -33,6 +42,32 @@ export interface ChapterChanges extends Partial<ChapterInput> {
   readonly firstPublishedAt?: Date
 }
 
+export interface TestCaseInput {
+  readonly arguments: readonly JsonValue[]
+  readonly expectedResult: JsonValue
+  readonly isHidden: boolean
+  readonly description: string | null
+}
+
+export interface ExerciseInput {
+  readonly slug: string
+  readonly title: string
+  readonly instructions: string
+  readonly functionName: string
+  readonly starterCode: string
+  readonly solutionCode: string
+  readonly hints: string[]
+  /** L'ordre de la liste donne les positions. */
+  readonly testCases: readonly TestCaseInput[]
+}
+
+export interface ExerciseChanges extends Partial<ExerciseInput> {
+  readonly status?: PublicationStatus
+  readonly firstPublishedAt?: Date
+  readonly solutionCheckStatus?: SolutionCheckStatus
+  readonly solutionCheckedAt?: Date | null
+}
+
 export type SaveOutcome<T> =
   | { readonly status: 'saved'; readonly item: T }
   /** L'element, ou pour une creation de chapitre son parcours. */
@@ -58,6 +93,20 @@ export interface AdminContentRepository {
   /** Un changement de niveau replace le chapitre a la fin de son nouveau niveau. */
   updateChapter(trackId: number, id: number, changes: ChapterChanges): Promise<SaveOutcome<Chapter>>
   deleteChapter(trackId: number, id: number): Promise<DeleteOutcome>
+  findChapterById(id: number): Promise<Chapter | null>
+  listExercises(chapterId: number): Promise<readonly AdminExercise[]>
+  findExercise(id: number): Promise<AdminExercise | null>
+  /** Toujours en brouillon et non verifie, place a la fin du chapitre. */
+  createExercise(chapterId: number, input: ExerciseInput): Promise<SaveOutcome<AdminExercise>>
+  /** `testCases`, si present, remplace toute la liste. */
+  updateExercise(id: number, changes: ExerciseChanges): Promise<SaveOutcome<AdminExercise>>
+  deleteExercise(id: number): Promise<DeleteOutcome>
+  /** Null si l'exercice a change depuis `checked` : le verdict ne vaut plus pour lui. */
+  recordSolutionCheck(
+    checked: Exercise,
+    result: SolutionCheckStatus,
+    at: Date,
+  ): Promise<AdminExercise | null>
 }
 
 const byPosition = (a: { position: number }, b: { position: number }): number =>
@@ -72,20 +121,26 @@ const nextPosition = (rows: readonly { position: number }[]): number =>
 const nextId = (rows: readonly { id: number }[]): number =>
   Math.max(0, ...rows.map((r) => r.id)) + 1
 
-/** Les lecons et exercices ne servent qu'a refuser la suppression d'un chapitre qui en a. */
+/** Les lecons ne servent qu'a refuser la suppression d'un chapitre qui en a. */
 export class InMemoryAdminContentRepository implements AdminContentRepository {
   private tracks: Track[]
   private chapters: Chapter[]
-  private readonly usedChapterIds: ReadonlySet<number>
+  private exercises: Exercise[]
+  private testCases: ExerciseTestCase[]
+  private readonly chapterIdsWithLessons: ReadonlySet<number>
 
   constructor(
     tracks: readonly Track[] = TRACKS,
     chapters: readonly Chapter[] = CHAPTERS,
-    contents: readonly { chapterId: number }[] = [...LESSONS, ...EXERCISES],
+    lessons: readonly { chapterId: number }[] = LESSONS,
+    exercises: readonly Exercise[] = EXERCISES,
+    testCases: readonly ExerciseTestCase[] = EXERCISE_TEST_CASES,
   ) {
     this.tracks = tracks.map((t) => ({ ...t }))
     this.chapters = chapters.map((c) => ({ ...c }))
-    this.usedChapterIds = new Set(contents.map((c) => c.chapterId))
+    this.exercises = exercises.map((e) => ({ ...e }))
+    this.testCases = testCases.map((t) => ({ ...t }))
+    this.chapterIdsWithLessons = new Set(lessons.map((l) => l.chapterId))
   }
 
   async listTracks(): Promise<readonly Track[]> {
@@ -198,11 +253,133 @@ export class InMemoryAdminContentRepository implements AdminContentRepository {
     if (!this.chapters.some((c) => c.trackId === trackId && c.id === id)) {
       return 'not-found'
     }
-    if (this.usedChapterIds.has(id)) {
+    if (this.chapterIdsWithLessons.has(id) || this.exercises.some((e) => e.chapterId === id)) {
       return 'in-use'
     }
     this.chapters = this.chapters.filter((c) => c.id !== id)
     return 'deleted'
+  }
+
+  async findChapterById(id: number): Promise<Chapter | null> {
+    const chapter = this.chapters.find((c) => c.id === id)
+    return chapter ? { ...chapter } : null
+  }
+
+  async listExercises(chapterId: number): Promise<readonly AdminExercise[]> {
+    return this.exercises
+      .filter((e) => e.chapterId === chapterId)
+      .toSorted(byPosition)
+      .map((e) => this.withTestCases(e))
+  }
+
+  async findExercise(id: number): Promise<AdminExercise | null> {
+    const exercise = this.exercises.find((e) => e.id === id)
+    return exercise ? this.withTestCases(exercise) : null
+  }
+
+  async createExercise(
+    chapterId: number,
+    { testCases, ...input }: ExerciseInput,
+  ): Promise<SaveOutcome<AdminExercise>> {
+    if (!this.chapters.some((c) => c.id === chapterId)) {
+      return { status: 'not-found' }
+    }
+    if (this.exerciseSlugTaken(chapterId, null, input.slug)) {
+      return { status: 'slug-taken' }
+    }
+    const now = new Date()
+    const exercise: Exercise = {
+      ...input,
+      id: nextId(this.exercises),
+      chapterId,
+      position: nextPosition(this.exercises.filter((e) => e.chapterId === chapterId)),
+      solutionCheckStatus: 'not_checked',
+      solutionCheckedAt: null,
+      status: 'draft',
+      firstPublishedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    }
+    this.exercises.push(exercise)
+    this.replaceTestCases(exercise.id, testCases)
+    return { status: 'saved', item: this.withTestCases(exercise) }
+  }
+
+  async updateExercise(
+    id: number,
+    { testCases, ...changes }: ExerciseChanges,
+  ): Promise<SaveOutcome<AdminExercise>> {
+    const exercise = this.exercises.find((e) => e.id === id)
+    if (!exercise) {
+      return { status: 'not-found' }
+    }
+    if (
+      changes.slug !== undefined &&
+      this.exerciseSlugTaken(exercise.chapterId, id, changes.slug)
+    ) {
+      return { status: 'slug-taken' }
+    }
+    Object.assign(exercise, changes, { updatedAt: new Date() })
+    if (testCases) {
+      this.replaceTestCases(id, testCases)
+    }
+    return { status: 'saved', item: this.withTestCases(exercise) }
+  }
+
+  async deleteExercise(id: number): Promise<DeleteOutcome> {
+    if (!this.exercises.some((e) => e.id === id)) {
+      return 'not-found'
+    }
+    this.exercises = this.exercises.filter((e) => e.id !== id)
+    this.testCases = this.testCases.filter((t) => t.exerciseId !== id)
+    return 'deleted'
+  }
+
+  async recordSolutionCheck(
+    checked: Exercise,
+    result: SolutionCheckStatus,
+    at: Date,
+  ): Promise<AdminExercise | null> {
+    const exercise = this.exercises.find((e) => e.id === checked.id)
+    if (exercise?.updatedAt.getTime() !== checked.updatedAt.getTime()) {
+      return null
+    }
+    Object.assign(exercise, {
+      solutionCheckStatus: result,
+      solutionCheckedAt: at,
+      updatedAt: new Date(),
+    })
+    return this.withTestCases(exercise)
+  }
+
+  private withTestCases(exercise: Exercise): AdminExercise {
+    return {
+      ...exercise,
+      testCases: this.testCases
+        .filter((t) => t.exerciseId === exercise.id)
+        .toSorted(byPosition)
+        .map((t) => ({ ...t })),
+    }
+  }
+
+  private replaceTestCases(exerciseId: number, cases: readonly TestCaseInput[]): void {
+    const now = new Date()
+    const firstId = nextId(this.testCases)
+    this.testCases = [
+      ...this.testCases.filter((t) => t.exerciseId !== exerciseId),
+      ...cases.map((c, index) => ({
+        ...c,
+        id: firstId + index,
+        exerciseId,
+        position: index + 1,
+        createdAt: now,
+        updatedAt: now,
+      })),
+    ]
+  }
+
+  private exerciseSlugTaken(chapterId: number, id: number | null, slug: string): boolean {
+    return this.exercises.some((e) => e.chapterId === chapterId && e.slug === slug && e.id !== id)
   }
 
   private checkTrack(
