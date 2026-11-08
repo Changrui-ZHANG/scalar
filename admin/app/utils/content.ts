@@ -1,28 +1,26 @@
-/**
- * Contenu cote backoffice : forme du futur schema (languages, chapters,
- * exercices) et regle d'ajout commune. Fonctions pures : le stockage arrive
- * en parametre.
- */
+/** Contenu cote backoffice : la forme renvoyee par `/api/v1/admin/*`. */
 
 export type ContentStatus = 'draft' | 'published' | 'archived'
-export type LanguageRuntime = 'node' | 'node_strip_types'
+export type ProgrammingLanguage = 'javascript' | 'typescript'
+export type ChapterLevel = 'beginner' | 'intermediate' | 'advanced' | 'ecosystem'
 
-export interface Language {
+export interface Track {
   readonly id: number
   readonly slug: string
-  /** Rang dans la liste des parcours, a partir de 1. */
   readonly position: number
-  readonly label: string
+  readonly name: string
   readonly summary: string
-  readonly runtime: LanguageRuntime
+  /** Nul pour un parcours de lecons seulement. */
+  readonly programmingLanguage: ProgrammingLanguage | null
   readonly status: ContentStatus
 }
 
 export interface Chapter {
   readonly id: number
-  readonly languageId: number
+  readonly trackId: number
   readonly slug: string
-  /** Rang dans le parcours du langage, a partir de 1. */
+  readonly level: ChapterLevel
+  /** Rang dans le niveau, a partir de 1. */
   readonly position: number
   readonly title: string
   readonly summary: string
@@ -31,9 +29,9 @@ export interface Chapter {
 
 export interface TestCase {
   /** Arguments passes a la fonction : toujours un tableau. */
-  readonly args: readonly unknown[]
-  readonly expected: unknown
-  readonly label: string
+  readonly arguments: readonly unknown[]
+  readonly expectedResult: unknown
+  readonly description: string | null
   readonly isHidden: boolean
 }
 
@@ -44,8 +42,8 @@ export interface Exercise {
   /** Rang dans le chapitre, a partir de 1. */
   readonly position: number
   readonly title: string
-  /** Markdown, affiche par `RichText` cote site. */
-  readonly statement: string
+  /** Markdown. */
+  readonly instructions: string
   readonly functionName: string
   readonly starterCode: string
   readonly solutionCode: string
@@ -60,9 +58,18 @@ export const STATUS_LABELS: Readonly<Record<ContentStatus, string>> = {
   archived: 'Archivé',
 }
 
-export const RUNTIME_LABELS: Readonly<Record<LanguageRuntime, string>> = {
-  node: 'Node.js',
-  node_strip_types: 'Node.js, types retirés avant exécution',
+export const LANGUAGE_LABELS: Readonly<Record<ProgrammingLanguage, string>> = {
+  javascript: 'JavaScript',
+  typescript: 'TypeScript',
+}
+
+export const NO_LANGUAGE_LABEL = 'Aucun, leçons seulement'
+
+export const LEVEL_LABELS: Readonly<Record<ChapterLevel, string>> = {
+  beginner: 'Débutant',
+  intermediate: 'Intermédiaire',
+  advanced: 'Avancé',
+  ecosystem: 'Écosystème',
 }
 
 /** « Les Boucles for ! » -> « les-boucles-for ». */
@@ -76,42 +83,5 @@ export const slugify = (text: string): string =>
 
 export type SaveResult<T> =
   | { readonly ok: true; readonly item: T }
-  | { readonly ok: false; readonly field: 'slug'; readonly message: string }
-
-const SLUG_TAKEN = {
-  ok: false,
-  field: 'slug',
-  message: 'Ce slug est déjà utilisé ici.',
-} as const
-
-/**
- * Ajoute un element en derniere position parmi `siblings` (meme langage, meme
- * chapitre, ou tous les langages). Le slug doit y etre unique, comme le
- * garantira la base.
- */
-export function append<I extends { readonly slug: string }>(
-  siblings: readonly { readonly slug: string; readonly position: number }[],
-  input: I,
-  id: number,
-): SaveResult<I & { readonly id: number; readonly position: number }> {
-  if (siblings.some((s) => s.slug === input.slug)) {
-    return SLUG_TAKEN
-  }
-  const position = Math.max(0, ...siblings.map((s) => s.position)) + 1
-  return { ok: true, item: { ...input, id, position } }
-}
-
-/**
- * Remplace les champs saisis d'un element existant : id et position restent.
- * Son propre slug ne compte pas comme un doublon.
- */
-export function replace<T extends { readonly id: number; readonly slug: string }, I>(
-  siblings: readonly T[],
-  current: T,
-  input: I & { readonly slug: string },
-): SaveResult<T & I> {
-  if (siblings.some((s) => s.id !== current.id && s.slug === input.slug)) {
-    return SLUG_TAKEN
-  }
-  return { ok: true, item: { ...current, ...input } }
-}
+  /** `field` : le champ du formulaire a marquer, sinon l'erreur s'affiche en notification. */
+  | { readonly ok: false; readonly field: 'slug' | null; readonly message: string }

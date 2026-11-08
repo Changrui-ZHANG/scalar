@@ -4,7 +4,7 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 const props = defineProps<{
   initial: ExerciseInput
   /** Creation ou edition : la page fournit l'ecriture dans la base. */
-  save: (input: ExerciseInput) => SaveResult<Exercise>
+  save: (input: ExerciseInput) => Promise<SaveResult<Exercise>>
   submitLabel: string
   cancelTo: string
   /** Coloration du code de depart et de la solution : celle du parcours. */
@@ -14,6 +14,7 @@ const props = defineProps<{
 const emit = defineEmits<{ saved: [exercise: Exercise] }>()
 
 const form = useTemplateRef('form')
+const toast = useToast()
 // Copie profonde : les cas de test sont edites sans toucher a `initial`.
 const state = reactive<ExerciseInput>(structuredClone(toRaw(props.initial)))
 const { markEdited } = useAutoSlug(
@@ -22,10 +23,14 @@ const { markEdited } = useAutoSlug(
   props.editing,
 )
 
-function onSubmit(event: FormSubmitEvent<ExerciseInput>) {
-  const result = props.save(event.data)
+async function onSubmit(event: FormSubmitEvent<ExerciseInput>) {
+  const result = await props.save(event.data)
   if (!result.ok) {
-    form.value?.setErrors([{ name: result.field, message: result.message }])
+    if (result.field) {
+      form.value?.setErrors([{ name: result.field, message: result.message }])
+    } else {
+      toast.add({ title: result.message, color: 'error' })
+    }
     return
   }
   emit('saved', result.item)

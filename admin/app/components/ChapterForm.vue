@@ -1,17 +1,23 @@
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@nuxt/ui'
+import type { FormSubmitEvent, RadioGroupItem } from '@nuxt/ui'
 
 const props = defineProps<{
   initial: ChapterInput
   /** Creation ou edition : la page fournit l'ecriture dans la base. */
-  save: (input: ChapterInput) => SaveResult<Chapter>
+  save: (input: ChapterInput) => Promise<SaveResult<Chapter>>
   submitLabel: string
   cancelTo: string
   editing?: boolean
 }>()
 const emit = defineEmits<{ saved: [chapter: Chapter] }>()
 
+const LEVEL_ITEMS: RadioGroupItem[] = Object.entries(LEVEL_LABELS).map(([value, label]) => ({
+  label,
+  value,
+}))
+
 const form = useTemplateRef('form')
+const toast = useToast()
 const state = reactive<ChapterInput>({ ...props.initial })
 const { markEdited } = useAutoSlug(
   () => state.title,
@@ -19,10 +25,14 @@ const { markEdited } = useAutoSlug(
   props.editing,
 )
 
-function onSubmit(event: FormSubmitEvent<ChapterInput>) {
-  const result = props.save(event.data)
+async function onSubmit(event: FormSubmitEvent<ChapterInput>) {
+  const result = await props.save(event.data)
   if (!result.ok) {
-    form.value?.setErrors([{ name: result.field, message: result.message }])
+    if (result.field) {
+      form.value?.setErrors([{ name: result.field, message: result.message }])
+    } else {
+      toast.add({ title: result.message, color: 'error' })
+    }
     return
   }
   emit('saved', result.item)
@@ -51,6 +61,14 @@ function onSubmit(event: FormSubmitEvent<ChapterInput>) {
     </UFormField>
 
     <UFormField
+      label="Niveau"
+      name="level"
+      help="Un chapitre qui change de niveau passe à la fin de son nouveau niveau."
+    >
+      <URadioGroup v-model="state.level" :items="LEVEL_ITEMS" orientation="horizontal" />
+    </UFormField>
+
+    <UFormField
       label="Résumé"
       name="summary"
       required
@@ -59,7 +77,7 @@ function onSubmit(event: FormSubmitEvent<ChapterInput>) {
       <UTextarea v-model="state.summary" :rows="3" autoresize class="w-full" />
     </UFormField>
 
-    <StatusRadio v-model="state.status" :allow-archived="editing" />
+    <StatusRadio v-if="editing" v-model="state.status" allow-archived />
 
     <slot name="note" />
 

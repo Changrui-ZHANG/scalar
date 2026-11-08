@@ -2,13 +2,13 @@
 import type { TableColumn } from '@nuxt/ui'
 
 const store = useContentStore()
-const language = useRouteLanguage()
-const chapter = useRouteChapter(language)
+const track = await useRouteTrack()
+const chapter = await useRouteChapter(track)
+await store.loadExercises(chapter.id)
 
 useSeoMeta({ title: `${chapter.title} — Backoffice Scalar` })
 
-const back = `/langages/${language.id}`
-const exercises = computed(() => store.exercisesOf(chapter.id))
+const back = `/parcours/${track.id}`
 
 const columns: TableColumn<Exercise>[] = [
   { accessorKey: 'position', header: 'N°' },
@@ -22,13 +22,13 @@ const columns: TableColumn<Exercise>[] = [
 <template>
   <UDashboardPanel :id="`chapitre-${chapter.id}`">
     <template #header>
-      <UDashboardNavbar :title="`${language.label} · ${chapter.title}`">
+      <UDashboardNavbar :title="`${track.name} · ${chapter.title}`">
         <template #leading>
           <UButton
             icon="i-lucide-arrow-left"
             color="neutral"
             variant="ghost"
-            :aria-label="`Retour à ${language.label}`"
+            :aria-label="`Retour à ${track.name}`"
             :to="back"
           />
         </template>
@@ -40,11 +40,6 @@ const columns: TableColumn<Exercise>[] = [
             variant="outline"
             :to="`${back}/chapitres/${chapter.id}/modifier`"
           />
-          <UButton
-            icon="i-lucide-plus"
-            label="Nouvel exercice"
-            :to="`${back}/chapitres/${chapter.id}/exercices/nouveau`"
-          />
         </template>
       </UDashboardNavbar>
     </template>
@@ -52,24 +47,21 @@ const columns: TableColumn<Exercise>[] = [
     <template #body>
       <div class="grid gap-1">
         <div class="flex items-center gap-3">
-          <span class="text-muted text-sm tabular-nums">Chapitre {{ chapter.position }}</span>
+          <span class="text-muted text-sm">
+            {{ LEVEL_LABELS[chapter.level] }}, chapitre {{ chapter.position }}
+          </span>
           <code class="text-sm">{{ chapter.slug }}</code>
           <StatusBadge :status="chapter.status" />
         </div>
         <p class="text-muted">{{ chapter.summary }}</p>
       </div>
 
-      <UTable :data="exercises" :columns="columns" empty="Aucun exercice : créez le premier.">
+      <UTable :data="[...store.exercises]" :columns="columns" empty="Aucun exercice.">
         <template #position-cell="{ row }">
           <span class="text-muted tabular-nums">{{ row.original.position }}</span>
         </template>
         <template #title-cell="{ row }">
-          <ULink
-            :to="`${back}/chapitres/${chapter.id}/exercices/${row.original.id}`"
-            class="font-medium"
-          >
-            {{ row.original.title }}
-          </ULink>
+          <span class="font-medium">{{ row.original.title }}</span>
           <code class="text-muted ms-2 text-xs">{{ row.original.slug }}</code>
         </template>
         <template #functionName-cell="{ row }">

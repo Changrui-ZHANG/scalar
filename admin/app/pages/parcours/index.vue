@@ -1,48 +1,49 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 
-useSeoMeta({ title: 'Langages — Backoffice Scalar' })
+useSeoMeta({ title: 'Parcours — Backoffice Scalar' })
 
 const store = useContentStore()
+await store.loadTracks()
 
-const columns: TableColumn<Language>[] = [
+const columns: TableColumn<Track>[] = [
   { accessorKey: 'position', header: 'N°' },
-  { accessorKey: 'label', header: 'Langage' },
+  { accessorKey: 'name', header: 'Parcours' },
   { accessorKey: 'slug', header: 'Slug' },
-  { accessorKey: 'runtime', header: 'Exécution' },
-  { id: 'chapters', header: 'Chapitres' },
+  { accessorKey: 'programmingLanguage', header: 'Langage' },
   { accessorKey: 'status', header: 'Statut' },
 ]
 </script>
 
 <template>
-  <UDashboardPanel id="langages">
+  <UDashboardPanel id="parcours">
     <template #header>
-      <UDashboardNavbar title="Langages">
+      <UDashboardNavbar title="Parcours">
         <template #right>
-          <UButton icon="i-lucide-plus" label="Nouveau langage" to="/langages/nouveau" />
+          <UButton icon="i-lucide-plus" label="Nouveau parcours" to="/parcours/nouveau" />
         </template>
       </UDashboardNavbar>
     </template>
 
     <template #body>
-      <UTable :data="store.languageList" :columns="columns" empty="Aucun langage.">
+      <UTable :data="[...store.tracks]" :columns="columns" empty="Aucun parcours.">
         <template #position-cell="{ row }">
           <span class="text-muted tabular-nums">{{ row.original.position }}</span>
         </template>
-        <template #label-cell="{ row }">
-          <ULink :to="`/langages/${row.original.id}`" class="font-medium">
-            {{ row.original.label }}
+        <template #name-cell="{ row }">
+          <ULink :to="`/parcours/${row.original.id}`" class="font-medium">
+            {{ row.original.name }}
           </ULink>
         </template>
         <template #slug-cell="{ row }">
           <code class="text-sm">{{ row.original.slug }}</code>
         </template>
-        <template #runtime-cell="{ row }">
-          {{ RUNTIME_LABELS[row.original.runtime] }}
-        </template>
-        <template #chapters-cell="{ row }">
-          <span class="tabular-nums">{{ store.chaptersOf(row.original.id).length }}</span>
+        <template #programmingLanguage-cell="{ row }">
+          {{
+            row.original.programmingLanguage
+              ? LANGUAGE_LABELS[row.original.programmingLanguage]
+              : NO_LANGUAGE_LABEL
+          }}
         </template>
         <template #status-cell="{ row }">
           <StatusBadge :status="row.original.status" />

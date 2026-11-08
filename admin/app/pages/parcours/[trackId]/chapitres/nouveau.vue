@@ -1,13 +1,18 @@
 <script setup lang="ts">
 const store = useContentStore()
-const language = useRouteLanguage()
+const track = await useRouteTrack()
 const toast = useToast()
 
-useSeoMeta({ title: `Nouveau chapitre ${language.label} — Backoffice Scalar` })
+useSeoMeta({ title: `Nouveau chapitre ${track.name} — Backoffice Scalar` })
 
-const back = `/langages/${language.id}`
-const nextPosition = store.chaptersOf(language.id).length + 1
-const EMPTY: ChapterInput = { title: '', slug: '', summary: '', status: 'draft' }
+const back = `/parcours/${track.id}`
+const EMPTY: ChapterInput = {
+  title: '',
+  slug: '',
+  level: 'beginner',
+  summary: '',
+  status: 'draft',
+}
 
 function onSaved(chapter: Chapter) {
   toast.add({ title: `Chapitre « ${chapter.title} » créé`, color: 'success' })
@@ -18,13 +23,13 @@ function onSaved(chapter: Chapter) {
 <template>
   <UDashboardPanel id="nouveau-chapitre">
     <template #header>
-      <UDashboardNavbar :title="`Nouveau chapitre · ${language.label}`">
+      <UDashboardNavbar :title="`Nouveau chapitre · ${track.name}`">
         <template #leading>
           <UButton
             icon="i-lucide-arrow-left"
             color="neutral"
             variant="ghost"
-            :aria-label="`Retour à ${language.label}`"
+            :aria-label="`Retour à ${track.name}`"
             :to="back"
           />
         </template>
@@ -34,14 +39,14 @@ function onSaved(chapter: Chapter) {
     <template #body>
       <ChapterForm
         :initial="EMPTY"
-        :save="(input) => store.createChapter(language.id, input)"
+        :save="(input) => store.createChapter(track.id, input)"
         submit-label="Créer le chapitre"
         :cancel-to="back"
         @saved="onSaved"
       >
         <template #note>
           <p class="text-muted text-sm">
-            Ajouté en fin de parcours {{ language.label }}, en position {{ nextPosition }}.
+            Créé en brouillon, à la fin du niveau choisi dans le parcours {{ track.name }}.
           </p>
         </template>
       </ChapterForm>
