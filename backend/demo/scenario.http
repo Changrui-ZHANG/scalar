@@ -110,18 +110,14 @@ POST {{base}}/tracks/javascript/chapters/conditions/exercises/est-pair/verificat
 Content-Type: application/json
 X-Learner-Id: {{learner.response.body.data.id}}
 
-{ "code": "function isEven(n) {
-  return true
-}" }
+{ "code": "function isEven(n) {\n  return true\n}" }
 
 ### 19. Puis sa réussite
 POST {{base}}/tracks/javascript/chapters/conditions/exercises/est-pair/verifications
 Content-Type: application/json
 X-Learner-Id: {{learner.response.body.data.id}}
 
-{ "code": "function isEven(n) {
-  return n % 2 === 0
-}" }
+{ "code": "function isEven(n) {\n  return n % 2 === 0\n}" }
 
 ### 20. Il passe le questionnaire : le résultat lui est rattaché
 POST {{base}}/questionnaire/results
