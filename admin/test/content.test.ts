@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { append, replace, slugify } from '../app/utils/content'
-import { exerciseInputSchema, toExerciseData, toExerciseInput } from '../app/utils/schemas'
+import { safeRedirect, toApiFailure, toSaveResult } from '../app/utils/api'
+import { slugify } from '../app/utils/content'
+import {
+  chapterInputSchema,
+  exerciseInputSchema,
+  toExerciseData,
+  toExerciseInput,
+  trackInputSchema,
+} from '../app/utils/schemas'
 
 describe('slugify', () => {
   it('retire accents, casse et ponctuation', () => {
@@ -9,42 +16,97 @@ describe('slugify', () => {
   })
 })
 
-describe('append', () => {
-  const siblings = [{ slug: 'boucles', position: 3 }]
-
-  it('ajoute en derniere position', () => {
-    expect(append(siblings, { slug: 'tableaux' }, 8)).toEqual({
-      ok: true,
-      item: { slug: 'tableaux', id: 8, position: 4 },
+describe('toApiFailure', () => {
+  it('garde le statut et le message de l’API', () => {
+    expect(toApiFailure({ status: 409, data: { error: 'Ce slug est déjà utilisé.' } })).toEqual({
+      ok: false,
+      status: 409,
+      message: 'Ce slug est déjà utilisé.',
     })
   })
 
-  it('commence a 1 sans voisin', () => {
-    const result = append([], { slug: 'tableaux' }, 1)
-    expect(result.ok && result.item.position).toBe(1)
+  it('donne un message lisible quand le serveur ne répond pas', () => {
+    expect(toApiFailure(new Error('fetch failed'))).toMatchObject({ status: null })
+    expect(toApiFailure(new Error('fetch failed')).message).toContain('ne répond pas')
   })
 
-  it('refuse un slug deja pris', () => {
-    expect(append(siblings, { slug: 'boucles' }, 8)).toMatchObject({ ok: false, field: 'slug' })
+  it('ignore une page d’erreur qui n’est pas du JSON de l’API', () => {
+    expect(toApiFailure({ status: 502, data: '<html>' })).toMatchObject({
+      status: 502,
+      message: expect.stringContaining('ne répond pas'),
+    })
   })
 })
 
-describe('replace', () => {
-  const boucles = { id: 1, slug: 'boucles', position: 1, title: 'Boucles' }
-  const tableaux = { id: 2, slug: 'tableaux', position: 2, title: 'Tableaux' }
+describe('toSaveResult', () => {
+  const failure = (message: string) => ({ ok: false, status: 409, message }) as const
 
-  it('garde id et position, et accepte son propre slug', () => {
-    expect(replace([boucles, tableaux], tableaux, { slug: 'tableaux', title: 'Listes' })).toEqual({
-      ok: true,
-      item: { id: 2, slug: 'tableaux', position: 2, title: 'Listes' },
-    })
+  it('renvoie l’élément enregistré', () => {
+    expect(toSaveResult({ ok: true, data: 1 })).toEqual({ ok: true, item: 1 })
   })
 
-  it('refuse le slug d un autre element', () => {
-    expect(replace([boucles, tableaux], tableaux, { slug: 'boucles' })).toMatchObject({
-      ok: false,
-      field: 'slug',
-    })
+  it.each(['Ce slug est déjà utilisé.', 'Slug figé : ce contenu a déjà été publié.'])(
+    'vise le champ slug pour « %s »',
+    (message) => {
+      expect(toSaveResult(failure(message))).toEqual({ ok: false, field: 'slug', message })
+    },
+  )
+
+  it('ne vise aucun champ pour une autre erreur', () => {
+    expect(toSaveResult(failure('Accès refusé.'))).toMatchObject({ ok: false, field: null })
+  })
+})
+
+describe('safeRedirect', () => {
+  it('suit un chemin de l’application', () => {
+    expect(safeRedirect('/parcours/2/modifier?x=1')).toBe('/parcours/2/modifier?x=1')
+  })
+
+  it.each([
+    ['une adresse externe', 'https://evil.example'],
+    ['une adresse sans protocole', '//evil.example'],
+    ['une adresse avec antislash', '/\\evil.example'],
+    ['une valeur absente', undefined],
+    ['une valeur répétée', ['/a', '/b']],
+  ])('ramène à la liste pour %s', (_name, target) => {
+    expect(safeRedirect(target)).toBe('/parcours')
+  })
+})
+
+describe('formulaires de contenu', () => {
+  const track = {
+    name: 'Conception',
+    slug: 'conception',
+    summary: 'Des principes.',
+    programmingLanguage: null,
+    status: 'draft',
+  }
+  const chapter = {
+    title: 'Tableaux',
+    slug: 'tableaux',
+    level: 'beginner',
+    summary: 'Des tableaux.',
+    status: 'draft',
+  }
+
+  it('accepte un parcours sans langage', () => {
+    expect(trackInputSchema.safeParse(track).success).toBe(true)
+  })
+
+  it('refuse un langage inconnu', () => {
+    expect(trackInputSchema.safeParse({ ...track, programmingLanguage: 'cobol' }).success).toBe(
+      false,
+    )
+  })
+
+  it('exige un niveau de chapitre connu', () => {
+    expect(chapterInputSchema.safeParse(chapter).success).toBe(true)
+    expect(chapterInputSchema.safeParse({ ...chapter, level: 'expert' }).success).toBe(false)
+  })
+
+  it('refuse les longueurs que l’API refuserait', () => {
+    expect(chapterInputSchema.safeParse({ ...chapter, title: 'x'.repeat(101) }).success).toBe(false)
+    expect(chapterInputSchema.safeParse({ ...chapter, slug: 'x'.repeat(65) }).success).toBe(false)
   })
 })
 
@@ -62,12 +124,15 @@ describe('exercice', () => {
     status: 'draft' as const,
   }
 
-  it('accepte un exercice complet et relit indices et cas de test', () => {
-    const parsed = exerciseInputSchema.parse(input)
-    expect(toExerciseData(parsed)).toMatchObject({
+  it('produit le corps attendu par l’API', () => {
+    const data = toExerciseData(exerciseInputSchema.parse(input))
+
+    expect(data).toMatchObject({
+      instructions: 'Additionnez a et b.',
       hints: ['Utilisez +', 'Pensez au return'],
-      testCases: [{ args: [2, 3], expected: 5 }],
+      testCases: [{ arguments: [2, 3], expectedResult: 5, description: null }],
     })
+    expect(data).not.toHaveProperty('statement')
   })
 
   it('refuse des arguments qui ne sont pas un tableau JSON', () => {
@@ -87,6 +152,7 @@ describe('exercice', () => {
       position: 1,
     }
     const back = toExerciseInput(stored)
+    expect(back.statement).toBe('Additionnez a et b.')
     expect(back.hints).toBe('Utilisez +\nPensez au return')
     expect(back.testCases).toEqual([{ args: '[2,3]', expected: '5', label: '', isHidden: false }])
     expect(toExerciseData(exerciseInputSchema.parse(back)).testCases).toEqual(stored.testCases)

@@ -1,16 +1,16 @@
 <script setup lang="ts">
 const store = useContentStore()
-const language = useRouteLanguage()
-const chapter = useRouteChapter(language)
+const track = await useRouteTrack()
+const chapter = await useRouteChapter(track)
 const toast = useToast()
 
 useSeoMeta({ title: `Modifier ${chapter.title} — Backoffice Scalar` })
 
-const back = `/langages/${language.id}/chapitres/${chapter.id}`
-const { id } = chapter
+const back = `/parcours/${track.id}/chapitres/${chapter.id}`
 const initial: ChapterInput = {
   title: chapter.title,
   slug: chapter.slug,
+  level: chapter.level,
   summary: chapter.summary,
   status: chapter.status,
 }
@@ -22,7 +22,7 @@ function onSaved(saved: Chapter) {
 </script>
 
 <template>
-  <UDashboardPanel :id="`modifier-chapitre-${id}`">
+  <UDashboardPanel :id="`modifier-chapitre-${chapter.id}`">
     <template #header>
       <UDashboardNavbar :title="`Modifier · ${chapter.title}`">
         <template #leading>
@@ -40,7 +40,7 @@ function onSaved(saved: Chapter) {
     <template #body>
       <ChapterForm
         :initial="initial"
-        :save="(input) => store.updateChapter(id, input)"
+        :save="(input) => store.updateChapter(track.id, chapter.id, input)"
         submit-label="Enregistrer"
         :cancel-to="back"
         editing

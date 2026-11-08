@@ -9,6 +9,7 @@ import type { Exercise } from './content'
 const slug = z
   .string()
   .trim()
+  .max(64, '64 caractères au plus.')
   .regex(
     /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
     'Minuscules, chiffres et tirets uniquement : « boucles-for ».',
@@ -25,17 +26,23 @@ function parsesAs(text: string, check: (value: unknown) => boolean): boolean {
   }
 }
 
-export const languageInputSchema = z.object({
-  label: required('Nom', 60),
+export const loginInputSchema = z.object({
+  email: z.string().trim().min(1, 'Email obligatoire.'),
+  password: z.string().min(1, 'Mot de passe obligatoire.'),
+})
+
+export const trackInputSchema = z.object({
+  name: required('Nom', 60),
   slug,
   summary: required('Résumé', 300),
-  runtime: z.enum(['node', 'node_strip_types']),
+  programmingLanguage: z.enum(['javascript', 'typescript']).nullable(),
   status,
 })
 
 export const chapterInputSchema = z.object({
-  title: required('Titre', 120),
+  title: required('Titre', 100),
   slug,
+  level: z.enum(['beginner', 'intermediate', 'advanced', 'ecosystem']),
   summary: required('Résumé', 500),
   status,
 })
@@ -67,39 +74,41 @@ export const exerciseInputSchema = z.object({
   status,
 })
 
-export type LanguageInput = z.infer<typeof languageInputSchema>
+export type LoginInput = z.infer<typeof loginInputSchema>
+export type TrackInput = z.infer<typeof trackInputSchema>
 export type ChapterInput = z.infer<typeof chapterInputSchema>
 export type TestCaseInput = z.infer<typeof testCaseInputSchema>
 export type ExerciseInput = z.infer<typeof exerciseInputSchema>
 
-/** Formulaire -> exercice stocke : indices decoupes, cas de test relus en JSON. */
-export const toExerciseData = (input: ExerciseInput) => ({
+/** Formulaire -> corps de l'API : indices decoupes, cas de test relus en JSON. */
+export const toExerciseData = ({ statement, ...input }: ExerciseInput) => ({
   ...input,
+  instructions: statement,
   hints: input.hints
     .split('\n')
     .map((h) => h.trim())
     .filter(Boolean),
   testCases: input.testCases.map((t) => ({
-    args: JSON.parse(t.args) as unknown[],
-    expected: JSON.parse(t.expected) as unknown,
-    label: t.label,
+    arguments: JSON.parse(t.args) as unknown[],
+    expectedResult: JSON.parse(t.expected) as unknown,
+    description: t.label === '' ? null : t.label,
     isHidden: t.isHidden,
   })),
 })
 
-/** Exercice stocke -> formulaire d'edition : l'inverse de `toExerciseData`. */
+/** Exercice de l'API -> formulaire d'edition : l'inverse de `toExerciseData`. */
 export const toExerciseInput = (exercise: Exercise): ExerciseInput => ({
   title: exercise.title,
   slug: exercise.slug,
-  statement: exercise.statement,
+  statement: exercise.instructions,
   functionName: exercise.functionName,
   starterCode: exercise.starterCode,
   solutionCode: exercise.solutionCode,
   hints: exercise.hints.join('\n'),
   testCases: exercise.testCases.map((t) => ({
-    args: JSON.stringify(t.args),
-    expected: JSON.stringify(t.expected),
-    label: t.label,
+    args: JSON.stringify(t.arguments),
+    expected: JSON.stringify(t.expectedResult),
+    label: t.description ?? '',
     isHidden: t.isHidden,
   })),
   status: exercise.status,
