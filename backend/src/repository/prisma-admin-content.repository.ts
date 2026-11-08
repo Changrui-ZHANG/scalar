@@ -1,22 +1,41 @@
 import { Prisma } from '@prisma/client'
 import type { PrismaClient } from '@prisma/client'
-import type { ChapterLevel } from '@scalar/shared/enums'
+import type { ChapterLevel, SolutionCheckStatus } from '@scalar/shared/enums'
 
 import { ORDER_BY_POSITION } from '../constants.ts'
+import type { AdminExercise } from '../entity/admin-exercise.entity.ts'
 import type { Chapter } from '../entity/chapter.entity.ts'
+import type { Exercise } from '../entity/exercise.entity.ts'
 import type { Track } from '../entity/track.entity.ts'
 import type {
   AdminContentRepository,
   ChapterChanges,
   ChapterInput,
   DeleteOutcome,
+  ExerciseChanges,
+  ExerciseInput,
   SaveOutcome,
+  TestCaseInput,
   TrackChanges,
   TrackInput,
 } from './admin-content.repository.ts'
-import { toChapter, toTrack } from './prisma.mapper.ts'
+import { toAdminExercise, toChapter, toTrack } from './prisma.mapper.ts'
 
 type Transaction = Prisma.TransactionClient
+
+const WITH_TEST_CASES = { testCases: { orderBy: ORDER_BY_POSITION } } as const
+
+const toTestCaseRow = (testCase: TestCaseInput, index: number) => ({
+  position: index + 1,
+  arguments: testCase.arguments as Prisma.InputJsonValue,
+  // Un `null` JavaScript veut dire « champ absent » pour Prisma, pas la valeur JSON null.
+  expectedResult:
+    testCase.expectedResult === null
+      ? Prisma.JsonNull
+      : (testCase.expectedResult as Prisma.InputJsonValue),
+  isHidden: testCase.isHidden,
+  description: testCase.description,
+})
 
 const errorCode = (error: unknown): string | null => {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -161,5 +180,90 @@ export class PrismaAdminContentRepository implements AdminContentRepository {
 
   async deleteChapter(trackId: number, id: number): Promise<DeleteOutcome> {
     return remove(() => this.prisma.chapter.delete({ where: { id, trackId } }))
+  }
+
+  async findChapterById(id: number): Promise<Chapter | null> {
+    const row = await this.prisma.chapter.findUnique({ where: { id } })
+    return row && toChapter(row)
+  }
+
+  async listExercises(chapterId: number): Promise<AdminExercise[]> {
+    const rows = await this.prisma.exercise.findMany({
+      where: { chapterId },
+      orderBy: ORDER_BY_POSITION,
+      include: WITH_TEST_CASES,
+    })
+    return rows.map(toAdminExercise)
+  }
+
+  async findExercise(id: number): Promise<AdminExercise | null> {
+    const row = await this.prisma.exercise.findUnique({
+      where: { id },
+      include: WITH_TEST_CASES,
+    })
+    return row && toAdminExercise(row)
+  }
+
+  async createExercise(
+    chapterId: number,
+    { testCases, ...input }: ExerciseInput,
+  ): Promise<SaveOutcome<AdminExercise>> {
+    const outcome = await save(() =>
+      this.prisma.$transaction(async (tx) => {
+        const { _max } = await tx.exercise.aggregate({
+          where: { chapterId },
+          _max: { position: true },
+        })
+        return toAdminExercise(
+          await tx.exercise.create({
+            data: {
+              ...input,
+              chapterId,
+              position: (_max.position ?? 0) + 1,
+              testCases: { create: testCases.map(toTestCaseRow) },
+            },
+            include: WITH_TEST_CASES,
+          }),
+        )
+      }),
+    )
+    // Ici, la seule cle etrangere est le chapitre.
+    return outcome.status === 'prerequisite-not-found' ? { status: 'not-found' } : outcome
+  }
+
+  async updateExercise(
+    id: number,
+    { testCases, ...changes }: ExerciseChanges,
+  ): Promise<SaveOutcome<AdminExercise>> {
+    return save(async () =>
+      toAdminExercise(
+        await this.prisma.exercise.update({
+          where: { id },
+          data: {
+            ...changes,
+            ...(testCases && {
+              testCases: { deleteMany: {}, create: testCases.map(toTestCaseRow) },
+            }),
+          },
+          include: WITH_TEST_CASES,
+        }),
+      ),
+    )
+  }
+
+  async deleteExercise(id: number): Promise<DeleteOutcome> {
+    return remove(() => this.prisma.exercise.delete({ where: { id } }))
+  }
+
+  async recordSolutionCheck(
+    checked: Exercise,
+    result: SolutionCheckStatus,
+    at: Date,
+  ): Promise<AdminExercise | null> {
+    const { count } = await this.prisma.exercise.updateMany({
+      where: { id: checked.id, updatedAt: checked.updatedAt },
+      data: { solutionCheckStatus: result, solutionCheckedAt: at },
+    })
+    return count === 0 ? null : this.findExercise(checked.id)
   }
 }

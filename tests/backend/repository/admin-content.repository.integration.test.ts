@@ -174,6 +174,120 @@ describe.each(BACKENDS)('contenu admin (%s)', (_name, open) => {
   })
 })
 
+describe.each(BACKENDS)('exercices admin (%s)', (_name, open) => {
+  const EXERCISE = CONTENT.exercises[0]!
+  const NEW_EXERCISE = {
+    slug: 'double',
+    title: 'Double',
+    instructions: 'Renvoie le double.',
+    functionName: 'double',
+    starterCode: 'function double(n) {}',
+    solutionCode: 'function double(n) { return n * 2 }',
+    hints: ['Multiplie.'],
+    testCases: [
+      { arguments: [2], expectedResult: 4, isHidden: false, description: null },
+      { arguments: [{ a: [1] }], expectedResult: null, isHidden: true, description: 'objet' },
+    ],
+  }
+  let content: AdminContentRepository
+  beforeEach(() => {
+    ;({ content } = open())
+  })
+
+  it('crée à la fin du chapitre, cas compris, et relit un résultat attendu null', async () => {
+    const siblings = await content.listExercises(EXERCISE.chapterId)
+    const created = saved(await content.createExercise(EXERCISE.chapterId, NEW_EXERCISE))
+
+    expect(created).toMatchObject({
+      position: Math.max(...siblings.map((e) => e.position)) + 1,
+      status: 'draft',
+      solutionCheckStatus: 'not_checked',
+      hints: ['Multiplie.'],
+    })
+    expect(created.testCases).toMatchObject([
+      { position: 1, arguments: [2], expectedResult: 4, isHidden: false },
+      {
+        position: 2,
+        arguments: [{ a: [1] }],
+        expectedResult: null,
+        isHidden: true,
+        description: 'objet',
+      },
+    ])
+    expect(await content.findExercise(created.id)).toEqual(created)
+  })
+
+  it('liste les exercices d’un chapitre avec leurs cas, triés', async () => {
+    const listed = await content.listExercises(EXERCISE.chapterId)
+
+    expect(listed.map((e) => e.position)).toEqual(
+      listed.map((e) => e.position).toSorted((a, b) => a - b),
+    )
+    expect(listed.find((e) => e.id === EXERCISE.id)?.testCases.length).toBe(
+      CONTENT.testCases.filter((t) => t.exerciseId === EXERCISE.id).length,
+    )
+  })
+
+  it('refuse un slug déjà pris dans le chapitre, et un chapitre inconnu', async () => {
+    expect(
+      await content.createExercise(EXERCISE.chapterId, { ...NEW_EXERCISE, slug: EXERCISE.slug }),
+    ).toEqual({ status: 'slug-taken' })
+    expect(await content.createExercise(UNKNOWN, NEW_EXERCISE)).toEqual({ status: 'not-found' })
+  })
+
+  it('remplace toute la liste des cas, et la laisse si elle est absente', async () => {
+    const created = saved(await content.createExercise(EXERCISE.chapterId, NEW_EXERCISE))
+
+    const renamed = saved(await content.updateExercise(created.id, { title: 'Doubler' }))
+    expect(renamed.testCases).toHaveLength(2)
+
+    const replaced = saved(
+      await content.updateExercise(created.id, {
+        testCases: [{ arguments: [5], expectedResult: 10, isHidden: false, description: null }],
+      }),
+    )
+    expect(replaced.testCases).toMatchObject([{ position: 1, arguments: [5], expectedResult: 10 }])
+  })
+
+  it('refuse un exercice inconnu et un slug déjà pris à la modification', async () => {
+    const created = saved(await content.createExercise(EXERCISE.chapterId, NEW_EXERCISE))
+
+    expect(await content.updateExercise(UNKNOWN, { title: 'X' })).toEqual({ status: 'not-found' })
+    expect(await content.updateExercise(created.id, { slug: EXERCISE.slug })).toEqual({
+      status: 'slug-taken',
+    })
+  })
+
+  it('supprime un exercice et ses cas, puis ne le trouve plus', async () => {
+    const created = saved(await content.createExercise(EXERCISE.chapterId, NEW_EXERCISE))
+
+    expect(await content.deleteExercise(created.id)).toBe('deleted')
+    expect(await content.findExercise(created.id)).toBeNull()
+    expect(await content.deleteExercise(created.id)).toBe('not-found')
+  })
+
+  it('ne supprime pas un chapitre qui a encore un exercice', async () => {
+    const chapter = saved(await content.createChapter(TRACK.id, NEW_CHAPTER))
+    const exercise = saved(await content.createExercise(chapter.id, NEW_EXERCISE))
+
+    expect(await content.deleteChapter(TRACK.id, chapter.id)).toBe('in-use')
+    await content.deleteExercise(exercise.id)
+    expect(await content.deleteChapter(TRACK.id, chapter.id)).toBe('deleted')
+  })
+
+  it('enregistre le verdict, sauf si l’exercice a changé depuis sa lecture', async () => {
+    const before = (await content.findExercise(EXERCISE.id))!
+    const at = new Date('2026-11-08T10:00:00Z')
+
+    expect(await content.recordSolutionCheck(before, 'failed', at)).toMatchObject({
+      solutionCheckStatus: 'failed',
+      solutionCheckedAt: at,
+    })
+    expect(await content.recordSolutionCheck(before, 'passed', at)).toBeNull()
+    expect((await content.findExercise(EXERCISE.id))?.solutionCheckStatus).toBe('failed')
+  })
+})
+
 describe.each(BACKENDS)('promotion admin (%s)', (_name, open) => {
   it('promeut un compte inscrit, quelle que soit la casse de l’email', async () => {
     const { users } = open()
