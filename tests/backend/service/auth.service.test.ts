@@ -4,7 +4,11 @@ import { fakeHasher, TEST_JWT_SECRET } from '../auth.fixtures.ts'
 import { MESSAGES } from '../../../backend/src/constants.ts'
 import { InMemoryUserRepository } from '../../../backend/src/repository/user.repository.ts'
 import type { RegisterOutcome, Session } from '../../../backend/src/service/auth.service.ts'
-import { AuthService, parseCredentials } from '../../../backend/src/service/auth.service.ts'
+import {
+  AuthService,
+  parseCredentials,
+  parseLoginCredentials,
+} from '../../../backend/src/service/auth.service.ts'
 import type { PasswordHasher } from '../../../backend/src/service/password-hasher.service.ts'
 import { SessionTokenService } from '../../../backend/src/service/session-token.service.ts'
 
@@ -44,6 +48,36 @@ describe('parseCredentials', () => {
   it('accepte un mot de passe de 8 à 128 caractères', () => {
     expect(parseCredentials({ email: ADA.email, password: 'x'.repeat(8) }).ok).toBe(true)
     expect(parseCredentials({ email: ADA.email, password: 'x'.repeat(128) }).ok).toBe(true)
+  })
+})
+
+describe('parseLoginCredentials', () => {
+  it('accepte un mot de passe court : la longueur minimale ne vaut qu’à l’inscription', () => {
+    expect(parseLoginCredentials({ email: ' Test@Test.FR ', password: 'test' })).toEqual({
+      ok: true,
+      credentials: { email: 'test@test.fr', password: 'test' },
+    })
+  })
+
+  it('accepte un identifiant qui n’est pas un email', () => {
+    expect(parseLoginCredentials({ email: ' Test ', password: 'test' })).toEqual({
+      ok: true,
+      credentials: { email: 'test', password: 'test' },
+    })
+  })
+
+  it.each([
+    ['identifiant absent', { password: 'test' }, MESSAGES.invalidEmail],
+    ['identifiant vide', { email: '   ', password: 'test' }, MESSAGES.invalidEmail],
+    ['mot de passe absent', { email: ADA.email }, MESSAGES.invalidPassword],
+    ['mot de passe vide', { email: ADA.email, password: '' }, MESSAGES.invalidPassword],
+    [
+      'mot de passe trop long',
+      { email: ADA.email, password: 'x'.repeat(129) },
+      MESSAGES.invalidPassword,
+    ],
+  ])('refuse : %s', (_cas, body, error) => {
+    expect(parseLoginCredentials(body)).toEqual({ ok: false, error })
   })
 })
 

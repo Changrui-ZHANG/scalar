@@ -78,6 +78,16 @@ describe('store des exercices', () => {
     expect([method, path]).toEqual(['POST', '/admin/exercises/3/solution-check'])
   })
 
+  it('change seulement le statut : le code reste intact et vérifié', async () => {
+    apiMock.mockResolvedValue({ ok: true, data: { id: 3 } })
+
+    await useContentStore().setExerciseStatus(3, 'published')
+
+    const { path, method, body } = lastCall()
+    expect([method, path]).toEqual(['PATCH', '/admin/exercises/3'])
+    expect(body).toEqual({ status: 'published' })
+  })
+
   it('renvoie null pour un exercice inconnu', async () => {
     apiMock.mockResolvedValue({ ok: false, status: 404, message: 'Exercice introuvable.' })
 

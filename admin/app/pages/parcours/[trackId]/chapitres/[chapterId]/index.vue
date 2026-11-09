@@ -18,7 +18,12 @@ const columns: TableColumn<Exercise>[] = [
   { id: 'tests', header: 'Cas de test' },
   { accessorKey: 'solutionCheckStatus', header: 'Solution' },
   { accessorKey: 'status', header: 'Statut' },
+  { id: 'actions', header: '' },
 ]
+
+function replaceExercise(updated: Exercise) {
+  store.exercises = store.exercises.map((e) => (e.id === updated.id ? updated : e))
+}
 </script>
 
 <template>
@@ -85,6 +90,13 @@ const columns: TableColumn<Exercise>[] = [
         </template>
         <template #status-cell="{ row }">
           <StatusBadge :status="row.original.status" />
+        </template>
+        <template #actions-cell="{ row }">
+          <ExerciseRowActions
+            :exercise="row.original"
+            :edit-to="`${base}/exercices/${row.original.id}`"
+            @updated="replaceExercise"
+          />
         </template>
       </UTable>
     </template>

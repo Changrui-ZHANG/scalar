@@ -1,6 +1,8 @@
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
+import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import ExerciseRowActions from '../app/components/ExerciseRowActions.vue'
 import ChapterPage from '../app/pages/parcours/[trackId]/chapitres/[chapterId]/index.vue'
 
 const apiMock = vi.hoisted(() => vi.fn())
@@ -67,6 +69,19 @@ describe('page d’un chapitre', () => {
 
     expect(wrapper.html()).toContain('/parcours/1/chapitres/2/exercices/3')
     expect(wrapper.text()).toContain('Vérifiée')
+  })
+
+  it('met à jour la ligne après une action', async () => {
+    serve(TRACK)
+    const wrapper = await mountPage()
+    expect(wrapper.text()).not.toContain('En échec')
+
+    wrapper
+      .findComponent(ExerciseRowActions)
+      .vm.$emit('updated', { ...EXERCISE, solutionCheckStatus: 'failed' })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('En échec')
   })
 
   it('propose de créer un exercice', async () => {

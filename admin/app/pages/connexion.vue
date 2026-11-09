@@ -32,8 +32,8 @@ async function onSubmit(event: FormSubmitEvent<LoginInput>) {
       </template>
 
       <UForm :schema="loginInputSchema" :state="state" class="grid gap-4" @submit="onSubmit">
-        <UFormField label="Email" name="email" required>
-          <UInput v-model="state.email" type="email" autocomplete="username" class="w-full" />
+        <UFormField label="Identifiant" name="email" required>
+          <UInput v-model="state.email" type="text" autocomplete="username" class="w-full" />
         </UFormField>
         <UFormField label="Mot de passe" name="password" required>
           <UInput

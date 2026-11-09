@@ -19,6 +19,20 @@ describe('parseConfig', () => {
     expect(config.AUTH_ATTEMPTS_LIMIT).toBe(10)
   })
 
+  it('lit le compte admin local, facultatif', () => {
+    expect(parseConfig(SECRET).ADMIN_EMAIL).toBeUndefined()
+    expect(parseConfig(SECRET).ADMIN_PASSWORD).toBeUndefined()
+
+    const config = parseConfig({
+      ...SECRET,
+      ADMIN_EMAIL: 'test@test.fr',
+      ADMIN_PASSWORD: 'test',
+    })
+
+    expect(config.ADMIN_EMAIL).toBe('test@test.fr')
+    expect(config.ADMIN_PASSWORD).toBe('test')
+  })
+
   it('convertit les chaînes de l’environnement', () => {
     const config = parseConfig({
       ...SECRET,

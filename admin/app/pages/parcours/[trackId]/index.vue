@@ -15,6 +15,7 @@ const columns: TableColumn<Chapter>[] = [
   { accessorKey: 'title', header: 'Chapitre' },
   { accessorKey: 'slug', header: 'Slug' },
   { accessorKey: 'status', header: 'Statut' },
+  { id: 'actions', header: '' },
 ]
 </script>
 
@@ -85,6 +86,24 @@ const columns: TableColumn<Chapter>[] = [
         </template>
         <template #status-cell="{ row }">
           <StatusBadge :status="row.original.status" />
+        </template>
+        <template #actions-cell="{ row }">
+          <div class="flex justify-end gap-2">
+            <UButton
+              label="Ouvrir"
+              size="sm"
+              color="neutral"
+              variant="outline"
+              :to="`${base}/chapitres/${row.original.id}`"
+            />
+            <UButton
+              label="Modifier"
+              size="sm"
+              color="neutral"
+              variant="outline"
+              :to="`${base}/chapitres/${row.original.id}/modifier`"
+            />
+          </div>
         </template>
       </UTable>
     </template>

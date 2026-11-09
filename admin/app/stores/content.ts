@@ -94,6 +94,15 @@ export const useContentStore = defineStore('content', () => {
     )
   }
 
+  async function setExerciseStatus(
+    id: number,
+    status: ContentStatus,
+  ): Promise<SaveResult<Exercise>> {
+    return toSaveResult(
+      await api<Exercise>(`/admin/exercises/${id}`, { method: 'PATCH', body: { status } }),
+    )
+  }
+
   const checkSolution = (id: number): Promise<ApiResult<SolutionCheck>> =>
     api<SolutionCheck>(`/admin/exercises/${id}/solution-check`, { method: 'POST' })
 
@@ -113,6 +122,7 @@ export const useContentStore = defineStore('content', () => {
     updateChapter,
     createExercise,
     updateExercise,
+    setExerciseStatus,
     checkSolution,
   }
 })

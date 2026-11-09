@@ -41,7 +41,7 @@ function parsesAs(text: string, check: (value: unknown) => boolean): boolean {
 }
 
 export const loginInputSchema = z.object({
-  email: z.string().trim().min(1, 'Email obligatoire.'),
+  email: z.string().trim().min(1, 'Identifiant obligatoire.'),
   password: z.string().min(1, 'Mot de passe obligatoire.'),
 })
 

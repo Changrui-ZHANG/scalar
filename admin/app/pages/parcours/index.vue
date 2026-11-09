@@ -12,6 +12,7 @@ const columns: TableColumn<Track>[] = [
   { accessorKey: 'slug', header: 'Slug' },
   { accessorKey: 'programmingLanguage', header: 'Langage' },
   { accessorKey: 'status', header: 'Statut' },
+  { id: 'actions', header: '' },
 ]
 </script>
 
@@ -47,6 +48,24 @@ const columns: TableColumn<Track>[] = [
         </template>
         <template #status-cell="{ row }">
           <StatusBadge :status="row.original.status" />
+        </template>
+        <template #actions-cell="{ row }">
+          <div class="flex justify-end gap-2">
+            <UButton
+              label="Ouvrir"
+              size="sm"
+              color="neutral"
+              variant="outline"
+              :to="`/parcours/${row.original.id}`"
+            />
+            <UButton
+              label="Modifier"
+              size="sm"
+              color="neutral"
+              variant="outline"
+              :to="`/parcours/${row.original.id}/modifier`"
+            />
+          </div>
         </template>
       </UTable>
     </template>
