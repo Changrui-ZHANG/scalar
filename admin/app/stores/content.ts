@@ -38,6 +38,9 @@ export const useContentStore = defineStore('content', () => {
   const findChapter = async (trackId: number, id: number): Promise<Chapter | null> =>
     orNull(await api<Chapter>(`/admin/tracks/${trackId}/chapters/${id}`))
 
+  const findExercise = async (id: number): Promise<Exercise | null> =>
+    orNull(await api<Exercise>(`/admin/exercises/${id}`))
+
   // L'API cree toujours en brouillon et refuse un `status` a la creation.
   async function createTrack({ status: _, ...fields }: TrackInput): Promise<SaveResult<Track>> {
     return toSaveResult(await api<Track>('/admin/tracks', { method: 'POST', body: fields }))
@@ -69,6 +72,31 @@ export const useContentStore = defineStore('content', () => {
     )
   }
 
+  async function createExercise(
+    chapterId: number,
+    input: ExerciseInput,
+  ): Promise<SaveResult<Exercise>> {
+    const { status: _, ...fields } = toExerciseData(input)
+    return toSaveResult(
+      await api<Exercise>(`/admin/chapters/${chapterId}/exercises`, {
+        method: 'POST',
+        body: fields,
+      }),
+    )
+  }
+
+  async function updateExercise(id: number, input: ExerciseInput): Promise<SaveResult<Exercise>> {
+    return toSaveResult(
+      await api<Exercise>(`/admin/exercises/${id}`, {
+        method: 'PATCH',
+        body: toExerciseData(input),
+      }),
+    )
+  }
+
+  const checkSolution = (id: number): Promise<ApiResult<SolutionCheck>> =>
+    api<SolutionCheck>(`/admin/exercises/${id}/solution-check`, { method: 'POST' })
+
   return {
     tracks,
     chapters,
@@ -78,10 +106,14 @@ export const useContentStore = defineStore('content', () => {
     loadExercises,
     findTrack,
     findChapter,
+    findExercise,
     createTrack,
     updateTrack,
     createChapter,
     updateChapter,
+    createExercise,
+    updateExercise,
+    checkSolution,
   }
 })
 

@@ -117,7 +117,7 @@ async function onSubmit(event: FormSubmitEvent<ExerciseInput>) {
       <UTextarea v-model="state.hints" :rows="3" autoresize class="w-full" />
     </UFormField>
 
-    <StatusRadio v-model="state.status" :allow-archived="editing" />
+    <StatusRadio v-if="editing" v-model="state.status" allow-archived />
 
     <slot name="note" />
 

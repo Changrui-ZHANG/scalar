@@ -1,5 +1,5 @@
 /**
- * Parcours et chapitre designes par l'URL. Une page par identifiant : `app.vue`
+ * Parcours, chapitre et exercice designes par l'URL. Une page par identifiant : `app.vue`
  * remonte la page quand l'URL change, la lecture a la creation suffit donc.
  */
 
@@ -18,4 +18,12 @@ export async function useRouteChapter(track: Track): Promise<Chapter> {
   const route = useRoute()
   const store = useContentStore()
   return (await store.findChapter(track.id, Number(route.params.chapterId))) ?? notFound('Chapitre')
+}
+
+export async function useRouteExercise(chapter: Chapter): Promise<Exercise> {
+  const route = useRoute()
+  const store = useContentStore()
+  const exercise = await store.findExercise(Number(route.params.exerciseId))
+  // L'API trouve un exercice par son seul id : l'URL d'un autre chapitre doit rester un 404.
+  return exercise?.chapterId === chapter.id ? exercise : notFound('Exercice')
 }

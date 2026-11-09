@@ -3,6 +3,7 @@
 export type ContentStatus = 'draft' | 'published' | 'archived'
 export type ProgrammingLanguage = 'javascript' | 'typescript'
 export type ChapterLevel = 'beginner' | 'intermediate' | 'advanced' | 'ecosystem'
+export type SolutionCheckStatus = 'not_checked' | 'passed' | 'failed'
 
 export interface Track {
   readonly id: number
@@ -49,13 +50,31 @@ export interface Exercise {
   readonly solutionCode: string
   readonly hints: readonly string[]
   readonly testCases: readonly TestCase[]
+  readonly solutionCheckStatus: SolutionCheckStatus
   readonly status: ContentStatus
+}
+
+export interface SolutionCheck {
+  readonly exercise: Exercise
+  readonly passed: boolean
+  readonly checks: readonly {
+    readonly label: string
+    readonly passed: boolean
+    readonly detail: string | null
+  }[]
+  readonly stderr: string
 }
 
 export const STATUS_LABELS: Readonly<Record<ContentStatus, string>> = {
   draft: 'Brouillon',
   published: 'Publié',
   archived: 'Archivé',
+}
+
+export const SOLUTION_CHECK_LABELS: Readonly<Record<SolutionCheckStatus, string>> = {
+  not_checked: 'Non vérifiée',
+  passed: 'Vérifiée',
+  failed: 'En échec',
 }
 
 export const LANGUAGE_LABELS: Readonly<Record<ProgrammingLanguage, string>> = {

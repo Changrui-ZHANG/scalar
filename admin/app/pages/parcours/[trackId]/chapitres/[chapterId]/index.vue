@@ -9,12 +9,14 @@ await store.loadExercises(chapter.id)
 useSeoMeta({ title: `${chapter.title} — Backoffice Scalar` })
 
 const back = `/parcours/${track.id}`
+const base = `${back}/chapitres/${chapter.id}`
 
 const columns: TableColumn<Exercise>[] = [
   { accessorKey: 'position', header: 'N°' },
   { accessorKey: 'title', header: 'Exercice' },
   { accessorKey: 'functionName', header: 'Fonction' },
   { id: 'tests', header: 'Cas de test' },
+  { accessorKey: 'solutionCheckStatus', header: 'Solution' },
   { accessorKey: 'status', header: 'Statut' },
 ]
 </script>
@@ -38,7 +40,13 @@ const columns: TableColumn<Exercise>[] = [
             label="Modifier"
             color="neutral"
             variant="outline"
-            :to="`${back}/chapitres/${chapter.id}/modifier`"
+            :to="`${base}/modifier`"
+          />
+          <UButton
+            v-if="track.programmingLanguage"
+            icon="i-lucide-plus"
+            label="Nouvel exercice"
+            :to="`${base}/exercices/nouveau`"
           />
         </template>
       </UDashboardNavbar>
@@ -61,7 +69,9 @@ const columns: TableColumn<Exercise>[] = [
           <span class="text-muted tabular-nums">{{ row.original.position }}</span>
         </template>
         <template #title-cell="{ row }">
-          <span class="font-medium">{{ row.original.title }}</span>
+          <ULink :to="`${base}/exercices/${row.original.id}`" class="font-medium">
+            {{ row.original.title }}
+          </ULink>
           <code class="text-muted ms-2 text-xs">{{ row.original.slug }}</code>
         </template>
         <template #functionName-cell="{ row }">
@@ -69,6 +79,9 @@ const columns: TableColumn<Exercise>[] = [
         </template>
         <template #tests-cell="{ row }">
           <span class="tabular-nums">{{ row.original.testCases.length }}</span>
+        </template>
+        <template #solutionCheckStatus-cell="{ row }">
+          <SolutionCheckBadge :status="row.original.solutionCheckStatus" />
         </template>
         <template #status-cell="{ row }">
           <StatusBadge :status="row.original.status" />
