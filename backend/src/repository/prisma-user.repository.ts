@@ -99,4 +99,16 @@ export class PrismaUserRepository implements UserRepository {
     })
     return rows[0] ? toUser(rows[0]) : null
   }
+
+  async upsertAdmin(user: NewUser): Promise<User> {
+    const email = user.email.toLowerCase()
+    const account = { passwordHash: user.passwordHash, role: 'admin' as const }
+    return toUser(
+      await this.prisma.user.upsert({
+        where: { email },
+        create: { email, ...account },
+        update: account,
+      }),
+    )
+  }
 }

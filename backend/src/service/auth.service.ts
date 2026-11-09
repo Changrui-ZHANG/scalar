@@ -48,15 +48,34 @@ const credentialsSchema = z.object({
     .max(PASSWORD_MAX_LENGTH, MESSAGES.invalidPassword),
 })
 
-export function parseCredentials(
-  body: unknown,
-): { ok: true; credentials: Credentials } | { ok: false; error: string } {
-  const parsed = credentialsSchema.safeParse(body ?? {})
+const loginSchema = z.object({
+  email: z
+    .string(MESSAGES.invalidEmail)
+    .trim()
+    .toLowerCase()
+    .min(1, MESSAGES.invalidEmail)
+    .max(254, MESSAGES.invalidEmail),
+  password: z
+    .string(MESSAGES.invalidPassword)
+    .min(1, MESSAGES.invalidPassword)
+    .max(PASSWORD_MAX_LENGTH, MESSAGES.invalidPassword),
+})
+
+type ParsedCredentials = { ok: true; credentials: Credentials } | { ok: false; error: string }
+
+function parseWith(schema: z.ZodType<Credentials>, body: unknown): ParsedCredentials {
+  const parsed = schema.safeParse(body ?? {})
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? MESSAGES.invalidRequest }
   }
   return { ok: true, credentials: parsed.data }
 }
+
+export const parseCredentials = (body: unknown): ParsedCredentials =>
+  parseWith(credentialsSchema, body)
+
+export const parseLoginCredentials = (body: unknown): ParsedCredentials =>
+  parseWith(loginSchema, body)
 
 const normalizeEmail = (email: string): string => email.trim().toLowerCase()
 

@@ -22,6 +22,7 @@ import { InMemoryProgressRepository } from './repository/progress.repository.ts'
 import { InMemoryQuestionnaireRepository } from './repository/questionnaire.repository.ts'
 import { InMemoryTrackRepository } from './repository/track.repository.ts'
 import { InMemoryUserRepository } from './repository/user.repository.ts'
+import { ensureConfiguredAdmin } from './service/configured-admin.service.ts'
 import { hasJavascriptRuntime } from './service/execution.service.ts'
 import { Argon2PasswordHasher } from './service/password-hasher.service.ts'
 
@@ -55,6 +56,8 @@ const repositories =
         adminContent: new PrismaAdminContentRepository(prisma),
       }
 
+const hasher = new Argon2PasswordHasher()
+
 async function prepareDatabase(): Promise<void> {
   try {
     await migrateDatabase()
@@ -64,6 +67,12 @@ async function prepareDatabase(): Promise<void> {
       await seedDatabase(prisma)
       logger.info('Base vide : contenu initial chargé depuis les données du dépôt')
     }
+
+    await ensureConfiguredAdmin(repositories.users, hasher, {
+      email: config.ADMIN_EMAIL,
+      password: config.ADMIN_PASSWORD,
+      nodeEnv: config.NODE_ENV,
+    })
   } catch (err: unknown) {
     logger.error({ err }, 'Connexion, migration ou chargement du contenu PostgreSQL échoué')
   }
@@ -93,7 +102,7 @@ export const viteNodeApp = buildApp({
   authAttemptsLimit: config.AUTH_ATTEMPTS_LIMIT,
   jwtSecret: config.JWT_SECRET,
   secureCookie: config.AUTH_COOKIE_SECURE,
-  hasher: new Argon2PasswordHasher(),
+  hasher,
   isDatabaseUp,
 })
 

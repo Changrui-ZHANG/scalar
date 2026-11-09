@@ -665,6 +665,23 @@ describe('compte : inscription, connexion, accès protégé', () => {
     expect(taken).toMatchObject({ status: 409, body: { error: MESSAGES.emailTaken } })
   })
 
+  it('répond 401 à la connexion pour un mot de passe court : il est juste faux', async () => {
+    const email = freshEmail()
+    await register(email)
+
+    const short = await call('POST', '/auth/login', { body: { email, password: '1234' } })
+
+    expect(short).toMatchObject({ status: 401, body: { error: MESSAGES.invalidCredentials } })
+  })
+
+  it('répond 401 à la connexion pour un identifiant inconnu qui n’est pas un email', async () => {
+    const unknown = await call('POST', '/auth/login', {
+      body: { email: 'inconnu', password: 'test' },
+    })
+
+    expect(unknown).toMatchObject({ status: 401, body: { error: MESSAGES.invalidCredentials } })
+  })
+
   it('connecte, puis /auth/me renvoie le compte de la session', async () => {
     const email = freshEmail()
     const registered = await register(email)

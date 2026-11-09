@@ -297,6 +297,25 @@ describe.each(BACKENDS)('promotion admin (%s)', (_name, open) => {
     expect((await users.findByEmail('ada@example.org'))?.role).toBe('admin')
   })
 
+  it('crée un compte admin, ou remet à niveau celui qui existe déjà', async () => {
+    const { users } = open()
+
+    const created = await users.upsertAdmin({ email: 'Test@Test.fr', passwordHash: 'premier' })
+    const updated = await users.upsertAdmin({ email: 'test@test.fr', passwordHash: 'second' })
+
+    expect(created).toMatchObject({ email: 'test@test.fr', role: 'admin' })
+    expect(updated).toMatchObject({ id: created.id, role: 'admin', passwordHash: 'second' })
+  })
+
+  it('rend admin un compte apprenant existant, sans en créer un autre', async () => {
+    const { users } = open()
+    const learner = await users.create({ email: 'ada@example.org', passwordHash: 'ancien' })
+
+    const admin = await users.upsertAdmin({ email: 'ada@example.org', passwordHash: 'nouveau' })
+
+    expect(admin).toMatchObject({ id: learner?.id, role: 'admin', passwordHash: 'nouveau' })
+  })
+
   it('ne promeut ni un email inconnu, ni donc un apprenant anonyme', async () => {
     const { users } = open()
     const anonymous = await users.createAnonymous()

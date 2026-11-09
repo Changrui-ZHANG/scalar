@@ -18,6 +18,20 @@ const status = z.enum(['draft', 'published', 'archived'])
 const required = (label: string, max: number) =>
   z.string().trim().min(1, `${label} obligatoire.`).max(max, `${max} caractères au plus.`)
 
+// Sans trim : l'API compare le code au caractere pres. Le retoucher ici annulerait
+// la verification et ferait refuser (409) l'edition d'un exercice publie.
+const code = (label: string) =>
+  z
+    .string()
+    .max(5000, '5000 caractères au plus.')
+    .refine((text) => text.trim() !== '', `${label} obligatoire.`)
+
+const toHints = (text: string): string[] =>
+  text
+    .split('\n')
+    .map((h) => h.trim())
+    .filter(Boolean)
+
 function parsesAs(text: string, check: (value: unknown) => boolean): boolean {
   try {
     return check(JSON.parse(text))
@@ -27,7 +41,7 @@ function parsesAs(text: string, check: (value: unknown) => boolean): boolean {
 }
 
 export const loginInputSchema = z.object({
-  email: z.string().trim().min(1, 'Email obligatoire.'),
+  email: z.string().trim().min(1, 'Identifiant obligatoire.'),
   password: z.string().min(1, 'Mot de passe obligatoire.'),
 })
 
@@ -65,12 +79,19 @@ export const exerciseInputSchema = z.object({
   functionName: z
     .string()
     .trim()
+    .max(60, '60 caractères au plus.')
     .regex(/^[A-Za-z_$][\w$]*$/, 'Un nom de fonction JavaScript : calculerAire.'),
-  starterCode: required('Code de départ', 5000),
-  solutionCode: required('Solution', 5000),
+  starterCode: code('Code de départ'),
+  solutionCode: code('Solution'),
   /** Un indice par ligne. */
-  hints: z.string(),
-  testCases: z.array(testCaseInputSchema).min(1, 'Au moins un cas de test.'),
+  hints: z
+    .string()
+    .refine((text) => toHints(text).length <= 3, '3 indices au plus.')
+    .refine((text) => toHints(text).every((h) => h.length <= 500), '500 caractères par indice.'),
+  testCases: z
+    .array(testCaseInputSchema)
+    .min(1, 'Au moins un cas de test.')
+    .max(20, '20 cas de test au plus.'),
   status,
 })
 
@@ -84,10 +105,7 @@ export type ExerciseInput = z.infer<typeof exerciseInputSchema>
 export const toExerciseData = ({ statement, ...input }: ExerciseInput) => ({
   ...input,
   instructions: statement,
-  hints: input.hints
-    .split('\n')
-    .map((h) => h.trim())
-    .filter(Boolean),
+  hints: toHints(input.hints),
   testCases: input.testCases.map((t) => ({
     arguments: JSON.parse(t.args) as unknown[],
     expectedResult: JSON.parse(t.expected) as unknown,

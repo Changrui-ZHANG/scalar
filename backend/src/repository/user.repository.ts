@@ -26,6 +26,7 @@ export interface UserRepository {
   incrementTokenVersion(id: string): Promise<number | null>
   /** Null si aucun compte n'a cet email : un anonyme ne peut pas devenir admin. */
   promoteToAdmin(email: string): Promise<User | null>
+  upsertAdmin(user: NewUser): Promise<User>
 }
 
 export class InMemoryUserRepository implements UserRepository {
@@ -103,5 +104,14 @@ export class InMemoryUserRepository implements UserRepository {
     }
     user.role = 'admin'
     return { ...user }
+  }
+
+  async upsertAdmin(user: NewUser): Promise<User> {
+    const existing = await this.findByEmail(user.email)
+    const created = existing ?? (await this.create(user))
+    const stored = this.users.get(created!.id)!
+    stored.passwordHash = user.passwordHash
+    stored.role = 'admin'
+    return { ...stored }
   }
 }

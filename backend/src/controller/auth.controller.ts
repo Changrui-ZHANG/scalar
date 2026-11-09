@@ -9,7 +9,7 @@ import type { SessionSettings } from '../http/require-auth.ts'
 import { currentUser, requireAuth } from '../http/require-auth.ts'
 import { clearSessionCookie, readSessionToken, setSessionCookie } from '../http/session-cookie.ts'
 import type { Session } from '../service/auth.service.ts'
-import { parseCredentials } from '../service/auth.service.ts'
+import { parseCredentials, parseLoginCredentials } from '../service/auth.service.ts'
 
 export class AuthController {
   private readonly settings: SessionSettings
@@ -49,7 +49,7 @@ export class AuthController {
   }
 
   async login(req: Request, res: Response) {
-    const parsed = parseCredentials(req.body)
+    const parsed = parseLoginCredentials(req.body)
     if (!parsed.ok) {
       badRequest(res, parsed.error)
       return

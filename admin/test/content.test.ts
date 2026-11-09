@@ -144,12 +144,32 @@ describe('exercice', () => {
     expect(exerciseInputSchema.safeParse({ ...input, testCases: [] }).success).toBe(false)
   })
 
+  it('garde le code au caractère près pour ne pas annuler la vérification', () => {
+    const solutionCode = 'function somme(a, b) {\n  return a + b\n}\n'
+    const data = toExerciseData(exerciseInputSchema.parse({ ...input, solutionCode }))
+    expect(data.solutionCode).toBe(solutionCode)
+  })
+
+  it('refuse un code vide', () => {
+    expect(exerciseInputSchema.safeParse({ ...input, starterCode: ' \n ' }).success).toBe(false)
+  })
+
+  it.each([
+    ['trop d’indices', { hints: 'a\nb\nc\nd' }],
+    ['un indice trop long', { hints: 'x'.repeat(501) }],
+    ['trop de cas de test', { testCases: Array(21).fill(testCase) }],
+    ['un nom de fonction trop long', { functionName: 'f'.repeat(61) }],
+  ])('refuse comme l’API %s', (_name, change) => {
+    expect(exerciseInputSchema.safeParse({ ...input, ...change }).success).toBe(false)
+  })
+
   it('se relit a l identique dans le formulaire d edition', () => {
     const stored = {
       ...toExerciseData(exerciseInputSchema.parse(input)),
       id: 1,
       chapterId: 1,
       position: 1,
+      solutionCheckStatus: 'not_checked' as const,
     }
     const back = toExerciseInput(stored)
     expect(back.statement).toBe('Additionnez a et b.')
