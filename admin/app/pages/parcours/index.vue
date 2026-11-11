@@ -52,6 +52,12 @@ const columns: TableColumn<Track>[] = [
         <template #actions-cell="{ row }">
           <div class="flex justify-end gap-2">
             <UButton
+              icon="i-lucide-play"
+              label="DEMO"
+              size="sm"
+              :to="`/parcours/${row.original.id}/demo`"
+            />
+            <UButton
               label="Ouvrir"
               size="sm"
               color="neutral"

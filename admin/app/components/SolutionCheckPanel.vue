@@ -54,19 +54,7 @@ async function check() {
     <p class="text-muted text-sm">
       Enregistre le formulaire, puis vérifie sa solution. Obligatoire avant de publier.
     </p>
-    <ul v-if="report" class="grid gap-2 text-sm">
-      <li v-for="(item, i) in report.checks" :key="i" class="flex items-start gap-2">
-        <UIcon
-          :name="item.passed ? 'i-lucide-check' : 'i-lucide-x'"
-          :class="item.passed ? 'text-success' : 'text-error'"
-          class="mt-0.5 shrink-0"
-        />
-        <div>
-          <p>{{ item.label }}</p>
-          <p v-if="item.detail" class="text-muted font-mono text-xs">{{ item.detail }}</p>
-        </div>
-      </li>
-    </ul>
+    <VerdictList v-if="report" :checks="report.checks" />
     <pre
       v-if="report?.stderr"
       class="bg-elevated overflow-x-auto rounded-md p-3 text-xs whitespace-pre-wrap"

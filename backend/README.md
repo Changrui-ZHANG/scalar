@@ -64,8 +64,9 @@ docker compose up -d --build --renew-anon-volumes backend
 | PATCH   | `/admin/exercises/:exerciseId`                         | admin : modifie ou publie un exercice                          |
 | DELETE  | `/admin/exercises/:exerciseId`                         | admin : supprime un exercice jamais publié                     |
 | POST    | `/admin/exercises/:exerciseId/solution-check`          | admin : passe la solution dans ses cas de test                 |
+| POST    | `/admin/exercises/:exerciseId/verifications`           | admin : essaie un code comme un apprenant, rien d'enregistré   |
 
-Les cinq routes `POST` qui exécutent du code partagent une limite : `EXECUTION_RATE_LIMIT`
+Les six routes `POST` qui exécutent du code partagent une limite : `EXECUTION_RATE_LIMIT`
 requêtes par minute et par adresse IP (30 par défaut), puis `429` avec `Retry-After`.
 `POST /learners` a son propre compteur : `LEARNER_CREATION_RATE_LIMIT` (10 par défaut).
 
@@ -127,6 +128,9 @@ Exercices, en plus de ces règles :
 - `POST …/solution-check` répond `200` avec `passed` et le détail par cas, cas cachés compris,
   et enregistre `passed` ou `failed` ; `409` sans cas de test, `503` si le moteur est
   indisponible (statut inchangé) ;
+- `POST …/verifications` avec `{ "code" }` essaie un exercice comme l'apprenant, brouillon
+  compris : même verdict que la route publique (cas cachés masqués), rien n'est enregistré ;
+  `400` sur un code vide ou un TypeScript illisible, `409` sans cas de test ;
 - publication refusée (`409`) tant que le statut n'est pas `passed` ;
 - un parcours sans `programmingLanguage` ne peut pas avoir d'exercice (`409`).
 

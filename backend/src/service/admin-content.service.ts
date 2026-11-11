@@ -27,8 +27,8 @@ import type {
   ExerciseInput,
 } from '../repository/admin-content.repository.ts'
 import type { ExecutionResult } from './execution.service.ts'
-import { executeCode, toJavaScript } from './execution.service.ts'
-import type { VerificationCheck } from './verification.service.ts'
+import { executeCode, parseSubmission, toJavaScript } from './execution.service.ts'
+import type { VerificationCheck, VerificationResult } from './verification.service.ts'
 import { buildHarness, readVerdict } from './verification.service.ts'
 
 export type Refusal =
@@ -351,6 +351,34 @@ export class AdminContentService {
     return checked
       ? { status: 'saved', item: { ...verdict, exercise: checked } }
       : { status: 'check-outdated' }
+  }
+
+  /** Le code d'un apprenant, brouillon compris : cas caches masques, rien d'enregistre. */
+  async tryExercise(id: number, body: unknown): Promise<AdminOutcome<VerificationResult>> {
+    const parsed = parseSubmission({ code: (body as { code?: unknown } | undefined)?.code })
+    if (!parsed.ok) {
+      return { status: 'invalid', error: parsed.error }
+    }
+    const exercise = await this.content.findExercise(id)
+    if (!exercise) {
+      return { status: 'not-found' }
+    }
+    if (exercise.testCases.length === 0) {
+      return { status: 'no-test-cases' }
+    }
+    const language = await this.languageOf(exercise.chapterId)
+    if (!language) {
+      return { status: 'no-language' }
+    }
+    const converted = toJavaScript(language, parsed.submission.code)
+    if (!converted.ok) {
+      return { status: 'invalid', error: converted.error }
+    }
+    const marker = `__scalar_${randomUUID()}__`
+    const { functionName, testCases } = exercise
+    const harness = buildHarness(converted.code, functionName, testCases, marker)
+    const item = readVerdict(await this.execute(harness), functionName, testCases, marker)
+    return { status: 'saved', item }
   }
 
   private async languageOf(chapterId: number): Promise<ProgrammingLanguage | null> {

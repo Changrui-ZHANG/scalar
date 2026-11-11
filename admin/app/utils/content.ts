@@ -54,15 +54,31 @@ export interface Exercise {
   readonly status: ContentStatus
 }
 
+export interface Check {
+  readonly label: string
+  readonly passed: boolean
+  readonly detail: string | null
+}
+
 export interface SolutionCheck {
   readonly exercise: Exercise
   readonly passed: boolean
-  readonly checks: readonly {
-    readonly label: string
-    readonly passed: boolean
-    readonly detail: string | null
-  }[]
+  readonly checks: readonly Check[]
   readonly stderr: string
+}
+
+/** Verdict d'un essai comme un apprenant : cas caches masques. */
+export interface Verification {
+  readonly passed: boolean
+  readonly passedCount: number
+  readonly total: number
+  readonly checks: readonly Check[]
+  readonly execution: { readonly run: { readonly stdout: string; readonly stderr: string } }
+}
+
+export interface OutlineChapter {
+  readonly chapter: Chapter
+  readonly exercises: readonly Exercise[]
 }
 
 export const STATUS_LABELS: Readonly<Record<ContentStatus, string>> = {

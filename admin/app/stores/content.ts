@@ -32,6 +32,20 @@ export const useContentStore = defineStore('content', () => {
     exercises.value = required(await api<Exercise[]>(`/admin/chapters/${chapterId}/exercises`))
   }
 
+  /** Chapitres et exercices du parcours, brouillons compris, dans l'ordre de l'API. */
+  async function loadOutline(trackId: number): Promise<readonly OutlineChapter[]> {
+    const list = required(await api<Chapter[]>(`/admin/tracks/${trackId}/chapters`))
+    return Promise.all(
+      list.map(async (chapter) => ({
+        chapter,
+        exercises: required(await api<Exercise[]>(`/admin/chapters/${chapter.id}/exercises`)),
+      })),
+    )
+  }
+
+  const tryExercise = (id: number, code: string): Promise<ApiResult<Verification>> =>
+    api<Verification>(`/admin/exercises/${id}/verifications`, { method: 'POST', body: { code } })
+
   const findTrack = async (id: number): Promise<Track | null> =>
     orNull(await api<Track>(`/admin/tracks/${id}`))
 
@@ -113,6 +127,8 @@ export const useContentStore = defineStore('content', () => {
     loadTracks,
     loadChapters,
     loadExercises,
+    loadOutline,
+    tryExercise,
     findTrack,
     findChapter,
     findExercise,

@@ -135,6 +135,11 @@ export class AdminContentController {
         this.write(res, MESSAGES.exerciseNotFound, () => this.service.checkSolution(id)),
       ),
     )
+    router.post('/exercises/:exerciseId/verifications', (req: Request<Params>, res) =>
+      this.withIds(req, res, MESSAGES.exerciseNotFound, ([id]) =>
+        this.write(res, MESSAGES.exerciseNotFound, () => this.service.tryExercise(id, req.body)),
+      ),
+    )
     return router
   }
 

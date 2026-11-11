@@ -216,6 +216,7 @@ describe('exercices', () => {
     ['GET', '/admin/chapters/1/exercises'],
     ['PATCH', '/admin/exercises/1'],
     ['POST', '/admin/exercises/1/solution-check'],
+    ['POST', '/admin/exercises/1/verifications'],
   ])('%s %s : 401 sans session, 403 pour un apprenant', async (method, path) => {
     expect((await call(method, path)).status).toBe(401)
     expect((await call(method, path, learnerCookie)).status).toBe(403)
@@ -303,6 +304,28 @@ describe('exercices', () => {
     )
   })
 
+  it('essai comme un apprenant : verdict sur le code envoyé, rien d’enregistré', async () => {
+    fakePiston(runInNode)
+    const created = await createExercise()
+    const path = `/exercises/${created.body!.data.id}`
+
+    const tried = await admin('POST', `${path}/verifications`, {
+      code: 'function double(n) { return 4 }',
+    })
+
+    expect(tried).toMatchObject({ status: 200, body: { data: { passed: false, total: 4 } } })
+    expect(tried.body!.data.checks.at(-1).detail).toBe('Résultat incorrect sur un cas non affiché.')
+    expect((await admin('GET', path)).body!.data.solutionCheckStatus).toBe('not_checked')
+  })
+
+  it('essai sans code : 400', async () => {
+    const created = await createExercise()
+
+    expect(
+      await admin('POST', `/exercises/${created.body!.data.id}/verifications`, {}),
+    ).toMatchObject({ status: 400, body: { error: expect.any(String) } })
+  })
+
   it('supprime un brouillon : 204, puis 404', async () => {
     const created = await createExercise()
     const path = `/exercises/${created.body!.data.id}`
@@ -323,6 +346,7 @@ describe('exercices', () => {
     ['404 sur un exercice inconnu', 'GET', '/exercises/999', undefined, 404],
     ['404 sur un id mal formé', 'PATCH', '/exercises/abc', {}, 404],
     ['404 à la vérification d’un inconnu', 'POST', '/exercises/999/solution-check', undefined, 404],
+    ['404 à l’essai d’un inconnu', 'POST', '/exercises/999/verifications', { code: 'x' }, 404],
     ['400 sur un champ invalide', 'POST', '/chapters/1/exercises', { slug: 'X' }, 400],
     ['400 sur un champ inconnu', 'PATCH', '/exercises/1', { titre: 'X' }, 400],
     ['409 sur le code d’un exercice publié', 'PATCH', '/exercises/1', { functionName: 'g' }, 409],
