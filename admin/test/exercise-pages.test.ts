@@ -189,6 +189,24 @@ describe('page d’édition d’un exercice', () => {
     expect(apiMock).not.toHaveBeenCalled()
   })
 
+  const backLinks = (wrapper: Awaited<ReturnType<typeof mountPage>>) =>
+    wrapper
+      .findAll('a')
+      .filter((a) => a.text().includes('Retour à la démo'))
+      .map((a) => a.attributes('href')?.replace(/^\/admin/, ''))
+
+  it('venue de la démo : propose de revenir au même exercice de la démo', async () => {
+    const wrapper = await mountSuspended(EditExercisePage, { route: `${EXERCISE_URL}?demo=1` })
+
+    expect(backLinks(wrapper)).toEqual(['/parcours/1/apercu/exercices/3?demo=1'])
+  })
+
+  it('hors démo : pas de retour à la démo', async () => {
+    const wrapper = await mountPage()
+
+    expect(backLinks(wrapper)).toEqual([])
+  })
+
   it('trouve l’exercice du chapitre de l’URL', async () => {
     await useRouter().push(EXERCISE_URL)
 

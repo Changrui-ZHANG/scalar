@@ -341,3 +341,12 @@ PATCH {{base}}/admin/exercises/{{adminExercise.response.body.data.id}}
 Content-Type: application/json
 
 { "status": "published" }
+
+### 58. Essai comme un apprenant, brouillon compris : cas caché masqué, rien d'enregistré
+POST {{base}}/admin/exercises/{{adminExercise.response.body.data.id}}/verifications
+Content-Type: application/json
+
+{ "code": "function double(n) {
+  return 4
+}
+" }

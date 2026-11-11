@@ -86,13 +86,14 @@ describe('limitation de débit', () => {
     }
   })
 
-  it('compte aussi la vérification de solution du back-office', async () => {
-    const path = '/admin/exercises/1/solution-check'
-
-    expect((await post(path)).status).toBe(401)
-    expect((await post(path)).status).toBe(401)
-    expect((await post(path)).status).toBe(429)
-  })
+  it.each(['/admin/exercises/1/solution-check', '/admin/exercises/1/verifications'])(
+    'compte aussi le back-office : %s',
+    async (path) => {
+      expect((await post(path)).status).toBe(401)
+      expect((await post(path)).status).toBe(401)
+      expect((await post(path)).status).toBe(429)
+    },
+  )
 
   it('ne limite jamais les lectures', async () => {
     await post('/executions')

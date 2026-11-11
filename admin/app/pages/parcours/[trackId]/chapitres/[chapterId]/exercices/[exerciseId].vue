@@ -9,6 +9,10 @@ useSeoMeta({ title: `Modifier ${exercise.value.title} — Backoffice Scalar` })
 
 const back = `/parcours/${track.id}/chapitres/${chapter.id}`
 const initial = toExerciseInput(exercise.value)
+const demoUrl =
+  useRoute().query.demo === '1'
+    ? { path: `/parcours/${track.id}/apercu/exercices/${exercise.value.id}`, query: { demo: '1' } }
+    : null
 
 const exerciseForm = useTemplateRef('exerciseForm')
 
@@ -41,6 +45,14 @@ function onSaved(saved: Exercise) {
         </template>
         <template #right>
           <StatusBadge :status="exercise.status" />
+          <UButton
+            v-if="demoUrl"
+            icon="i-lucide-undo-2"
+            label="Retour à la démo"
+            color="neutral"
+            variant="outline"
+            :to="demoUrl"
+          />
         </template>
       </UDashboardNavbar>
     </template>

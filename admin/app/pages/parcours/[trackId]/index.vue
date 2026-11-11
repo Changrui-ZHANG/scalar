@@ -34,6 +34,13 @@ const columns: TableColumn<Chapter>[] = [
         </template>
         <template #right>
           <UButton
+            icon="i-lucide-play"
+            label="Tester le parcours"
+            color="neutral"
+            variant="outline"
+            :to="`${base}/apercu`"
+          />
+          <UButton
             icon="i-lucide-pencil"
             label="Modifier"
             color="neutral"

@@ -20,6 +20,20 @@ export async function useRouteChapter(track: Track): Promise<Chapter> {
   return (await store.findChapter(track.id, Number(route.params.chapterId))) ?? notFound('Chapitre')
 }
 
+/** L'exercice de l'URL dans la suite des exercices du parcours, et ses voisins dans cette suite. */
+export async function useRoutePreviewExercise(track: Track): Promise<{
+  exercise: Exercise
+  previous: Exercise | undefined
+  next: Exercise | undefined
+}> {
+  const route = useRoute()
+  const store = useContentStore()
+  const sequence = (await store.loadOutline(track.id)).flatMap(({ exercises }) => exercises)
+  const index = sequence.findIndex(({ id }) => id === Number(route.params.exerciseId))
+  const exercise = sequence[index] ?? notFound('Exercice')
+  return { exercise, previous: sequence[index - 1], next: sequence[index + 1] }
+}
+
 export async function useRouteExercise(chapter: Chapter): Promise<Exercise> {
   const route = useRoute()
   const store = useContentStore()

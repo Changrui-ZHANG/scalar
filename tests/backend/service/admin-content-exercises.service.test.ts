@@ -404,3 +404,58 @@ describe('AdminContentService : vérification de la solution', () => {
     expect((await service.findExercise(DRAFT))?.solutionCheckStatus).toBe('not_checked')
   })
 })
+
+describe('AdminContentService : essai d’un exercice comme un apprenant', () => {
+  it('passe le code envoyé dans les cas, brouillon compris', async () => {
+    const outcome = await service.tryExercise(DRAFT, { code: DOUBLE })
+
+    expect(outcome).toMatchObject({ status: 'saved', item: { passed: true } })
+  })
+
+  it('garde les cas cachés masqués, comme pour l’apprenant', async () => {
+    const outcome = saved(await service.tryExercise(DRAFT, { code: 'function f(n) { return 4 }' }))
+
+    expect(outcome.passed).toBe(false)
+    expect(outcome.checks.at(-1)?.label).not.toContain('f(3)')
+    expect(outcome.checks.at(-1)?.detail).toBe('Résultat incorrect sur un cas non affiché.')
+  })
+
+  it('n’enregistre rien : le statut de la solution reste celui d’avant', async () => {
+    await service.tryExercise(DRAFT, { code: DOUBLE })
+
+    expect((await service.findExercise(DRAFT))?.solutionCheckStatus).toBe('not_checked')
+  })
+
+  it('retire les types d’un code TypeScript avant de l’exécuter', async () => {
+    const code = 'function f(n: number): number { return n * 2 }'
+
+    expect(await service.tryExercise(TS_DRAFT, { code })).toMatchObject({ item: { passed: true } })
+  })
+
+  it('refuse un TypeScript illisible avec un message, sans appeler le moteur', async () => {
+    let executions = 0
+    const counting = serviceWith(async (code) => {
+      executions += 1
+      return runInNode(code)
+    })
+
+    const outcome = await counting.tryExercise(TS_DRAFT, { code: 'function f(n: ) {}' })
+
+    expect(outcome).toMatchObject({ status: 'invalid' })
+    expect(executions).toBe(0)
+  })
+
+  it('refuse un code absent ou vide', async () => {
+    expect(await service.tryExercise(DRAFT, {})).toMatchObject({ status: 'invalid' })
+    expect(await service.tryExercise(DRAFT, { code: '  ' })).toMatchObject({ status: 'invalid' })
+  })
+
+  it('refuse un exercice inconnu, sans cas de test, ou d’un parcours sans langage', async () => {
+    expect(await service.tryExercise(99, { code: DOUBLE })).toEqual({ status: 'not-found' })
+    expect(await service.tryExercise(NO_CASES, { code: DOUBLE })).toEqual({
+      status: 'no-test-cases',
+    })
+    await service.updateTrack(1, { programmingLanguage: null })
+    expect(await service.tryExercise(DRAFT, { code: DOUBLE })).toEqual({ status: 'no-language' })
+  })
+})
