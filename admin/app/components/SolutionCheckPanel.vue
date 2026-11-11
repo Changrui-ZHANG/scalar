@@ -1,5 +1,9 @@
 <script setup lang="ts">
-const props = defineProps<{ exercise: Exercise }>()
+const props = defineProps<{
+  exercise: Exercise
+  /** Enregistre le formulaire avant de verifier ; `null` annule la verification. */
+  beforeCheck?: () => Promise<Exercise | null>
+}>()
 const emit = defineEmits<{ checked: [exercise: Exercise] }>()
 
 const store = useContentStore()
@@ -19,6 +23,10 @@ watch(
 
 async function check() {
   checking.value = true
+  if (props.beforeCheck && !(await props.beforeCheck())) {
+    checking.value = false
+    return
+  }
   const result = await store.checkSolution(props.exercise.id)
   checking.value = false
   if (!result.ok) {
@@ -44,7 +52,7 @@ async function check() {
       />
     </div>
     <p class="text-muted text-sm">
-      Porte sur la dernière version enregistrée. Obligatoire avant de publier.
+      Enregistre le formulaire, puis vérifie sa solution. Obligatoire avant de publier.
     </p>
     <ul v-if="report" class="grid gap-2 text-sm">
       <li v-for="(item, i) in report.checks" :key="i" class="flex items-start gap-2">

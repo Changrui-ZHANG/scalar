@@ -3,7 +3,6 @@
  * Editeur CodeMirror 6 pour le code et le Markdown. Tab indente ; pour sortir
  * de l'editeur au clavier : Echap puis Tab (comportement standard de CodeMirror).
  */
-import { javascript } from '@codemirror/lang-javascript'
 import { markdown } from '@codemirror/lang-markdown'
 import { EditorView } from '@codemirror/view'
 import { basicSetup } from 'codemirror'
@@ -22,8 +21,8 @@ const props = defineProps<{
 }>()
 
 const LANGUAGES = {
-  javascript: () => javascript(),
-  typescript: () => javascript({ typescript: true }),
+  javascript: () => codeLanguageExtension('javascript'),
+  typescript: () => codeLanguageExtension('typescript'),
   markdown: () => markdown(),
 } as const
 
@@ -50,6 +49,8 @@ const extensions = computed(() => [
   basicSetup,
   theme,
   LANGUAGES[props.language](),
+  // Sur la racine du composant, la hauteur ne touche pas l'editeur : il resterait d'une ligne.
+  EditorView.theme({ '.cm-content, .cm-gutter': { minHeight: props.minHeight ?? '14rem' } }),
   // Le Markdown se lit en paragraphes : on replie les lignes, pas le code.
   ...(props.language === 'markdown' ? [EditorView.lineWrapping] : []),
   EditorView.contentAttributes.of({ 'aria-label': props.label }),
@@ -61,7 +62,6 @@ const extensions = computed(() => [
     v-model="code"
     :extensions="extensions"
     :placeholder="placeholder"
-    :style="{ minHeight: minHeight ?? '8rem' }"
     :tab-size="2"
     indent-with-tab
   />

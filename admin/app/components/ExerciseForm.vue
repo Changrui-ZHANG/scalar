@@ -23,18 +23,34 @@ const { markEdited } = useAutoSlug(
   props.editing,
 )
 
-async function onSubmit(event: FormSubmitEvent<ExerciseInput>) {
-  const result = await props.save(event.data)
+async function persist(data: ExerciseInput): Promise<Exercise | null> {
+  const result = await props.save(data)
   if (!result.ok) {
     if (result.field) {
       form.value?.setErrors([{ name: result.field, message: result.message }])
     } else {
       toast.add({ title: result.message, color: 'error' })
     }
-    return
+    return null
   }
-  emit('saved', result.item)
+  return result.item
 }
+
+async function onSubmit(event: FormSubmitEvent<ExerciseInput>) {
+  const saved = await persist(event.data)
+  if (saved) {
+    emit('saved', saved)
+  }
+}
+
+// La verification porte sur la base : sans cet enregistrement, elle jugerait
+// l'ancienne solution alors que l'ecran en montre une autre.
+async function saveNow(): Promise<Exercise | null> {
+  const data = await form.value?.validate({ nested: true, silent: true, transform: true })
+  return data ? persist(data as ExerciseInput) : null
+}
+
+defineExpose({ saveNow })
 </script>
 
 <template>

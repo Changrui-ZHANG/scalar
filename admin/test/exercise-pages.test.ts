@@ -2,6 +2,7 @@ import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import CodeField from '../app/components/CodeField.vue'
 import ExerciseForm from '../app/components/ExerciseForm.vue'
 import { useRouteExercise } from '../app/composables/useRouteRecord'
 import NewExercisePage from '../app/pages/parcours/[trackId]/chapitres/[chapterId]/exercices/nouveau.vue'
@@ -131,6 +132,61 @@ describe('page d’édition d’un exercice', () => {
 
     expect(currentPath()).toBe(EXERCISE_URL)
     expect(wrapper.text()).toContain('Non vérifiée')
+  })
+
+  async function typeSolution(wrapper: Awaited<ReturnType<typeof mountPage>>, code: string) {
+    const solution = wrapper
+      .findAllComponents(CodeField)
+      .find((field) => field.props('label') === 'Solution')
+    solution!.vm.$emit('update:modelValue', code)
+    await flushPromises()
+  }
+
+  async function clickCheck(wrapper: Awaited<ReturnType<typeof mountPage>>) {
+    const button = wrapper.findAll('button').find((b) => b.text().includes('Vérifier la solution'))
+    await button!.trigger('click')
+    await flushPromises()
+  }
+
+  it('vérifie la solution du formulaire : enregistre d’abord, puis vérifie', async () => {
+    const wrapper = await mountPage()
+    await typeSolution(wrapper, 'function somme() { return 6 }\n')
+    apiMock.mockReset()
+    apiMock.mockImplementation(async (path: string, options: { method: string }) =>
+      options.method === 'PATCH'
+        ? { ok: true, data: { ...EXERCISE, solutionCheckStatus: 'not_checked' } }
+        : { ok: true, data: { exercise: EXERCISE, passed: true, checks: [], stderr: '' } },
+    )
+
+    await clickCheck(wrapper)
+
+    const calls = apiMock.mock.calls as [string, { method: string; body?: Exercise }][]
+    expect(calls.map(([path, options]) => [options.method, path])).toEqual([
+      ['PATCH', '/admin/exercises/3'],
+      ['POST', '/admin/exercises/3/solution-check'],
+    ])
+    expect(calls[0]![1].body!.solutionCode).toBe('function somme() { return 6 }\n')
+  })
+
+  it('ne vérifie pas quand l’enregistrement est refusé', async () => {
+    const wrapper = await mountPage()
+    apiMock.mockReset()
+    apiMock.mockResolvedValue({ ok: false, status: 409, message: 'Exercice publié : code figé.' })
+
+    await clickCheck(wrapper)
+
+    const paths = (apiMock.mock.calls as [string][]).map(([path]) => path)
+    expect(paths).not.toContain('/admin/exercises/3/solution-check')
+  })
+
+  it('ne vérifie pas un formulaire invalide', async () => {
+    const wrapper = await mountPage()
+    await typeSolution(wrapper, '')
+    apiMock.mockReset()
+
+    await clickCheck(wrapper)
+
+    expect(apiMock).not.toHaveBeenCalled()
   })
 
   it('trouve l’exercice du chapitre de l’URL', async () => {

@@ -10,6 +10,16 @@ useSeoMeta({ title: `Modifier ${exercise.value.title} — Backoffice Scalar` })
 const back = `/parcours/${track.id}/chapitres/${chapter.id}`
 const initial = toExerciseInput(exercise.value)
 
+const exerciseForm = useTemplateRef('exerciseForm')
+
+async function saveBeforeCheck(): Promise<Exercise | null> {
+  const saved = (await exerciseForm.value?.saveNow()) ?? null
+  if (saved) {
+    exercise.value = saved
+  }
+  return saved
+}
+
 function onSaved(saved: Exercise) {
   exercise.value = saved
   toast.add({ title: `Exercice « ${saved.title} » enregistré`, color: 'success' })
@@ -36,8 +46,13 @@ function onSaved(saved: Exercise) {
     </template>
 
     <template #body>
-      <SolutionCheckPanel :exercise="exercise" @checked="exercise = $event" />
+      <SolutionCheckPanel
+        :exercise="exercise"
+        :before-check="saveBeforeCheck"
+        @checked="exercise = $event"
+      />
       <ExerciseForm
+        ref="exerciseForm"
         :initial="initial"
         :save="(input) => store.updateExercise(exercise.id, input)"
         submit-label="Enregistrer"
