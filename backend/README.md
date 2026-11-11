@@ -88,8 +88,17 @@ Un apprenant anonyme reste accessible par son seul identifiant. Une fois inscrit
 (`/learners/:id/…`, `X-Learner-Id`) exigent sa session : `401` sans session, `403` avec
 celle d'un autre compte.
 
-Connexions et inscriptions ratées : `AUTH_ATTEMPTS_LIMIT` par adresse IP et par email sur
-15 minutes (10 par défaut), puis `429`. Une réussite ne compte pas.
+Connexions et inscriptions ratées, sur 15 minutes, puis `429` (une réussite ne compte pas) :
+trois compteurs qui s'appliquent ensemble.
+
+| Variable                      | Compte les échecs                           | Défaut | Contre                              |
+| ----------------------------- | ------------------------------------------- | ------ | ----------------------------------- |
+| `AUTH_ATTEMPTS_LIMIT`         | d'une adresse IP sur un email               | 10     | l'essai de mots de passe            |
+| `AUTH_IP_ATTEMPTS_LIMIT`      | d'une adresse IP, tous emails confondus     | 30     | le _password spraying_              |
+| `AUTH_ACCOUNT_ATTEMPTS_LIMIT` | sur un email, toutes adresses IP confondues | 20     | une attaque depuis de nombreuses IP |
+
+Le compteur par email permet à un attaquant de bloquer un compte visé pendant 15 minutes au
+plus : c'est le prix d'une protection contre une attaque distribuée.
 
 Variables : `JWT_SECRET` (obligatoire, 32 caractères au moins), `AUTH_COOKIE_SECURE`
 (`true` par défaut ; `false` pour un site servi en http, comme le compose).

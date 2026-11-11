@@ -2,6 +2,7 @@ import { Router } from 'express'
 import type { Request, Response } from 'express'
 
 import { LEARNER_HEADER, MESSAGES } from '../constants.ts'
+import type { AuthAttemptsLimits } from '../http/auth-rate-limit.ts'
 import { authRateLimit } from '../http/auth-rate-limit.ts'
 import { badRequest, fail, notFound, ok } from '../http/envelope.ts'
 import { contentUnavailable } from '../http/errors.ts'
@@ -13,11 +14,11 @@ import { parseCredentials, parseLoginCredentials } from '../service/auth.service
 
 export class AuthController {
   private readonly settings: SessionSettings
-  private readonly attemptsLimit: number
+  private readonly attemptsLimits: AuthAttemptsLimits
 
-  constructor(settings: SessionSettings, attemptsLimit: number) {
+  constructor(settings: SessionSettings, attemptsLimits: AuthAttemptsLimits) {
     this.settings = settings
-    this.attemptsLimit = attemptsLimit
+    this.attemptsLimits = attemptsLimits
   }
 
   async register(req: Request, res: Response) {
@@ -88,7 +89,7 @@ export class AuthController {
   buildRouter() {
     const router = Router()
     // Une seule instance : inscription et connexion partagent le meme budget d'essais rates.
-    const limit = authRateLimit(this.attemptsLimit)
+    const limit = authRateLimit(this.attemptsLimits)
     router.post('/auth/register', limit, this.register.bind(this))
     router.post('/auth/login', limit, this.login.bind(this))
     router.post('/auth/logout', this.logout.bind(this))

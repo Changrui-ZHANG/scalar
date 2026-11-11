@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { AUTH_DEPENDENCIES } from '../auth.fixtures.ts'
+import { CountingHasher } from '../counting-hasher.ts'
 import { buildApp } from '../../../backend/src/app.ts'
 import { MESSAGES } from '../../../backend/src/constants.ts'
 import { InMemoryAdminContentRepository } from '../../../backend/src/repository/admin-content.repository.ts'
@@ -33,8 +34,11 @@ describe('limitation de débit', () => {
       body: JSON.stringify({ choices: 'invalide' }),
     })
 
+  let hasher: CountingHasher
+
   // Une app neuve par test : chaque test part d'un compteur vide.
   beforeEach(async () => {
+    hasher = new CountingHasher()
     const app = buildApp({
       tracks: new InMemoryTrackRepository(),
       lessons: new InMemoryLessonRepository(),
@@ -49,7 +53,10 @@ describe('limitation de débit', () => {
       executionRateLimit: 2,
       learnerCreationRateLimit: 2,
       ...AUTH_DEPENDENCIES,
+      hasher,
       authAttemptsLimit: 2,
+      authIpAttemptsLimit: 3,
+      authAccountAttemptsLimit: 3,
       isDatabaseUp: async () => false,
     })
     server = await new Promise<Server>((resolve) => {
@@ -124,10 +131,10 @@ describe('limitation de débit', () => {
   })
 
   describe('connexion et inscription', () => {
-    const login = (email: string, password: string) =>
+    const login = (email: string, password: string, ip = '203.0.113.1') =>
       fetch(`${base}/auth/login`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.1' },
+        headers: { 'content-type': 'application/json', 'x-forwarded-for': ip },
         body: JSON.stringify({ email, password }),
       })
     const register = (email: string) =>
@@ -147,6 +154,45 @@ describe('limitation de débit', () => {
       expect(refused.status).toBe(429)
       expect(((await refused.json()) as { error: string }).error).toBe(MESSAGES.tooManyAuthAttempts)
       expect((await login('eve@example.org', 'mauvais 1')).status).toBe(401)
+    })
+
+    const IP_LIMIT = 3
+    const ACCOUNT_LIMIT = 3
+    // Largement plus que les limites : l'attaque doit vraiment buter dessus.
+    const ATTEMPTS = 10
+
+    it('limite par IP : 10 emails essayés, seuls 3 mots de passe vérifiés, le reste en 429', async () => {
+      const statuses: number[] = []
+
+      for (let i = 0; i < ATTEMPTS; i++) {
+        statuses.push((await login(`victime-${i}@example.org`, 'motdepasse')).status)
+      }
+
+      expect(statuses.length).toBeGreaterThan(IP_LIMIT)
+      expect(hasher.verifications).toBe(IP_LIMIT)
+      expect(statuses.filter((s) => s === 401)).toHaveLength(IP_LIMIT)
+      expect(statuses.filter((s) => s === 429)).toHaveLength(ATTEMPTS - IP_LIMIT)
+      // Une autre IP n'est pas touchée : on bloque l'attaquant, pas tout le monde.
+      expect((await login('victime-0@example.org', 'motdepasse', '198.51.100.7')).status).toBe(401)
+      expect(hasher.verifications).toBe(IP_LIMIT + 1)
+    })
+
+    it('limite par compte : 10 IP sur le même email, seuls 3 mots de passe vérifiés, le reste en 429', async () => {
+      const statuses: number[] = []
+
+      for (let i = 0; i < ATTEMPTS; i++) {
+        statuses.push(
+          (await login('admin@example.org', 'motdepasse', `198.51.100.${i + 1}`)).status,
+        )
+      }
+
+      expect(statuses.length).toBeGreaterThan(ACCOUNT_LIMIT)
+      expect(hasher.verifications).toBe(ACCOUNT_LIMIT)
+      expect(statuses.filter((s) => s === 401)).toHaveLength(ACCOUNT_LIMIT)
+      expect(statuses.filter((s) => s === 429)).toHaveLength(ATTEMPTS - ACCOUNT_LIMIT)
+      // Un autre compte, depuis une IP neuve, n'est pas touché.
+      expect((await login('eve@example.org', 'motdepasse', '198.51.100.200')).status).toBe(401)
+      expect(hasher.verifications).toBe(ACCOUNT_LIMIT + 1)
     })
 
     it('ne compte pas les essais réussis', async () => {
