@@ -100,6 +100,8 @@ export const viteNodeApp = buildApp({
   executionRateLimit: config.EXECUTION_RATE_LIMIT,
   learnerCreationRateLimit: config.LEARNER_CREATION_RATE_LIMIT,
   authAttemptsLimit: config.AUTH_ATTEMPTS_LIMIT,
+  authIpAttemptsLimit: config.AUTH_IP_ATTEMPTS_LIMIT,
+  authAccountAttemptsLimit: config.AUTH_ACCOUNT_ATTEMPTS_LIMIT,
   jwtSecret: config.JWT_SECRET,
   secureCookie: config.AUTH_COOKIE_SECURE,
   hasher,

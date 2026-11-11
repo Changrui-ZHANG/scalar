@@ -16,6 +16,8 @@ const schema = z.object({
   // false seulement pour un site servi en http hors localhost : le navigateur y ignorerait un cookie Secure.
   AUTH_COOKIE_SECURE: z.stringbool().default(true),
   AUTH_ATTEMPTS_LIMIT: z.coerce.number().int().positive().default(10),
+  AUTH_IP_ATTEMPTS_LIMIT: z.coerce.number().int().positive().default(30),
+  AUTH_ACCOUNT_ATTEMPTS_LIMIT: z.coerce.number().int().positive().default(20),
   ADMIN_EMAIL: z.string().optional(),
   ADMIN_PASSWORD: z.string().optional(),
 })

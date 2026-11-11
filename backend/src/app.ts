@@ -54,8 +54,10 @@ export interface AppDependencies {
   readonly executionRateLimit: number
   /** Apprenants anonymes crees par minute et par adresse IP. */
   readonly learnerCreationRateLimit: number
-  /** Connexions et inscriptions ratees par adresse IP et par email, sur 15 minutes. */
+  /** Connexions et inscriptions ratees sur 15 minutes : par IP et email, par IP, par email. */
   readonly authAttemptsLimit: number
+  readonly authIpAttemptsLimit: number
+  readonly authAccountAttemptsLimit: number
   readonly jwtSecret: string
   readonly secureCookie: boolean
   readonly hasher: PasswordHasher
@@ -122,7 +124,14 @@ export function buildApp(deps: AppDependencies): Express {
     '/api/v1/admin',
     new AdminContentController(new AdminContentService(deps.adminContent)).buildRouter(),
   )
-  app.use('/api/v1', new AuthController(session, deps.authAttemptsLimit).buildRouter())
+  app.use(
+    '/api/v1',
+    new AuthController(session, {
+      pair: deps.authAttemptsLimit,
+      ip: deps.authIpAttemptsLimit,
+      account: deps.authAccountAttemptsLimit,
+    }).buildRouter(),
+  )
   app.use('/api/v1/executions', new ExecutionController().buildRouter())
   app.use(
     '/api/v1',

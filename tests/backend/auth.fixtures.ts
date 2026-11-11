@@ -11,6 +11,8 @@ export const fakeHasher: PasswordHasher = {
 /** Dependances d'authentification de `buildApp` pour les tests. */
 export const AUTH_DEPENDENCIES = {
   authAttemptsLimit: 1_000,
+  authIpAttemptsLimit: 1_000,
+  authAccountAttemptsLimit: 1_000,
   jwtSecret: TEST_JWT_SECRET,
   secureCookie: false,
   hasher: fakeHasher,
