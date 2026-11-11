@@ -9,11 +9,11 @@ certification vérifiable.
 
 ## État
 
-Projet en cours de démarrage. Le monorepo tourne sous `docker compose`, et la
-brique fondatrice — **exécuter le code d'un utilisateur et lui en restituer le
-résultat** — fonctionne de bout en bout.
+Le monorepo tourne sous `docker compose`. L'API couvre le parcours de
+l'apprenant de bout en bout, et le back-office permet d'écrire et de publier le
+contenu.
 
-Ce qui existe aujourd'hui :
+Ce qui existe aujourd'hui côté apprenant :
 
 - **Parcours** (`/parcours`) : JavaScript et TypeScript, en chapitres et
   exercices numérotés, avec énoncé, cas de test, indices et exécution du code ;
@@ -26,11 +26,26 @@ Ce qui existe aujourd'hui :
 - la correction automatique d'un exercice (`POST …/verifications`) : un verdict
   par cas de test, les valeurs attendues ne quittant jamais le serveur ;
 - l'exécution isolée par [Piston](https://github.com/engineer-man/piston), avec
-  réseau coupé, plafond de durée et plafond de sortie.
+  réseau coupé, plafond de durée et plafond de sortie ;
+- un apprenant anonyme, puis un compte (inscription, connexion, cookie
+  HttpOnly) qui reprend sa progression ;
+- le questionnaire de positionnement et la progression, enregistrés en base ;
+- un certificat délivré à la fin d'un parcours, vérifiable publiquement par son
+  code ;
+- des limites de débit sur les exécutions, la création d'apprenants et les
+  essais de connexion.
 
-Ce qui n'existe pas encore : authentification, comptes, quotas, vérification
-des types TypeScript, persistance des soumissions, certification. La
-progression de l'apprenant vit dans son navigateur.
+Côté back-office (`/admin`, réservé au rôle admin) : parcours, chapitres,
+exercices et cas de test en brouillon, vérification de la solution par le
+moteur, puis publication (refusée tant que la solution n'est pas vérifiée).
+
+Les routes, la démo pas à pas et les règles métier sont détaillées dans
+`backend/README.md` et `backend/demo/scenario.http`.
+
+Ce qui n'existe pas encore : vérification des types TypeScript, édition des
+leçons depuis le back-office, double authentification. Le frontend apprenant
+n'est pas encore branché sur les comptes, la progression et les certificats :
+sa progression vit toujours dans le navigateur.
 
 Architecture : un monorepo npm workspaces réunissant une API Node/Express sur
 PostgreSQL, un exécuteur de code conteneurisé et isolé, et un frontend Nuxt,
@@ -53,6 +68,10 @@ Le produit est accessible sur :
 - API Backend : http://localhost:8080/api/v1
 - Santé : http://localhost:8080/api/v1/health
 
+Pour se connecter à l'admin en local, définir `ADMIN_EMAIL` et `ADMIN_PASSWORD`
+dans un fichier `.env.local` à la racine (ignoré par git) : le backend crée ce
+compte admin, ou le remet à niveau, à chaque démarrage, jamais en production.
+
 Au premier démarrage, le service `piston-setup` installe le runtime Node dans le
 moteur d'exécution : la première exécution n'est possible qu'une fois ce service
 terminé (voir « Moteur d'exécution »).
@@ -60,7 +79,7 @@ terminé (voir « Moteur d'exécution »).
 ## Base de données
 
 Le backend applique les migrations au démarrage, puis charge le contenu
-(langages, chapitres, exercices, cours) si la base est vide : `docker compose up`
+(parcours, chapitres, exercices, cours) si la base est vide : `docker compose up`
 suffit sur un dépôt fraîchement cloné.
 
 Le contenu est rédigé dans le dépôt, dans `backend/src/content/*.ts`.
