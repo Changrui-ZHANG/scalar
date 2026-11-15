@@ -1,0 +1,1646 @@
+openapi: 3.1.0
+info:
+  title: API Scalar
+  version: 1.0.0
+  description: |
+    API de la plateforme d'apprentissage Scalar.
+
+    **Enveloppe.** Toute réponse JSON a la forme `{ success, data, error }` :
+    `data` est rempli en cas de succès, `error` porte un message en français prêt à afficher
+    en cas d'échec. Une suppression répond `204` sans corps.
+
+    **Apprenant.** Un apprenant anonyme est créé par `POST /learners` ; son identifiant (UUID)
+    est ensuite envoyé dans l'en-tête `X-Learner-Id` (ou dans l'URL pour sa progression).
+    Après inscription, la session (cookie `scalar_session`, HttpOnly) suffit.
+
+    **Administration.** Les routes `/admin/...` exigent une session d'un compte `admin`.
+
+    **Dates.** Chaînes ISO 8601 en UTC (`2026-11-16T09:12:00.000Z`).
+servers:
+  - url: /api/v1
+tags:
+  - name: Système
+  - name: Contenu
+    description: Parcours, leçons et exercices publiés.
+  - name: Exécution
+  - name: Positionnement
+    description: Questionnaire qui conseille un parcours et un niveau de départ.
+  - name: Apprenant
+  - name: Certificat
+  - name: Compte
+  - name: Admin — parcours et chapitres
+  - name: Admin — exercices
+
+paths:
+  /:
+    get:
+      tags: [Système]
+      summary: Vérifier que l'API répond
+      operationId: getRoot
+      responses:
+        '200':
+          description: L'API répond.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, message]
+                properties:
+                  status: { type: string, const: ok }
+                  message: { type: string, examples: ['API Scalar (Backend)'] }
+
+  /health:
+    get:
+      tags: [Système]
+      summary: État de l'API et de la base
+      operationId: getHealth
+      responses:
+        '200':
+          description: État courant ; répond même si la base est injoignable.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, content, database]
+                properties:
+                  status: { type: string, const: ok }
+                  content: { type: string, enum: [database, mock] }
+                  database: { type: string, enum: [connected, disconnected] }
+
+  # ---------------------------------------------------------------- Contenu
+
+  /tracks:
+    get:
+      tags: [Contenu]
+      summary: Lister les parcours publiés
+      operationId: listTracks
+      responses:
+        '200':
+          description: Parcours dans l'ordre d'affichage.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/TrackSummary' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /tracks/{track}:
+    get:
+      tags: [Contenu]
+      summary: Un parcours, ses chapitres, leçons et exercices
+      operationId: getTrack
+      parameters:
+        - $ref: '#/components/parameters/TrackSlug'
+      responses:
+        '200':
+          description: Le parcours et son sommaire.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data: { $ref: '#/components/schemas/TrackView' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /tracks/{track}/chapters/{chapter}/lessons/{lesson}:
+    get:
+      tags: [Contenu]
+      summary: Une leçon
+      operationId: getLesson
+      parameters:
+        - $ref: '#/components/parameters/TrackSlug'
+        - $ref: '#/components/parameters/ChapterSlug'
+        - name: lesson
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Slug' }
+      responses:
+        '200':
+          description: La leçon, corps en Markdown.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data: { $ref: '#/components/schemas/LessonDetail' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /tracks/{track}/chapters/{chapter}/exercises/{exercise}:
+    get:
+      tags: [Contenu]
+      summary: Un exercice
+      description: Sans la solution ni les cas de test cachés.
+      operationId: getExercise
+      parameters:
+        - $ref: '#/components/parameters/TrackSlug'
+        - $ref: '#/components/parameters/ChapterSlug'
+        - $ref: '#/components/parameters/ExerciseSlug'
+      responses:
+        '200':
+          description: L'exercice.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data: { $ref: '#/components/schemas/PublicExercise' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /tracks/{track}/chapters/{chapter}/exercises/{exercise}/verifications:
+    post:
+      tags: [Contenu]
+      summary: Corriger le code d'un apprenant
+      description: |
+        Exécute le code contre tous les cas de test, cachés compris. La tentative est
+        enregistrée pour l'apprenant de `X-Learner-Id`, sinon celui de la session ;
+        sans l'un ni l'autre, la correction a lieu mais n'est rattachée à personne.
+      operationId: verifyExercise
+      parameters:
+        - $ref: '#/components/parameters/TrackSlug'
+        - $ref: '#/components/parameters/ChapterSlug'
+        - $ref: '#/components/parameters/ExerciseSlug'
+        - $ref: '#/components/parameters/LearnerHeader'
+      security:
+        - {}
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { $ref: '#/components/schemas/SubmittedCode' }
+      responses:
+        '200':
+          description: "Verdict (réussi ou non : un échec des cas n'est pas une erreur HTTP)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data: { $ref: '#/components/schemas/VerificationResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+        '503': { $ref: '#/components/responses/EngineUnavailable' }
+
+  # ---------------------------------------------------------------- Exécution
+
+  /executions:
+    post:
+      tags: [Exécution]
+      summary: Exécuter du code libre (bac à sable)
+      operationId: executeCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Submission' }
+      responses:
+        '200':
+          description: Résultat brut de l'exécution.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data: { $ref: '#/components/schemas/ExecutionResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/EngineUnavailable' }
+
+  # ---------------------------------------------------------------- Positionnement
+
+  /questionnaire:
+    get:
+      tags: [Positionnement]
+      summary: Le questionnaire de positionnement
+      description: Sans les scores des options ni les solutions.
+      operationId: getQuestionnaire
+      responses:
+        '200':
+          description: Questions dans l'ordre.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/PublicQuestion' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /questionnaire/exercises/{questionId}/verifications:
+    post:
+      tags: [Positionnement]
+      summary: Essayer le code d'une question de code
+      description: Rien n'est enregistré ; le score compte seulement via `POST /questionnaire/results`.
+      operationId: verifyQuestionnaireExercise
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Submission' }
+      responses:
+        '200':
+          description: Verdict.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data: { $ref: '#/components/schemas/VerificationResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+        '503': { $ref: '#/components/responses/EngineUnavailable' }
+
+  /questionnaire/results:
+    post:
+      tags: [Positionnement]
+      summary: Envoyer ses réponses et obtenir son niveau
+      description: |
+        Le serveur recorrige le code soumis. Le résultat est enregistré pour l'apprenant de
+        `X-Learner-Id` (ou de la session) quand un parcours a pu être conseillé.
+      operationId: submitQuestionnaireResults
+      parameters:
+        - $ref: '#/components/parameters/LearnerHeader'
+      security:
+        - {}
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                choices:
+                  type: array
+                  maxItems: 50
+                  default: []
+                  items:
+                    type: object
+                    required: [questionId, optionId]
+                    properties:
+                      questionId: { type: integer, minimum: 1 }
+                      optionId: { type: integer, minimum: 1 }
+                submissions:
+                  type: array
+                  maxItems: 10
+                  default: []
+                  items:
+                    type: object
+                    required: [questionId, code]
+                    properties:
+                      questionId: { type: integer, minimum: 1 }
+                      programmingLanguage: { $ref: '#/components/schemas/ProgrammingLanguage' }
+                      code:
+                        type: string
+                        description: Vide si l'exercice est laissé de côté (compté comme non réussi).
+      responses:
+        '200':
+          description: Niveau, parcours conseillé et détail du score.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data: { $ref: '#/components/schemas/QuestionnaireResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+        '503': { $ref: '#/components/responses/EngineUnavailable' }
+
+  # ---------------------------------------------------------------- Apprenant
+
+  /learners:
+    post:
+      tags: [Apprenant]
+      summary: Créer un apprenant anonyme
+      description: À appeler une fois, puis garder l'identifiant (ex. localStorage).
+      operationId: createLearner
+      responses:
+        '201':
+          description: Apprenant créé.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data:
+                    type: object
+                    required: [id]
+                    properties:
+                      id: { $ref: '#/components/schemas/LearnerId' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /learners/{learnerId}/progress:
+    get:
+      tags: [Apprenant]
+      summary: Progression d'un apprenant
+      description: |
+        Libre pour un apprenant anonyme. Une fois l'apprenant inscrit, seule sa propre
+        session y accède (401 sans session, 403 avec une autre).
+      operationId: getProgress
+      parameters:
+        - $ref: '#/components/parameters/LearnerIdPath'
+      security:
+        - {}
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Positionnement, exercices tentés, certificats.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data: { $ref: '#/components/schemas/LearnerProgress' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  # ---------------------------------------------------------------- Certificat
+
+  /learners/{learnerId}/certificates:
+    post:
+      tags: [Certificat]
+      summary: Obtenir le certificat d'un parcours terminé
+      description: |
+        Idempotent : un certificat déjà délivré pour ce parcours est renvoyé tel quel (200).
+        Mêmes règles d'accès que la progression.
+      operationId: issueCertificate
+      parameters:
+        - $ref: '#/components/parameters/LearnerIdPath'
+      security:
+        - {}
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [track, holderName]
+              properties:
+                track: { $ref: '#/components/schemas/Slug' }
+                holderName: { type: string, minLength: 1, maxLength: 100 }
+      responses:
+        '200':
+          description: Certificat déjà délivré.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CertificateEnvelope' }
+        '201':
+          description: Certificat délivré.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CertificateEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403':
+          description: Accès refusé, ou parcours pas encore terminé.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Failure' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /certificates/{code}:
+    get:
+      tags: [Certificat]
+      summary: Vérifier un certificat (public)
+      operationId: verifyCertificate
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: 10 caractères, casse indifférente.
+          schema: { type: string, examples: [K7M2P9QRST] }
+      responses:
+        '200':
+          description: Certificat authentique.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CertificateEnvelope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  # ---------------------------------------------------------------- Compte
+
+  /auth/register:
+    post:
+      tags: [Compte]
+      summary: Créer un compte
+      description: |
+        Avec `X-Learner-Id`, le compte reprend cet apprenant anonyme et sa progression.
+        Ouvre la session (cookie `scalar_session`).
+      operationId: register
+      parameters:
+        - $ref: '#/components/parameters/LearnerHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Credentials' }
+      responses:
+        '201':
+          description: Compte créé, session ouverte.
+          headers:
+            Set-Cookie: { $ref: '#/components/headers/SessionCookie' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /auth/login:
+    post:
+      tags: [Compte]
+      summary: Se connecter
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Credentials' }
+      responses:
+        '200':
+          description: Session ouverte.
+          headers:
+            Set-Cookie: { $ref: '#/components/headers/SessionCookie' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401':
+          description: Email ou mot de passe incorrect (même réponse pour un email inconnu).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Failure' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /auth/logout:
+    post:
+      tags: [Compte]
+      summary: Se déconnecter
+      description: Révoque toutes les sessions du compte et efface le cookie. Réussit aussi sans session.
+      operationId: logout
+      security:
+        - {}
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Session fermée.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data: { type: 'null' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /auth/me:
+    get:
+      tags: [Compte]
+      summary: Le compte connecté
+      operationId: me
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Le compte de la session.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  # ---------------------------------------------------------------- Admin : parcours et chapitres
+
+  /admin/tracks:
+    get:
+      tags: [Admin — parcours et chapitres]
+      summary: Lister tous les parcours, brouillons compris
+      operationId: adminListTracks
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Parcours.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/AdminTrack' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+    post:
+      tags: [Admin — parcours et chapitres]
+      summary: Créer un parcours (brouillon)
+      operationId: adminCreateTrack
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewTrack' }
+      responses:
+        '201':
+          description: Parcours créé.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminTrackEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /admin/tracks/{trackId}:
+    parameters:
+      - $ref: '#/components/parameters/TrackId'
+    get:
+      tags: [Admin — parcours et chapitres]
+      summary: Un parcours
+      operationId: adminGetTrack
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Le parcours.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminTrackEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+    patch:
+      tags: [Admin — parcours et chapitres]
+      summary: Modifier, publier ou archiver un parcours
+      description: Le slug est figé une fois le parcours publié.
+      operationId: adminUpdateTrack
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TrackChanges' }
+      responses:
+        '200':
+          description: Parcours modifié.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminTrackEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+    delete:
+      tags: [Admin — parcours et chapitres]
+      summary: Supprimer un parcours jamais publié
+      operationId: adminDeleteTrack
+      security: [{ sessionCookie: [] }]
+      responses:
+        '204': { description: Supprimé. }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /admin/tracks/{trackId}/chapters:
+    parameters:
+      - $ref: '#/components/parameters/TrackId'
+    get:
+      tags: [Admin — parcours et chapitres]
+      summary: Les chapitres d'un parcours
+      operationId: adminListChapters
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Chapitres dans l'ordre.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/AdminChapter' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+    post:
+      tags: [Admin — parcours et chapitres]
+      summary: Ajouter un chapitre (brouillon, en dernier)
+      operationId: adminCreateChapter
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewChapter' }
+      responses:
+        '201':
+          description: Chapitre créé.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminChapterEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /admin/tracks/{trackId}/chapters/{chapterId}:
+    parameters:
+      - $ref: '#/components/parameters/TrackId'
+      - $ref: '#/components/parameters/ChapterId'
+    get:
+      tags: [Admin — parcours et chapitres]
+      summary: Un chapitre
+      operationId: adminGetChapter
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Le chapitre.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminChapterEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+    patch:
+      tags: [Admin — parcours et chapitres]
+      summary: Modifier, publier ou archiver un chapitre
+      operationId: adminUpdateChapter
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChapterChanges' }
+      responses:
+        '200':
+          description: Chapitre modifié.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminChapterEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+    delete:
+      tags: [Admin — parcours et chapitres]
+      summary: Supprimer un chapitre jamais publié et vide
+      operationId: adminDeleteChapter
+      security: [{ sessionCookie: [] }]
+      responses:
+        '204': { description: Supprimé. }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  # ---------------------------------------------------------------- Admin : exercices
+
+  /admin/chapters/{chapterId}/exercises:
+    parameters:
+      - $ref: '#/components/parameters/ChapterId'
+    get:
+      tags: [Admin — exercices]
+      summary: Les exercices d'un chapitre, avec solution et cas de test
+      operationId: adminListExercises
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Exercices dans l'ordre.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/AdminExercise' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+    post:
+      tags: [Admin — exercices]
+      summary: Ajouter un exercice (brouillon, solution non vérifiée)
+      operationId: adminCreateExercise
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewExercise' }
+      responses:
+        '201':
+          description: Exercice créé.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminExerciseEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /admin/exercises/{exerciseId}:
+    parameters:
+      - $ref: '#/components/parameters/ExerciseId'
+    get:
+      tags: [Admin — exercices]
+      summary: Un exercice, avec solution et cas de test
+      operationId: adminGetExercise
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: L'exercice.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminExerciseEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+    patch:
+      tags: [Admin — exercices]
+      summary: Modifier, publier ou archiver un exercice
+      description: |
+        Changer le code ou les cas de test remet la solution à « non vérifiée ».
+        Publier exige une solution vérifiée (`POST .../solution-check`). Le code et les cas
+        d'un exercice publié ne changent plus (409).
+      operationId: adminUpdateExercise
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExerciseChanges' }
+      responses:
+        '200':
+          description: Exercice modifié.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminExerciseEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+    delete:
+      tags: [Admin — exercices]
+      summary: Supprimer un exercice jamais publié
+      operationId: adminDeleteExercise
+      security: [{ sessionCookie: [] }]
+      responses:
+        '204': { description: Supprimé. }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /admin/exercises/{exerciseId}/solution-check:
+    post:
+      tags: [Admin — exercices]
+      summary: Vérifier la solution enregistrée avec le moteur
+      description: Enregistre le statut `passed` ou `failed` ; condition pour publier.
+      operationId: adminCheckSolution
+      parameters:
+        - $ref: '#/components/parameters/ExerciseId'
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Vérification faite (réussie ou non).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data: { $ref: '#/components/schemas/SolutionCheck' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+        '503': { $ref: '#/components/responses/EngineUnavailable' }
+
+  /admin/exercises/{exerciseId}/verifications:
+    post:
+      tags: [Admin — exercices]
+      summary: Essayer un exercice comme un apprenant
+      description: Brouillon compris ; rien n'est enregistré.
+      operationId: adminTryExercise
+      parameters:
+        - $ref: '#/components/parameters/ExerciseId'
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { $ref: '#/components/schemas/SubmittedCode' }
+      responses:
+        '200':
+          description: Verdict.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data: { $ref: '#/components/schemas/VerificationResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+        '503': { $ref: '#/components/responses/EngineUnavailable' }
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: scalar_session
+      description: JWT posé par `/auth/login` ou `/auth/register` (HttpOnly, SameSite=Strict).
+
+  headers:
+    SessionCookie:
+      description: '`scalar_session=<jwt>; HttpOnly; SameSite=Strict; Path=/`'
+      schema: { type: string }
+
+  parameters:
+    TrackSlug:
+      name: track
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Slug' }
+      example: javascript
+    ChapterSlug:
+      name: chapter
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Slug' }
+    ExerciseSlug:
+      name: exercise
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Slug' }
+    LearnerIdPath:
+      name: learnerId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/LearnerId' }
+    LearnerHeader:
+      name: X-Learner-Id
+      in: header
+      required: false
+      description: Apprenant anonyme à qui rattacher la requête.
+      schema: { $ref: '#/components/schemas/LearnerId' }
+    TrackId:
+      name: trackId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Id' }
+    ChapterId:
+      name: chapterId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Id' }
+    ExerciseId:
+      name: exerciseId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Id' }
+
+  responses:
+    BadRequest:
+      description: Corps invalide ; `error` dit quel champ.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Failure' }
+    Unauthenticated:
+      description: Session requise.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Failure' }
+    Forbidden:
+      description: Session d'un autre compte, ou compte non admin.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Failure' }
+    NotFound:
+      description: Ressource introuvable (ou non publiée).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Failure' }
+    Conflict:
+      description: Refus métier (slug déjà pris ou figé, contenu publié, solution non vérifiée…).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Failure' }
+    TooManyRequests:
+      description: Limite de débit atteinte ; réessayer plus tard.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Failure' }
+    ContentUnavailable:
+      description: Base injoignable ou erreur interne.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Failure' }
+    EngineUnavailable:
+      description: Moteur d'exécution (Piston) injoignable.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Failure' }
+
+  schemas:
+    # ------------------------------------------------ Enveloppe
+
+    Envelope:
+      type: object
+      required: [success, data, error]
+      properties:
+        success: { type: boolean, const: true }
+        data: {}
+        error: { type: 'null' }
+    Failure:
+      type: object
+      required: [success, data, error]
+      properties:
+        success: { type: boolean, const: false }
+        data: { type: 'null' }
+        error: { type: string, examples: ['Exercice introuvable.'] }
+
+    # ------------------------------------------------ Types de base
+
+    Id: { type: integer, minimum: 1, maximum: 2147483647 }
+    LearnerId: { type: string, format: uuid }
+    Slug:
+      type: string
+      pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+      maxLength: 64
+    DateTime: { type: string, format: date-time }
+    NullableDateTime: { type: [string, 'null'], format: date-time }
+    ProgrammingLanguage:
+      type: string
+      enum: [javascript, typescript]
+      default: javascript
+    ChapterLevel:
+      type: string
+      enum: [beginner, intermediate, advanced, ecosystem]
+    PlacementLevel:
+      type: string
+      enum: [beginner, intermediate, advanced]
+    PublicationStatus:
+      type: string
+      enum: [draft, published, archived]
+    SolutionCheckStatus:
+      type: string
+      enum: [not_checked, passed, failed]
+    SubmittedCode:
+      type: string
+      minLength: 1
+      description: Non vide ; 64 Kio au plus (UTF-8).
+    Submission:
+      type: object
+      required: [code]
+      properties:
+        programmingLanguage: { $ref: '#/components/schemas/ProgrammingLanguage' }
+        code: { $ref: '#/components/schemas/SubmittedCode' }
+    TrackLink:
+      type: object
+      required: [slug, name]
+      properties:
+        slug: { $ref: '#/components/schemas/Slug' }
+        name: { type: string }
+    ChapterLink:
+      type: object
+      required: [slug, title, number]
+      properties:
+        slug: { $ref: '#/components/schemas/Slug' }
+        title: { type: string }
+        number: { type: integer, description: 'Rang dans le parcours, à partir de 1.' }
+    TestCaseView:
+      type: object
+      required: [arguments, expectedResult, description]
+      properties:
+        arguments: { type: array, items: {} }
+        expectedResult: {}
+        description: { type: [string, 'null'] }
+
+    # ------------------------------------------------ Contenu public
+
+    TrackSummary:
+      allOf:
+        - $ref: '#/components/schemas/TrackLink'
+        - type: object
+          required: [summary, programmingLanguage, prerequisite]
+          properties:
+            summary: { type: string }
+            programmingLanguage:
+              type: [string, 'null']
+              enum: [javascript, typescript, null]
+            prerequisite:
+              oneOf:
+                - $ref: '#/components/schemas/TrackLink'
+                - type: 'null'
+    TrackView:
+      type: object
+      required: [track, chapters]
+      properties:
+        track:
+          allOf:
+            - $ref: '#/components/schemas/TrackLink'
+            - type: object
+              required: [programmingLanguage]
+              properties:
+                programmingLanguage:
+                  type: [string, 'null']
+                  enum: [javascript, typescript, null]
+        chapters:
+          type: array
+          items:
+            type: object
+            required: [slug, title, level, number, lessons, exercises]
+            properties:
+              slug: { $ref: '#/components/schemas/Slug' }
+              title: { type: string }
+              level: { $ref: '#/components/schemas/ChapterLevel' }
+              number: { type: integer }
+              lessons:
+                type: array
+                items:
+                  type: object
+                  required: [slug, title, summary]
+                  properties:
+                    slug: { $ref: '#/components/schemas/Slug' }
+                    title: { type: string }
+                    summary: { type: string }
+              exercises:
+                type: array
+                items:
+                  type: object
+                  required: [slug, title, instructions]
+                  properties:
+                    slug: { $ref: '#/components/schemas/Slug' }
+                    title: { type: string }
+                    instructions: { type: string }
+    LessonDetail:
+      type: object
+      required: [slug, title, summary, body, lastReviewedAt, number, track, chapter]
+      properties:
+        slug: { $ref: '#/components/schemas/Slug' }
+        title: { type: string }
+        summary: { type: string }
+        body: { type: string, description: Markdown. }
+        lastReviewedAt: { $ref: '#/components/schemas/NullableDateTime' }
+        number: { type: integer }
+        track: { $ref: '#/components/schemas/TrackLink' }
+        chapter: { $ref: '#/components/schemas/ChapterLink' }
+    PublicExercise:
+      type: object
+      required:
+        [
+          slug,
+          title,
+          number,
+          instructions,
+          functionName,
+          starterCode,
+          hints,
+          testCases,
+          track,
+          chapter,
+          next,
+        ]
+      properties:
+        slug: { $ref: '#/components/schemas/Slug' }
+        title: { type: string }
+        number: { type: integer }
+        instructions: { type: string, description: Markdown. }
+        functionName: { type: string, description: Fonction que le code doit définir. }
+        starterCode: { type: string }
+        hints: { type: array, items: { type: string }, maxItems: 3 }
+        testCases:
+          type: array
+          description: Cas visibles seulement.
+          items: { $ref: '#/components/schemas/TestCaseView' }
+        track:
+          allOf:
+            - $ref: '#/components/schemas/TrackLink'
+            - type: object
+              required: [programmingLanguage]
+              properties:
+                programmingLanguage: { $ref: '#/components/schemas/ProgrammingLanguage' }
+        chapter: { $ref: '#/components/schemas/ChapterLink' }
+        next:
+          description: Exercice suivant du parcours, null pour le dernier.
+          oneOf:
+            - type: object
+              required: [chapterSlug, slug]
+              properties:
+                chapterSlug: { $ref: '#/components/schemas/Slug' }
+                slug: { $ref: '#/components/schemas/Slug' }
+            - type: 'null'
+
+    # ------------------------------------------------ Exécution et correction
+
+    ExecutionResult:
+      type: object
+      required: [status, label, run]
+      properties:
+        status:
+          type: string
+          enum: [OK, TO, OL, EL, RE, SG, XX]
+          description: |
+            OK terminé, TO temps dépassé, OL sortie tronquée, EL sortie d'erreur tronquée,
+            RE erreur d'exécution, SG interrompu par un signal, XX erreur interne du moteur.
+        label: { type: string, examples: [Terminé] }
+        run:
+          type: object
+          required: [stdout, stderr, output, code, signal, status]
+          properties:
+            stdout: { type: string }
+            stderr: { type: string }
+            output: { type: string }
+            code: { type: [integer, 'null'] }
+            signal: { type: [string, 'null'] }
+            status: { type: [string, 'null'] }
+            message: { type: [string, 'null'] }
+            cpu_time: { type: number }
+            wall_time: { type: number }
+            memory: { type: number }
+    VerificationCheck:
+      type: object
+      required: [label, passed, detail]
+      properties:
+        label: { type: string }
+        passed: { type: boolean }
+        detail: { type: [string, 'null'], description: Explication en cas d'échec. }
+    VerificationResult:
+      type: object
+      required: [passed, passedCount, total, checks, execution]
+      description: |
+        `checks` : d'abord « le code s'exécute », puis « la fonction existe », puis un critère
+        par cas de test (le détail d'un cas caché ne révèle pas la valeur attendue).
+      properties:
+        passed: { type: boolean }
+        passedCount: { type: integer }
+        total: { type: integer }
+        checks:
+          type: array
+          items: { $ref: '#/components/schemas/VerificationCheck' }
+        execution: { $ref: '#/components/schemas/ExecutionResult' }
+
+    # ------------------------------------------------ Positionnement
+
+    PublicQuestion:
+      type: object
+      required:
+        [id, position, kind, title, description, options, functionName, starterCode, testCases]
+      properties:
+        id: { type: integer }
+        position: { type: integer }
+        kind: { type: string, enum: [experience, language, knowledge, code] }
+        title: { type: string }
+        description: { type: [string, 'null'] }
+        options:
+          type: array
+          description: Vide pour une question `code`.
+          items:
+            type: object
+            required: [id, label]
+            properties:
+              id: { type: integer }
+              label: { type: string }
+        functionName: { type: [string, 'null'], description: Questions `code` seulement. }
+        starterCode: { type: [string, 'null'] }
+        testCases:
+          type: array
+          items: { $ref: '#/components/schemas/TestCaseView' }
+    QuestionnaireResult:
+      type: object
+      required:
+        [
+          score,
+          level,
+          declared,
+          knowledge,
+          practical,
+          feedback,
+          placementId,
+          track,
+          startChapter,
+          exercises,
+        ]
+      properties:
+        score: { type: number, minimum: 0, maximum: 100 }
+        level: { $ref: '#/components/schemas/PlacementLevel' }
+        declared: { type: number, minimum: 0, maximum: 100, description: Sous-score déclaratif. }
+        knowledge: { type: number, minimum: 0, maximum: 100 }
+        practical: { type: number, minimum: 0, maximum: 100 }
+        feedback: { type: array, items: { type: string } }
+        placementId:
+          type: [integer, 'null']
+          description: Null si aucun parcours n'a pu être conseillé (rien n'est alors enregistré).
+        track:
+          oneOf:
+            - $ref: '#/components/schemas/TrackLink'
+            - type: 'null'
+        startChapter:
+          oneOf:
+            - type: object
+              required: [slug, title]
+              properties:
+                slug: { $ref: '#/components/schemas/Slug' }
+                title: { type: string }
+            - type: 'null'
+        exercises:
+          type: array
+          items:
+            type: object
+            required: [questionId, title, passed, passedCases, totalCases]
+            properties:
+              questionId: { type: integer }
+              title: { type: string }
+              passed: { type: boolean }
+              passedCases: { type: integer }
+              totalCases: { type: integer }
+
+    # ------------------------------------------------ Apprenant et certificat
+
+    LearnerProgress:
+      type: object
+      required: [placement, passedCount, exercises, certificates]
+      properties:
+        placement:
+          description: Dernier questionnaire passé, null s'il n'y en a aucun.
+          oneOf:
+            - type: object
+              required: [score, level, track, createdAt]
+              properties:
+                score: { type: number }
+                level: { $ref: '#/components/schemas/PlacementLevel' }
+                track:
+                  oneOf:
+                    - $ref: '#/components/schemas/TrackLink'
+                    - type: 'null'
+                createdAt: { $ref: '#/components/schemas/DateTime' }
+            - type: 'null'
+        passedCount: { type: integer }
+        exercises:
+          type: array
+          items:
+            type: object
+            required:
+              [track, chapter, exercise, title, attempts, passed, firstPassedAt, lastAttemptAt]
+            properties:
+              track: { $ref: '#/components/schemas/Slug' }
+              chapter: { $ref: '#/components/schemas/Slug' }
+              exercise: { $ref: '#/components/schemas/Slug' }
+              title: { type: string }
+              attempts: { type: integer }
+              passed: { type: boolean }
+              firstPassedAt: { $ref: '#/components/schemas/NullableDateTime' }
+              lastAttemptAt: { $ref: '#/components/schemas/DateTime' }
+        certificates:
+          type: array
+          items: { $ref: '#/components/schemas/Certificate' }
+    Certificate:
+      type: object
+      required: [code, holderName, track, issuedAt]
+      properties:
+        code: { type: string, examples: [K7M2P9QRST] }
+        holderName: { type: string }
+        track:
+          oneOf:
+            - $ref: '#/components/schemas/TrackLink'
+            - type: 'null'
+        issuedAt: { $ref: '#/components/schemas/DateTime' }
+    CertificateEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - properties:
+            data: { $ref: '#/components/schemas/Certificate' }
+
+    # ------------------------------------------------ Compte
+
+    Credentials:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 8, maxLength: 128 }
+    PublicUser:
+      type: object
+      required: [id, email, role, createdAt]
+      properties:
+        id: { $ref: '#/components/schemas/LearnerId' }
+        email: { type: string, format: email }
+        role: { type: string, enum: [learner, admin] }
+        createdAt: { $ref: '#/components/schemas/DateTime' }
+    UserEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - properties:
+            data: { $ref: '#/components/schemas/PublicUser' }
+
+    # ------------------------------------------------ Administration
+
+    AdminTrack:
+      type: object
+      required:
+        [
+          id,
+          slug,
+          name,
+          summary,
+          position,
+          programmingLanguage,
+          prerequisiteTrackId,
+          status,
+          firstPublishedAt,
+          createdAt,
+          updatedAt,
+        ]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        slug: { $ref: '#/components/schemas/Slug' }
+        name: { type: string }
+        summary: { type: string }
+        position: { type: integer }
+        programmingLanguage:
+          type: [string, 'null']
+          enum: [javascript, typescript, null]
+        prerequisiteTrackId: { type: [integer, 'null'] }
+        status: { $ref: '#/components/schemas/PublicationStatus' }
+        firstPublishedAt: { $ref: '#/components/schemas/NullableDateTime' }
+        createdAt: { $ref: '#/components/schemas/DateTime' }
+        updatedAt: { $ref: '#/components/schemas/DateTime' }
+    AdminTrackEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - properties:
+            data: { $ref: '#/components/schemas/AdminTrack' }
+    NewTrack:
+      type: object
+      additionalProperties: false
+      required: [slug, name, summary]
+      properties:
+        slug: { $ref: '#/components/schemas/Slug' }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        summary: { type: string, minLength: 1, maxLength: 500 }
+        programmingLanguage:
+          type: [string, 'null']
+          enum: [javascript, typescript, null]
+          default: null
+        prerequisiteTrackId: { type: [integer, 'null'], minimum: 1, default: null }
+    TrackChanges:
+      type: object
+      additionalProperties: false
+      description: Champs de `NewTrack`, tous facultatifs, plus `status`.
+      properties:
+        slug: { $ref: '#/components/schemas/Slug' }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        summary: { type: string, minLength: 1, maxLength: 500 }
+        programmingLanguage:
+          type: [string, 'null']
+          enum: [javascript, typescript, null]
+        prerequisiteTrackId: { type: [integer, 'null'], minimum: 1 }
+        status: { $ref: '#/components/schemas/PublicationStatus' }
+
+    AdminChapter:
+      type: object
+      required:
+        [
+          id,
+          trackId,
+          slug,
+          level,
+          position,
+          title,
+          summary,
+          status,
+          firstPublishedAt,
+          createdAt,
+          updatedAt,
+        ]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        trackId: { $ref: '#/components/schemas/Id' }
+        slug: { $ref: '#/components/schemas/Slug' }
+        level: { $ref: '#/components/schemas/ChapterLevel' }
+        position: { type: integer }
+        title: { type: string }
+        summary: { type: string }
+        status: { $ref: '#/components/schemas/PublicationStatus' }
+        firstPublishedAt: { $ref: '#/components/schemas/NullableDateTime' }
+        createdAt: { $ref: '#/components/schemas/DateTime' }
+        updatedAt: { $ref: '#/components/schemas/DateTime' }
+    AdminChapterEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - properties:
+            data: { $ref: '#/components/schemas/AdminChapter' }
+    NewChapter:
+      type: object
+      additionalProperties: false
+      required: [slug, level, title, summary]
+      properties:
+        slug: { $ref: '#/components/schemas/Slug' }
+        level: { $ref: '#/components/schemas/ChapterLevel' }
+        title: { type: string, minLength: 1, maxLength: 100 }
+        summary: { type: string, minLength: 1, maxLength: 500 }
+    ChapterChanges:
+      type: object
+      additionalProperties: false
+      description: Champs de `NewChapter`, tous facultatifs, plus `status`.
+      properties:
+        slug: { $ref: '#/components/schemas/Slug' }
+        level: { $ref: '#/components/schemas/ChapterLevel' }
+        title: { type: string, minLength: 1, maxLength: 100 }
+        summary: { type: string, minLength: 1, maxLength: 500 }
+        status: { $ref: '#/components/schemas/PublicationStatus' }
+
+    TestCase:
+      type: object
+      additionalProperties: false
+      required: [arguments, expectedResult]
+      properties:
+        arguments:
+          type: array
+          items: {}
+          description: Arguments passés à la fonction ; 1 Kio au plus en JSON.
+        expectedResult:
+          description: Valeur attendue ; 1 Kio au plus en JSON.
+        isHidden: { type: boolean, default: false }
+        description: { type: [string, 'null'], maxLength: 80, default: null }
+    AdminTestCase:
+      allOf:
+        - $ref: '#/components/schemas/TestCase'
+        - type: object
+          required: [id, exerciseId, position, isHidden, description, createdAt, updatedAt]
+          properties:
+            id: { $ref: '#/components/schemas/Id' }
+            exerciseId: { $ref: '#/components/schemas/Id' }
+            position: { type: integer }
+            createdAt: { $ref: '#/components/schemas/DateTime' }
+            updatedAt: { $ref: '#/components/schemas/DateTime' }
+    AdminExercise:
+      type: object
+      required:
+        [
+          id,
+          chapterId,
+          slug,
+          position,
+          title,
+          instructions,
+          functionName,
+          starterCode,
+          solutionCode,
+          hints,
+          solutionCheckStatus,
+          solutionCheckedAt,
+          status,
+          firstPublishedAt,
+          createdAt,
+          updatedAt,
+          testCases,
+        ]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        chapterId: { $ref: '#/components/schemas/Id' }
+        slug: { $ref: '#/components/schemas/Slug' }
+        position: { type: integer }
+        title: { type: string }
+        instructions: { type: string }
+        functionName: { type: string }
+        starterCode: { type: string }
+        solutionCode: { type: string }
+        hints: { type: array, items: { type: string } }
+        solutionCheckStatus: { $ref: '#/components/schemas/SolutionCheckStatus' }
+        solutionCheckedAt: { $ref: '#/components/schemas/NullableDateTime' }
+        status: { $ref: '#/components/schemas/PublicationStatus' }
+        firstPublishedAt: { $ref: '#/components/schemas/NullableDateTime' }
+        createdAt: { $ref: '#/components/schemas/DateTime' }
+        updatedAt: { $ref: '#/components/schemas/DateTime' }
+        testCases:
+          type: array
+          items: { $ref: '#/components/schemas/AdminTestCase' }
+    AdminExerciseEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - properties:
+            data: { $ref: '#/components/schemas/AdminExercise' }
+    NewExercise:
+      type: object
+      additionalProperties: false
+      required: [slug, title, instructions, functionName, starterCode, solutionCode]
+      properties:
+        slug: { $ref: '#/components/schemas/Slug' }
+        title: { type: string, minLength: 1, maxLength: 120 }
+        instructions: { type: string, minLength: 1, maxLength: 5000 }
+        functionName:
+          type: string
+          pattern: '^[A-Za-z_$][\w$]*$'
+          maxLength: 60
+        starterCode: { type: string, minLength: 1, maxLength: 5000 }
+        solutionCode: { type: string, minLength: 1, maxLength: 5000 }
+        hints:
+          type: array
+          maxItems: 3
+          default: []
+          items: { type: string, minLength: 1, maxLength: 500 }
+        testCases:
+          type: array
+          maxItems: 20
+          default: []
+          description: Remplace tous les cas existants.
+          items: { $ref: '#/components/schemas/TestCase' }
+    ExerciseChanges:
+      type: object
+      additionalProperties: false
+      description: Champs de `NewExercise`, tous facultatifs, plus `status`.
+      properties:
+        slug: { $ref: '#/components/schemas/Slug' }
+        title: { type: string, minLength: 1, maxLength: 120 }
+        instructions: { type: string, minLength: 1, maxLength: 5000 }
+        functionName:
+          type: string
+          pattern: '^[A-Za-z_$][\w$]*$'
+          maxLength: 60
+        starterCode: { type: string, minLength: 1, maxLength: 5000 }
+        solutionCode: { type: string, minLength: 1, maxLength: 5000 }
+        hints:
+          type: array
+          maxItems: 3
+          items: { type: string, minLength: 1, maxLength: 500 }
+        testCases:
+          type: array
+          maxItems: 20
+          items: { $ref: '#/components/schemas/TestCase' }
+        status: { $ref: '#/components/schemas/PublicationStatus' }
+    SolutionCheck:
+      type: object
+      required: [exercise, passed, checks, stderr]
+      properties:
+        exercise: { $ref: '#/components/schemas/AdminExercise' }
+        passed: { type: boolean }
+        checks:
+          type: array
+          items: { $ref: '#/components/schemas/VerificationCheck' }
+        stderr: { type: string }
