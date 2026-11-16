@@ -4,12 +4,19 @@ import type { TableColumn } from '@nuxt/ui'
 const store = useContentStore()
 const track = await useRouteTrack()
 const chapter = await useRouteChapter(track)
-await store.loadExercises(chapter.id)
+await Promise.all([store.loadLessons(chapter.id), store.loadExercises(chapter.id)])
 
 useSeoMeta({ title: `${chapter.title} — Backoffice Scalar` })
 
 const back = `/parcours/${track.id}`
 const base = `${back}/chapitres/${chapter.id}`
+
+const lessonColumns: TableColumn<Lesson>[] = [
+  { accessorKey: 'position', header: 'N°' },
+  { accessorKey: 'title', header: 'Leçon' },
+  { accessorKey: 'summary', header: 'Résumé' },
+  { accessorKey: 'status', header: 'Statut' },
+]
 
 const columns: TableColumn<Exercise>[] = [
   { accessorKey: 'position', header: 'N°' },
@@ -48,6 +55,13 @@ function replaceExercise(updated: Exercise) {
             :to="`${base}/modifier`"
           />
           <UButton
+            icon="i-lucide-plus"
+            label="Nouvelle leçon"
+            color="neutral"
+            variant="outline"
+            :to="`${base}/lecons/nouveau`"
+          />
+          <UButton
             v-if="track.programmingLanguage"
             icon="i-lucide-plus"
             label="Nouvel exercice"
@@ -69,6 +83,26 @@ function replaceExercise(updated: Exercise) {
         <p class="text-muted">{{ chapter.summary }}</p>
       </div>
 
+      <h2 class="font-semibold">Leçons</h2>
+      <UTable :data="[...store.lessons]" :columns="lessonColumns" empty="Aucune leçon.">
+        <template #position-cell="{ row }">
+          <span class="text-muted tabular-nums">{{ row.original.position }}</span>
+        </template>
+        <template #title-cell="{ row }">
+          <ULink :to="`${base}/lecons/${row.original.id}`" class="font-medium">
+            {{ row.original.title }}
+          </ULink>
+          <code class="text-muted ms-2 text-xs">{{ row.original.slug }}</code>
+        </template>
+        <template #summary-cell="{ row }">
+          <span class="text-muted">{{ row.original.summary }}</span>
+        </template>
+        <template #status-cell="{ row }">
+          <StatusBadge :status="row.original.status" />
+        </template>
+      </UTable>
+
+      <h2 class="font-semibold">Exercices</h2>
       <UTable :data="[...store.exercises]" :columns="columns" empty="Aucun exercice.">
         <template #position-cell="{ row }">
           <span class="text-muted tabular-nums">{{ row.original.position }}</span>

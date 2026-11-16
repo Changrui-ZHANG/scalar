@@ -4,7 +4,7 @@
  */
 import { z } from 'zod'
 
-import type { Exercise } from './content'
+import type { Exercise, Lesson } from './content'
 
 const slug = z
   .string()
@@ -61,6 +61,18 @@ export const chapterInputSchema = z.object({
   status,
 })
 
+export const lessonInputSchema = z.object({
+  title: required('Titre', 120),
+  slug,
+  summary: required('Résumé', 300),
+  // Sans trim, comme le code : l'indentation d'un bloc en tete ou en fin de cours compte.
+  body: z
+    .string()
+    .max(20_000, '20000 caractères au plus.')
+    .refine((text) => text.trim() !== '', 'Cours obligatoire.'),
+  status,
+})
+
 export const testCaseInputSchema = z.object({
   args: z
     .string()
@@ -98,8 +110,17 @@ export const exerciseInputSchema = z.object({
 export type LoginInput = z.infer<typeof loginInputSchema>
 export type TrackInput = z.infer<typeof trackInputSchema>
 export type ChapterInput = z.infer<typeof chapterInputSchema>
+export type LessonInput = z.infer<typeof lessonInputSchema>
 export type TestCaseInput = z.infer<typeof testCaseInputSchema>
 export type ExerciseInput = z.infer<typeof exerciseInputSchema>
+
+export const toLessonInput = (lesson: Lesson): LessonInput => ({
+  title: lesson.title,
+  slug: lesson.slug,
+  summary: lesson.summary,
+  body: lesson.body,
+  status: lesson.status,
+})
 
 /** Formulaire -> corps de l'API : indices decoupes, cas de test relus en JSON. */
 export const toExerciseData = ({ statement, ...input }: ExerciseInput) => ({

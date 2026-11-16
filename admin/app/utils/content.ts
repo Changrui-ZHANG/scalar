@@ -28,6 +28,21 @@ export interface Chapter {
   readonly status: ContentStatus
 }
 
+export interface Lesson {
+  readonly id: number
+  readonly chapterId: number
+  readonly slug: string
+  /** Rang dans le chapitre, a partir de 1. */
+  readonly position: number
+  readonly title: string
+  readonly summary: string
+  /** Markdown. */
+  readonly body: string
+  /** Posee par l'API a chaque changement du cours. */
+  readonly lastReviewedAt: string | null
+  readonly status: ContentStatus
+}
+
 export interface TestCase {
   /** Arguments passes a la fonction : toujours un tableau. */
   readonly arguments: readonly unknown[]
