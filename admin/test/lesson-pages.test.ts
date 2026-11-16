@@ -168,6 +168,32 @@ describe('page d’édition d’une leçon', () => {
     await vi.waitFor(() => expect(currentPath()).toBe(CHAPTER_URL))
   })
 
+  const demoLinks = (wrapper: Awaited<ReturnType<typeof mountPage>>) =>
+    wrapper
+      .findAll('a')
+      .filter((a) => a.text().includes('Retour à la démo'))
+      .map((a) => a.attributes('href')?.replace(/^\/admin/, ''))
+
+  it('venue de la démo : propose de revenir à la même leçon de la démo', async () => {
+    const wrapper = await mountSuspended(EditLessonPage, { route: `${LESSON_URL}?demo=1` })
+
+    expect(demoLinks(wrapper)).toEqual(['/parcours/1/apercu/lecons/4?demo=1'])
+  })
+
+  it('venue de la démo : y revient après l’enregistrement', async () => {
+    const wrapper = await mountSuspended(EditLessonPage, { route: `${LESSON_URL}?demo=1` })
+
+    wrapper.findComponent(LessonForm).vm.$emit('saved', LESSON)
+
+    await vi.waitFor(() =>
+      expect(useRouter().currentRoute.value.fullPath).toBe('/parcours/1/apercu/lecons/4?demo=1'),
+    )
+  })
+
+  it('hors démo : pas de retour à la démo', async () => {
+    expect(demoLinks(await mountPage())).toEqual([])
+  })
+
   it('trouve la leçon du chapitre de l’URL', async () => {
     await useRouter().push(LESSON_URL)
 

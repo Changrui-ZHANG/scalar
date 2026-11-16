@@ -3,13 +3,15 @@ import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import CodeField from '../app/components/CodeField.vue'
-import { useRoutePreviewExercise } from '../app/composables/useRouteRecord'
+import MarkdownPreview from '../app/components/MarkdownPreview.vue'
+import { useRoutePreviewExercise, useRoutePreviewLesson } from '../app/composables/useRouteRecord'
 import TracksPage from '../app/pages/parcours/index.vue'
 import TrackPage from '../app/pages/parcours/[trackId]/index.vue'
 import DemoPage from '../app/pages/parcours/[trackId]/demo.vue'
 import PreviewPage from '../app/pages/parcours/[trackId]/apercu/index.vue'
 import ExercisePreviewPage from '../app/pages/parcours/[trackId]/apercu/exercices/[exerciseId].vue'
-import type { Chapter, Exercise, Track } from '../app/utils/content'
+import LessonPreviewPage from '../app/pages/parcours/[trackId]/apercu/lecons/[lessonId].vue'
+import type { Chapter, Exercise, Lesson, Track } from '../app/utils/content'
 
 const apiMock = vi.hoisted(() => vi.fn())
 
@@ -53,6 +55,18 @@ const exercise = (id: number, chapterId: number, overrides: Partial<Exercise> = 
   ...overrides,
 })
 
+const LESSON: Lesson = {
+  id: 10,
+  chapterId: 2,
+  slug: 'introduction',
+  position: 1,
+  title: 'Introduction aux bases',
+  summary: 'Le point de départ.',
+  body: '## Variables\n\nUne variable range une valeur.',
+  lastReviewedAt: null,
+  status: 'draft',
+}
+
 const FIRST = exercise(3, 2, { hints: ['Premier indice', 'Second indice'] })
 const MIDDLE = exercise(4, 2, { status: 'draft', title: 'Exercice brouillon' })
 const LAST = exercise(5, 6)
@@ -82,7 +96,9 @@ beforeEach(() => {
       chapter(2, 'Les bases', 'published'),
       chapter(6, 'Chapitre en cours', 'draft'),
     ],
+    '/admin/chapters/2/lessons': [LESSON],
     '/admin/chapters/2/exercises': [FIRST, MIDDLE],
+    '/admin/chapters/6/lessons': [],
     '/admin/chapters/6/exercises': [LAST],
     '/admin/exercises/3/verifications': VERDICT,
   }
@@ -114,16 +130,27 @@ describe('DEMO depuis la liste des parcours', () => {
     expect(hrefs(wrapper)).toContain('/parcours/1/demo')
   })
 
-  it('ouvre le premier exercice du parcours en DEMO', async () => {
+  it('ouvre la première étape du parcours en DEMO : la leçon qui ouvre le chapitre', async () => {
     await mountSuspended(DemoPage, { route: '/parcours/1/demo' })
 
     await vi.waitFor(() =>
-      expect(useRouter().currentRoute.value.fullPath).toBe('/parcours/1/apercu/exercices/3?demo=1'),
+      expect(useRouter().currentRoute.value.fullPath).toBe('/parcours/1/apercu/lecons/10?demo=1'),
     )
   })
 })
 
 describe('aperçu d’un parcours', () => {
+  it('liste les leçons de chaque chapitre avant ses exercices, comme l’apprenant', async () => {
+    const wrapper = await mountSuspended(PreviewPage, { route: '/parcours/1/apercu' })
+    const links = hrefs(wrapper)
+
+    expect(wrapper.text()).toContain('Introduction aux bases')
+    expect(links).toContain('/parcours/1/apercu/lecons/10')
+    expect(links.indexOf('/parcours/1/apercu/lecons/10')).toBeLessThan(
+      links.indexOf('/parcours/1/apercu/exercices/3'),
+    )
+  })
+
   it('liste les chapitres et leurs exercices, brouillons compris et signalés', async () => {
     const wrapper = await mountSuspended(PreviewPage, { route: '/parcours/1/apercu' })
 
@@ -248,9 +275,10 @@ describe('essai d’un exercice', () => {
     expect(hrefs(middle)).toEqual(
       expect.arrayContaining(['/parcours/1/apercu/exercices/3', '/parcours/1/apercu/exercices/5']),
     )
+  })
 
-    const first = await mountExercise(3)
-    expect(first.text()).not.toContain('Précédent')
+  it('revient à la leçon qui précède le premier exercice du chapitre', async () => {
+    expect(hrefs(await mountExercise(3))).toContain('/parcours/1/apercu/lecons/10')
   })
 
   it('renvoie vers la page d’édition de l’exercice', async () => {
@@ -269,5 +297,51 @@ describe('essai d’un exercice', () => {
     await useRouter().push('/parcours/1/apercu/exercices/99')
 
     await expect(useRoutePreviewExercise(TRACK)).rejects.toMatchObject({ statusCode: 404 })
+  })
+})
+
+describe('lecture d’une leçon', () => {
+  const mountLesson = (query = '') =>
+    mountSuspended(LessonPreviewPage, { route: `/parcours/1/apercu/lecons/10${query}` })
+
+  it('montre le titre et le cours tel que le site l’affichera', async () => {
+    const wrapper = await mountLesson()
+
+    expect(wrapper.text()).toContain('Introduction aux bases')
+    expect(wrapper.findComponent(MarkdownPreview).props('source')).toBe(LESSON.body)
+    expect(wrapper.find('h3').text()).toBe('Variables')
+  })
+
+  it('signale un brouillon', async () => {
+    expect((await mountLesson()).text()).toContain('Brouillon')
+  })
+
+  it('mène au premier exercice du chapitre ; pas de précédent au début du parcours', async () => {
+    const wrapper = await mountLesson()
+
+    expect(hrefs(wrapper)).toContain('/parcours/1/apercu/exercices/3')
+    expect(wrapper.text()).not.toContain('Précédent')
+  })
+
+  it('renvoie vers la page d’édition de la leçon', async () => {
+    expect(hrefs(await mountLesson())).toContain('/parcours/1/chapitres/2/lecons/10')
+  })
+
+  it('en DEMO : reste en DEMO vers l’étape suivante et vers l’édition', async () => {
+    const wrapper = await mountLesson('?demo=1')
+
+    expect(wrapper.text()).toContain('Mode DEMO')
+    expect(hrefs(wrapper)).toEqual(
+      expect.arrayContaining([
+        '/parcours/1/apercu/exercices/3?demo=1',
+        '/parcours/1/chapitres/2/lecons/10?demo=1',
+      ]),
+    )
+  })
+
+  it('404 pour une leçon d’un autre parcours', async () => {
+    await useRouter().push('/parcours/1/apercu/lecons/99')
+
+    await expect(useRoutePreviewLesson(TRACK)).rejects.toMatchObject({ statusCode: 404 })
   })
 })
