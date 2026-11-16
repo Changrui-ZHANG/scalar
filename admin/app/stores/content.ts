@@ -18,6 +18,7 @@ export const useContentStore = defineStore('content', () => {
   const api = useApi()
   const tracks = ref<readonly Track[]>([])
   const chapters = ref<readonly Chapter[]>([])
+  const lessons = ref<readonly Lesson[]>([])
   const exercises = ref<readonly Exercise[]>([])
 
   async function loadTracks(): Promise<void> {
@@ -26,6 +27,10 @@ export const useContentStore = defineStore('content', () => {
 
   async function loadChapters(trackId: number): Promise<void> {
     chapters.value = required(await api<Chapter[]>(`/admin/tracks/${trackId}/chapters`))
+  }
+
+  async function loadLessons(chapterId: number): Promise<void> {
+    lessons.value = required(await api<Lesson[]>(`/admin/chapters/${chapterId}/lessons`))
   }
 
   async function loadExercises(chapterId: number): Promise<void> {
@@ -51,6 +56,9 @@ export const useContentStore = defineStore('content', () => {
 
   const findChapter = async (trackId: number, id: number): Promise<Chapter | null> =>
     orNull(await api<Chapter>(`/admin/tracks/${trackId}/chapters/${id}`))
+
+  const findLesson = async (id: number): Promise<Lesson | null> =>
+    orNull(await api<Lesson>(`/admin/lessons/${id}`))
 
   const findExercise = async (id: number): Promise<Exercise | null> =>
     orNull(await api<Exercise>(`/admin/exercises/${id}`))
@@ -84,6 +92,19 @@ export const useContentStore = defineStore('content', () => {
         body: input,
       }),
     )
+  }
+
+  async function createLesson(
+    chapterId: number,
+    { status: _, ...fields }: LessonInput,
+  ): Promise<SaveResult<Lesson>> {
+    return toSaveResult(
+      await api<Lesson>(`/admin/chapters/${chapterId}/lessons`, { method: 'POST', body: fields }),
+    )
+  }
+
+  async function updateLesson(id: number, input: LessonInput): Promise<SaveResult<Lesson>> {
+    return toSaveResult(await api<Lesson>(`/admin/lessons/${id}`, { method: 'PATCH', body: input }))
   }
 
   async function createExercise(
@@ -123,19 +144,24 @@ export const useContentStore = defineStore('content', () => {
   return {
     tracks,
     chapters,
+    lessons,
     exercises,
     loadTracks,
     loadChapters,
+    loadLessons,
     loadExercises,
     loadOutline,
     tryExercise,
     findTrack,
     findChapter,
+    findLesson,
     findExercise,
     createTrack,
     updateTrack,
     createChapter,
     updateChapter,
+    createLesson,
+    updateLesson,
     createExercise,
     updateExercise,
     setExerciseStatus,

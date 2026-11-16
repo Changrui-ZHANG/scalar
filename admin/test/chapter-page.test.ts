@@ -48,6 +48,7 @@ function serve(
     '/admin/tracks/1': track,
     '/admin/tracks/1/chapters/2': CHAPTER,
     '/admin/chapters/2/exercises': [EXERCISE],
+    '/admin/chapters/2/lessons': [],
   }
   apiMock.mockImplementation(async (path: string) =>
     path in data

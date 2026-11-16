@@ -1,0 +1,51 @@
+<script setup lang="ts">
+const store = useContentStore()
+const track = await useRouteTrack()
+const chapter = await useRouteChapter(track)
+const lesson = await useRouteLesson(chapter)
+const toast = useToast()
+
+useSeoMeta({ title: `Modifier ${lesson.title} — Backoffice Scalar` })
+
+const back = `/parcours/${track.id}/chapitres/${chapter.id}`
+
+function onSaved(saved: Lesson) {
+  toast.add({ title: `Leçon « ${saved.title} » enregistrée`, color: 'success' })
+  return navigateTo(back)
+}
+</script>
+
+<template>
+  <UDashboardPanel :id="`lecon-${lesson.id}`">
+    <template #header>
+      <UDashboardNavbar :title="`Modifier · ${lesson.title}`">
+        <template #leading>
+          <UButton
+            icon="i-lucide-arrow-left"
+            color="neutral"
+            variant="ghost"
+            :aria-label="`Retour au chapitre ${chapter.title}`"
+            :to="back"
+          />
+        </template>
+      </UDashboardNavbar>
+    </template>
+
+    <template #body>
+      <LessonForm
+        :initial="toLessonInput(lesson)"
+        :save="(input) => store.updateLesson(lesson.id, input)"
+        submit-label="Enregistrer"
+        :cancel-to="back"
+        editing
+        @saved="onSaved"
+      >
+        <template #note>
+          <p class="text-muted text-sm">
+            Une leçon publiée reste modifiable. Changer le cours met à jour sa date de relecture.
+          </p>
+        </template>
+      </LessonForm>
+    </template>
+  </UDashboardPanel>
+</template>

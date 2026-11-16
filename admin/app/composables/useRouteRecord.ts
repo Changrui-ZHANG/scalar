@@ -1,5 +1,5 @@
 /**
- * Parcours, chapitre et exercice designes par l'URL. Une page par identifiant : `app.vue`
+ * Parcours, chapitre, lecon et exercice designes par l'URL. Une page par identifiant : `app.vue`
  * remonte la page quand l'URL change, la lecture a la creation suffit donc.
  */
 
@@ -32,6 +32,14 @@ export async function useRoutePreviewExercise(track: Track): Promise<{
   const index = sequence.findIndex(({ id }) => id === Number(route.params.exerciseId))
   const exercise = sequence[index] ?? notFound('Exercice')
   return { exercise, previous: sequence[index - 1], next: sequence[index + 1] }
+}
+
+export async function useRouteLesson(chapter: Chapter): Promise<Lesson> {
+  const route = useRoute()
+  const store = useContentStore()
+  const lesson = await store.findLesson(Number(route.params.lessonId))
+  // L'API trouve une lecon par son seul id : l'URL d'un autre chapitre doit rester un 404.
+  return lesson?.chapterId === chapter.id ? lesson : notFound('Leçon')
 }
 
 export async function useRouteExercise(chapter: Chapter): Promise<Exercise> {
