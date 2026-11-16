@@ -11,6 +11,7 @@ import type { AdminExercise } from '../entity/admin-exercise.entity.ts'
 import type { Chapter } from '../entity/chapter.entity.ts'
 import type { Exercise } from '../entity/exercise.entity.ts'
 import type { ExerciseTestCase } from '../entity/exercise-test-case.entity.ts'
+import type { Lesson } from '../entity/lesson.entity.ts'
 import type { Track } from '../entity/track.entity.ts'
 import { CHAPTERS } from '../content/chapters.ts'
 import { EXERCISES, EXERCISE_TEST_CASES } from '../content/exercises.ts'
@@ -38,6 +39,19 @@ export interface ChapterInput {
 }
 
 export interface ChapterChanges extends Partial<ChapterInput> {
+  readonly status?: PublicationStatus
+  readonly firstPublishedAt?: Date
+}
+
+export interface LessonInput {
+  readonly slug: string
+  readonly title: string
+  readonly summary: string
+  readonly body: string
+  readonly lastReviewedAt: Date | null
+}
+
+export interface LessonChanges extends Partial<LessonInput> {
   readonly status?: PublicationStatus
   readonly firstPublishedAt?: Date
 }
@@ -94,6 +108,12 @@ export interface AdminContentRepository {
   updateChapter(trackId: number, id: number, changes: ChapterChanges): Promise<SaveOutcome<Chapter>>
   deleteChapter(trackId: number, id: number): Promise<DeleteOutcome>
   findChapterById(id: number): Promise<Chapter | null>
+  listLessons(chapterId: number): Promise<readonly Lesson[]>
+  findLesson(id: number): Promise<Lesson | null>
+  /** Toujours en brouillon, placee a la fin du chapitre. */
+  createLesson(chapterId: number, input: LessonInput): Promise<SaveOutcome<Lesson>>
+  updateLesson(id: number, changes: LessonChanges): Promise<SaveOutcome<Lesson>>
+  deleteLesson(id: number): Promise<DeleteOutcome>
   listExercises(chapterId: number): Promise<readonly AdminExercise[]>
   findExercise(id: number): Promise<AdminExercise | null>
   /** Toujours en brouillon et non verifie, place a la fin du chapitre. */
@@ -121,18 +141,17 @@ const nextPosition = (rows: readonly { position: number }[]): number =>
 const nextId = (rows: readonly { id: number }[]): number =>
   Math.max(0, ...rows.map((r) => r.id)) + 1
 
-/** Les lecons ne servent qu'a refuser la suppression d'un chapitre qui en a. */
 export class InMemoryAdminContentRepository implements AdminContentRepository {
   private tracks: Track[]
   private chapters: Chapter[]
   private exercises: Exercise[]
   private testCases: ExerciseTestCase[]
-  private readonly chapterIdsWithLessons: ReadonlySet<number>
+  private lessons: Lesson[]
 
   constructor(
     tracks: readonly Track[] = TRACKS,
     chapters: readonly Chapter[] = CHAPTERS,
-    lessons: readonly { chapterId: number }[] = LESSONS,
+    lessons: readonly Lesson[] = LESSONS,
     exercises: readonly Exercise[] = EXERCISES,
     testCases: readonly ExerciseTestCase[] = EXERCISE_TEST_CASES,
   ) {
@@ -140,7 +159,7 @@ export class InMemoryAdminContentRepository implements AdminContentRepository {
     this.chapters = chapters.map((c) => ({ ...c }))
     this.exercises = exercises.map((e) => ({ ...e }))
     this.testCases = testCases.map((t) => ({ ...t }))
-    this.chapterIdsWithLessons = new Set(lessons.map((l) => l.chapterId))
+    this.lessons = lessons.map((l) => ({ ...l }))
   }
 
   async listTracks(): Promise<readonly Track[]> {
@@ -253,7 +272,10 @@ export class InMemoryAdminContentRepository implements AdminContentRepository {
     if (!this.chapters.some((c) => c.trackId === trackId && c.id === id)) {
       return 'not-found'
     }
-    if (this.chapterIdsWithLessons.has(id) || this.exercises.some((e) => e.chapterId === id)) {
+    if (
+      this.lessons.some((l) => l.chapterId === id) ||
+      this.exercises.some((e) => e.chapterId === id)
+    ) {
       return 'in-use'
     }
     this.chapters = this.chapters.filter((c) => c.id !== id)
@@ -263,6 +285,60 @@ export class InMemoryAdminContentRepository implements AdminContentRepository {
   async findChapterById(id: number): Promise<Chapter | null> {
     const chapter = this.chapters.find((c) => c.id === id)
     return chapter ? { ...chapter } : null
+  }
+
+  async listLessons(chapterId: number): Promise<readonly Lesson[]> {
+    return this.lessons
+      .filter((l) => l.chapterId === chapterId)
+      .toSorted(byPosition)
+      .map((l) => ({ ...l }))
+  }
+
+  async findLesson(id: number): Promise<Lesson | null> {
+    const lesson = this.lessons.find((l) => l.id === id)
+    return lesson ? { ...lesson } : null
+  }
+
+  async createLesson(chapterId: number, input: LessonInput): Promise<SaveOutcome<Lesson>> {
+    if (!this.chapters.some((c) => c.id === chapterId)) {
+      return { status: 'not-found' }
+    }
+    if (this.lessonSlugTaken(chapterId, null, input.slug)) {
+      return { status: 'slug-taken' }
+    }
+    const now = new Date()
+    const lesson: Lesson = {
+      ...input,
+      id: nextId(this.lessons),
+      chapterId,
+      position: nextPosition(this.lessons.filter((l) => l.chapterId === chapterId)),
+      status: 'draft',
+      firstPublishedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    }
+    this.lessons.push(lesson)
+    return { status: 'saved', item: { ...lesson } }
+  }
+
+  async updateLesson(id: number, changes: LessonChanges): Promise<SaveOutcome<Lesson>> {
+    const lesson = this.lessons.find((l) => l.id === id)
+    if (!lesson) {
+      return { status: 'not-found' }
+    }
+    if (changes.slug !== undefined && this.lessonSlugTaken(lesson.chapterId, id, changes.slug)) {
+      return { status: 'slug-taken' }
+    }
+    Object.assign(lesson, changes, { updatedAt: new Date() })
+    return { status: 'saved', item: { ...lesson } }
+  }
+
+  async deleteLesson(id: number): Promise<DeleteOutcome> {
+    if (!this.lessons.some((l) => l.id === id)) {
+      return 'not-found'
+    }
+    this.lessons = this.lessons.filter((l) => l.id !== id)
+    return 'deleted'
   }
 
   async listExercises(chapterId: number): Promise<readonly AdminExercise[]> {
@@ -376,6 +452,10 @@ export class InMemoryAdminContentRepository implements AdminContentRepository {
         updatedAt: now,
       })),
     ]
+  }
+
+  private lessonSlugTaken(chapterId: number, id: number | null, slug: string): boolean {
+    return this.lessons.some((l) => l.chapterId === chapterId && l.slug === slug && l.id !== id)
   }
 
   private exerciseSlugTaken(chapterId: number, id: number | null, slug: string): boolean {

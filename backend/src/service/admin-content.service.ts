@@ -11,6 +11,9 @@ import {
   MAX_FUNCTION_NAME_LENGTH,
   MAX_HINT_LENGTH,
   MAX_HINTS,
+  MAX_LESSON_BODY_LENGTH,
+  MAX_LESSON_SUMMARY_LENGTH,
+  MAX_LESSON_TITLE_LENGTH,
   MAX_TEST_CASE_DESCRIPTION_LENGTH,
   MAX_TEST_CASES,
 } from '@scalar/shared/limits'
@@ -19,6 +22,7 @@ import { z } from 'zod'
 import { FUNCTION_NAME_PATTERN, MESSAGES, SLUG_PATTERN } from '../constants.ts'
 import type { AdminExercise } from '../entity/admin-exercise.entity.ts'
 import type { Chapter } from '../entity/chapter.entity.ts'
+import type { Lesson } from '../entity/lesson.entity.ts'
 import type { Track } from '../entity/track.entity.ts'
 import type {
   AdminContentRepository,
@@ -85,6 +89,19 @@ const chapterFields = {
 }
 const newChapter = z.strictObject(chapterFields)
 const chapterChanges = z.strictObject(chapterFields).partial().extend({ status: status.optional() })
+
+const lessonFields = {
+  slug,
+  title: text(MAX_LESSON_TITLE_LENGTH),
+  summary: text(MAX_LESSON_SUMMARY_LENGTH),
+  // Pas de trim : il casserait l'indentation d'un bloc de code en tete ou en fin de cours.
+  body: z
+    .string()
+    .max(MAX_LESSON_BODY_LENGTH)
+    .refine((markdown) => markdown.trim() !== ''),
+}
+const newLesson = z.strictObject(lessonFields)
+const lessonChanges = z.strictObject(lessonFields).partial().extend({ status: status.optional() })
 
 const code = z
   .string()
@@ -261,6 +278,53 @@ export class AdminContentService {
       return { status: 'published-once' }
     }
     return fromDelete(await this.content.deleteChapter(trackId, id))
+  }
+
+  async listLessons(chapterId: number): Promise<readonly Lesson[] | null> {
+    return (await this.content.findChapterById(chapterId))
+      ? this.content.listLessons(chapterId)
+      : null
+  }
+
+  findLesson(id: number): Promise<Lesson | null> {
+    return this.content.findLesson(id)
+  }
+
+  async createLesson(chapterId: number, body: unknown): Promise<AdminOutcome<Lesson>> {
+    const parsed = parse(newLesson, body)
+    if (!parsed.ok) {
+      return parsed.outcome
+    }
+    return this.content.createLesson(chapterId, { ...parsed.data, lastReviewedAt: this.now() })
+  }
+
+  async updateLesson(id: number, body: unknown): Promise<AdminOutcome<Lesson>> {
+    const parsed = parse(lessonChanges, body)
+    if (!parsed.ok) {
+      return parsed.outcome
+    }
+    const current = await this.content.findLesson(id)
+    if (!current) {
+      return { status: 'not-found' }
+    }
+    const published = publication(current, parsed.data, this.now())
+    if ('refusal' in published) {
+      return { status: published.refusal }
+    }
+    const reviewed = parsed.data.body !== undefined && parsed.data.body !== current.body
+    return this.content.updateLesson(id, {
+      ...parsed.data,
+      ...published,
+      ...(reviewed && { lastReviewedAt: this.now() }),
+    })
+  }
+
+  async deleteLesson(id: number): Promise<AdminOutcome<never>> {
+    const current = await this.content.findLesson(id)
+    if (current?.firstPublishedAt) {
+      return { status: 'published-once' }
+    }
+    return fromDelete(await this.content.deleteLesson(id))
   }
 
   async listExercises(chapterId: number): Promise<readonly AdminExercise[] | null> {

@@ -359,6 +359,120 @@ describe('exercices', () => {
   })
 })
 
+describe('leçons', () => {
+  const NEW_LESSON = {
+    title: 'Les tableaux',
+    summary: 'Ranger plusieurs valeurs.',
+    body: '## Tableaux\n\n```js\nconst notes = [12, 15]\n```',
+  }
+  let slugs = 0
+  const createLesson = async (extra: object = {}) =>
+    admin('POST', '/chapters/1/lessons', {
+      ...NEW_LESSON,
+      slug: `tableaux-${(slugs += 1)}`,
+      ...extra,
+    })
+
+  it.each([
+    ['GET', '/admin/chapters/1/lessons'],
+    ['POST', '/admin/chapters/1/lessons'],
+    ['GET', '/admin/lessons/1'],
+    ['PATCH', '/admin/lessons/1'],
+    ['DELETE', '/admin/lessons/1'],
+  ])('%s %s : 401 sans session, 403 pour un apprenant', async (method, path) => {
+    expect((await call(method, path)).status).toBe(401)
+    expect((await call(method, path, learnerCookie)).status).toBe(403)
+  })
+
+  it('crée un brouillon (201) à la fin du chapitre, que la liste et la lecture montrent', async () => {
+    const before = (await admin('GET', '/chapters/1/lessons')).body!.data as { position: number }[]
+
+    const created = await createLesson()
+
+    expect(created).toMatchObject({
+      status: 201,
+      body: {
+        success: true,
+        data: {
+          ...NEW_LESSON,
+          chapterId: 1,
+          position: Math.max(0, ...before.map((l) => l.position)) + 1,
+          status: 'draft',
+          firstPublishedAt: null,
+          lastReviewedAt: expect.any(String),
+        },
+      },
+    })
+    const id = created.body!.data.id as number
+    const listed = await admin('GET', '/chapters/1/lessons')
+    expect(listed.body!.data.map((l: { id: number }) => l.id)).toContain(id)
+    expect((await admin('GET', `/lessons/${id}`)).body!.data.body).toBe(NEW_LESSON.body)
+  })
+
+  it('publie, corrige le cours en ligne, puis refuse slug et suppression', async () => {
+    const created = await createLesson()
+    const path = `/lessons/${created.body!.data.id}`
+
+    expect(await admin('PATCH', path, { status: 'published' })).toMatchObject({
+      status: 200,
+      body: { data: { status: 'published', firstPublishedAt: expect.any(String) } },
+    })
+    expect(await admin('PATCH', path, { body: 'Cours corrigé.' })).toMatchObject({
+      status: 200,
+      body: { data: { status: 'published', body: 'Cours corrigé.' } },
+    })
+    expect(await admin('PATCH', path, { slug: 'autre-slug' })).toMatchObject({
+      status: 409,
+      body: { error: MESSAGES.slugLocked },
+    })
+    expect(await admin('DELETE', path)).toMatchObject({
+      status: 409,
+      body: { error: MESSAGES.publishedNotDeletable },
+    })
+  })
+
+  it('supprime un brouillon : 204, puis 404', async () => {
+    const created = await createLesson()
+    const path = `/lessons/${created.body!.data.id}`
+
+    expect(await admin('DELETE', path)).toEqual({ status: 204, body: null })
+    expect(await admin('GET', path)).toMatchObject({
+      status: 404,
+      body: { error: MESSAGES.lessonNotFound },
+    })
+  })
+
+  it.each([
+    ['404 sur un chapitre inconnu', 'GET', '/chapters/999/lessons', undefined, 404],
+    [
+      '404 sur un chapitre inconnu (création)',
+      'POST',
+      '/chapters/999/lessons',
+      { ...NEW_LESSON, slug: 'tableaux' },
+      404,
+    ],
+    ['404 sur une leçon inconnue', 'GET', '/lessons/999', undefined, 404],
+    ['404 sur une leçon inconnue (modification)', 'PATCH', '/lessons/999', { title: 'X' }, 404],
+    ['404 sur une leçon inconnue (suppression)', 'DELETE', '/lessons/999', undefined, 404],
+    ['404 sur un id mal formé', 'PATCH', '/lessons/abc', {}, 404],
+    ['400 sur un champ invalide', 'POST', '/chapters/1/lessons', { slug: 'X' }, 400],
+    ['400 sur un champ inconnu', 'PATCH', '/lessons/2', { titre: 'X' }, 400],
+    [
+      '409 sur un slug déjà pris dans le chapitre',
+      'POST',
+      '/chapters/1/lessons',
+      { ...NEW_LESSON, slug: 'variables-et-types-primitifs' },
+      409,
+    ],
+    ['409 sur la suppression d’une leçon publiée', 'DELETE', '/lessons/2', undefined, 409],
+  ])('%s', async (_name, method, path, body, expected) => {
+    const res = await admin(method, path, body)
+
+    expect(res.status).toBe(expected)
+    expect(res.body).toMatchObject({ success: false, data: null, error: expect.any(String) })
+  })
+})
+
 describe('chapitres', () => {
   it('liste ceux d’un parcours, 404 pour un parcours inconnu', async () => {
     expect((await admin('GET', '/tracks/1/chapters')).body!.data.length).toBeGreaterThan(0)

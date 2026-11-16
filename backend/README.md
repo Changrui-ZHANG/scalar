@@ -67,6 +67,11 @@ Toute route ajoutée ou retirée doit l'être aussi dans `openapi.yaml` :
 | GET     | `/admin/tracks/:trackId/chapters/:chapterId`           | admin : un chapitre                                            |
 | PATCH   | `/admin/tracks/:trackId/chapters/:chapterId`           | admin : modifie, change de niveau ou publie un chapitre        |
 | DELETE  | `/admin/tracks/:trackId/chapters/:chapterId`           | admin : supprime un chapitre jamais publié et vide             |
+| GET     | `/admin/chapters/:chapterId/lessons`                   | admin : ses leçons, brouillons compris                         |
+| POST    | `/admin/chapters/:chapterId/lessons`                   | admin : crée une leçon (en brouillon)                          |
+| GET     | `/admin/lessons/:lessonId`                             | admin : une leçon                                              |
+| PATCH   | `/admin/lessons/:lessonId`                             | admin : modifie ou publie une leçon                            |
+| DELETE  | `/admin/lessons/:lessonId`                             | admin : supprime une leçon jamais publiée                      |
 | GET     | `/admin/chapters/:chapterId/exercises`                 | admin : ses exercices, avec solution et cas cachés             |
 | POST    | `/admin/chapters/:chapterId/exercises`                 | admin : crée un exercice (en brouillon) et ses cas de test     |
 | GET     | `/admin/exercises/:exerciseId`                         | admin : un exercice                                            |
@@ -124,7 +129,7 @@ un apprenant. L'API ne donne jamais ce rôle ; on promeut un compte déjà inscr
 docker compose exec backend npm run admin:promote --workspace backend -- admin@scalar.local
 ```
 
-Les routes admin désignent parcours et chapitres par leur `id` (le slug peut changer tant que
+Les routes admin désignent parcours, chapitres, leçons et exercices par leur `id` (le slug peut changer tant que
 le contenu n'est pas publié). Règles :
 
 - création toujours en brouillon, placée à la fin (des parcours, ou du niveau du chapitre) ;
@@ -134,6 +139,15 @@ le contenu n'est pas publié). Règles :
 - suppression refusée tant que du contenu, un certificat ou un positionnement en dépend
   (`409`) ;
 - champ invalide ou inconnu : `400` qui le nomme ; slug déjà pris : `409`.
+
+Leçons, en plus de ces règles :
+
+- `body` est le cours en Markdown ; une leçon publiée reste modifiable (titre, résumé, cours) ;
+- `lastReviewedAt` est posée à la création, puis chaque fois que `body` change ; renvoyer le
+  même cours, ou changer seulement le titre ou le résumé, ne la change pas. Elle ne s'envoie
+  pas (`400`), pas plus que `position` ;
+- une leçon se crée toujours à la fin de son chapitre ; un chapitre qui a encore une leçon ne
+  se supprime pas (`409`).
 
 Exercices, en plus de ces règles :
 

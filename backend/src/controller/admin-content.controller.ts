@@ -11,7 +11,7 @@ import type {
 } from '../service/admin-content.service.ts'
 import { EngineUnavailableError } from '../service/execution.service.ts'
 
-type Params = { trackId?: string; chapterId?: string; exerciseId?: string }
+type Params = { trackId?: string; chapterId?: string; lessonId?: string; exerciseId?: string }
 
 // Plafond d'une colonne INT PostgreSQL : au-dela, Prisma leverait au lieu de ne rien trouver.
 const MAX_ID = 2_147_483_647
@@ -100,6 +100,36 @@ export class AdminContentController {
         ),
       ),
     )
+    router.get('/chapters/:chapterId/lessons', (req: Request<Params>, res) =>
+      this.withIds(req, res, MESSAGES.chapterNotFound, ([chapterId]) =>
+        this.read(res, MESSAGES.chapterNotFound, () => this.service.listLessons(chapterId)),
+      ),
+    )
+    router.post('/chapters/:chapterId/lessons', (req: Request<Params>, res) =>
+      this.withIds(req, res, MESSAGES.chapterNotFound, ([chapterId]) =>
+        this.write(
+          res,
+          MESSAGES.chapterNotFound,
+          () => this.service.createLesson(chapterId, req.body),
+          201,
+        ),
+      ),
+    )
+    router.get('/lessons/:lessonId', (req: Request<Params>, res) =>
+      this.withIds(req, res, MESSAGES.lessonNotFound, ([id]) =>
+        this.read(res, MESSAGES.lessonNotFound, () => this.service.findLesson(id)),
+      ),
+    )
+    router.patch('/lessons/:lessonId', (req: Request<Params>, res) =>
+      this.withIds(req, res, MESSAGES.lessonNotFound, ([id]) =>
+        this.write(res, MESSAGES.lessonNotFound, () => this.service.updateLesson(id, req.body)),
+      ),
+    )
+    router.delete('/lessons/:lessonId', (req: Request<Params>, res) =>
+      this.withIds(req, res, MESSAGES.lessonNotFound, ([id]) =>
+        this.write(res, MESSAGES.lessonNotFound, () => this.service.deleteLesson(id)),
+      ),
+    )
     router.get('/chapters/:chapterId/exercises', (req: Request<Params>, res) =>
       this.withIds(req, res, MESSAGES.chapterNotFound, ([chapterId]) =>
         this.read(res, MESSAGES.chapterNotFound, () => this.service.listExercises(chapterId)),
@@ -150,8 +180,8 @@ export class AdminContentController {
     notFoundMessage: string,
     handle: (ids: [number, number?]) => Promise<void>,
   ): Promise<void> {
-    const { trackId, chapterId, exerciseId } = req.params
-    const raw = [trackId, chapterId, exerciseId].filter((p) => p !== undefined)
+    const { trackId, chapterId, lessonId, exerciseId } = req.params
+    const raw = [trackId, chapterId, lessonId, exerciseId].filter((p) => p !== undefined)
     const ids = raw.map(toId)
     if (ids.some((id) => id === null)) {
       notFound(res, notFoundMessage)
