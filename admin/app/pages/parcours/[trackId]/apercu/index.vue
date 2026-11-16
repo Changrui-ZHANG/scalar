@@ -29,14 +29,24 @@ const back = `/parcours/${track.id}`
         Le parcours tel que l’apprenant le suivra, brouillons compris. Rien n’est enregistré.
       </p>
       <p v-if="outline.length === 0" class="text-muted">Aucun chapitre dans ce parcours.</p>
-      <section v-for="{ chapter, exercises } in outline" :key="chapter.id" class="grid gap-2">
+      <section v-for="{ chapter, lessons, exercises } in outline" :key="chapter.id" class="grid gap-2">
         <div class="flex items-center gap-3">
           <h2 class="font-medium">{{ chapter.title }}</h2>
           <StatusBadge v-if="chapter.status !== 'published'" :status="chapter.status" />
         </div>
-        <p v-if="exercises.length === 0" class="text-muted text-sm">Aucun exercice.</p>
+        <p v-if="lessons.length + exercises.length === 0" class="text-muted text-sm">
+          Aucune leçon ni exercice.
+        </p>
         <ul v-else class="grid gap-1">
+          <li v-for="lesson in lessons" :key="`l${lesson.id}`" class="flex items-center gap-3">
+            <UIcon name="i-lucide-book-open" class="text-muted" />
+            <ULink :to="`/parcours/${track.id}/apercu/lecons/${lesson.id}`">
+              {{ lesson.title }}
+            </ULink>
+            <StatusBadge v-if="lesson.status !== 'published'" :status="lesson.status" />
+          </li>
           <li v-for="exercise in exercises" :key="exercise.id" class="flex items-center gap-3">
+            <UIcon name="i-lucide-code" class="text-muted" />
             <ULink :to="`/parcours/${track.id}/apercu/exercices/${exercise.id}`">
               {{ exercise.title }}
             </ULink>

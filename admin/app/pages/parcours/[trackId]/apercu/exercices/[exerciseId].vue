@@ -8,8 +8,8 @@ useSeoMeta({ title: `Tester ${exercise.title} — Backoffice Scalar` })
 
 const base = `/parcours/${track.id}/apercu`
 const demo = useRoute().query.demo === '1'
-const linkTo = (target: Exercise) => ({
-  path: `${base}/exercices/${target.id}`,
+const linkTo = (step: PreviewStep) => ({
+  path: previewPath(track.id, step),
   query: demo ? { demo: '1' } : {},
 })
 const code = ref(exercise.starterCode)

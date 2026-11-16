@@ -37,14 +37,17 @@ export const useContentStore = defineStore('content', () => {
     exercises.value = required(await api<Exercise[]>(`/admin/chapters/${chapterId}/exercises`))
   }
 
-  /** Chapitres et exercices du parcours, brouillons compris, dans l'ordre de l'API. */
+  /** Chapitres, lecons et exercices du parcours, brouillons compris, dans l'ordre de l'API. */
   async function loadOutline(trackId: number): Promise<readonly OutlineChapter[]> {
     const list = required(await api<Chapter[]>(`/admin/tracks/${trackId}/chapters`))
     return Promise.all(
-      list.map(async (chapter) => ({
-        chapter,
-        exercises: required(await api<Exercise[]>(`/admin/chapters/${chapter.id}/exercises`)),
-      })),
+      list.map(async (chapter) => {
+        const [lessonsOf, exercisesOf] = await Promise.all([
+          api<Lesson[]>(`/admin/chapters/${chapter.id}/lessons`),
+          api<Exercise[]>(`/admin/chapters/${chapter.id}/exercises`),
+        ])
+        return { chapter, lessons: required(lessonsOf), exercises: required(exercisesOf) }
+      }),
     )
   }
 

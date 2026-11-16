@@ -8,10 +8,14 @@ const toast = useToast()
 useSeoMeta({ title: `Modifier ${lesson.title} — Backoffice Scalar` })
 
 const back = `/parcours/${track.id}/chapitres/${chapter.id}`
+const demoUrl =
+  useRoute().query.demo === '1'
+    ? { path: `/parcours/${track.id}/apercu/lecons/${lesson.id}`, query: { demo: '1' } }
+    : null
 
 function onSaved(saved: Lesson) {
   toast.add({ title: `Leçon « ${saved.title} » enregistrée`, color: 'success' })
-  return navigateTo(back)
+  return navigateTo(demoUrl ?? back)
 }
 </script>
 
@@ -26,6 +30,15 @@ function onSaved(saved: Lesson) {
             variant="ghost"
             :aria-label="`Retour au chapitre ${chapter.title}`"
             :to="back"
+          />
+        </template>
+        <template v-if="demoUrl" #right>
+          <UButton
+            icon="i-lucide-undo-2"
+            label="Retour à la démo"
+            color="neutral"
+            variant="outline"
+            :to="demoUrl"
           />
         </template>
       </UDashboardNavbar>

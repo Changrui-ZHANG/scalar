@@ -93,8 +93,23 @@ export interface Verification {
 
 export interface OutlineChapter {
   readonly chapter: Chapter
+  readonly lessons: readonly Lesson[]
   readonly exercises: readonly Exercise[]
 }
+
+/** Une etape du parcours tel que l'apprenant le suit : les lecons d'un chapitre, puis ses exercices. */
+export type PreviewStep =
+  | { readonly kind: 'lesson'; readonly item: Lesson }
+  | { readonly kind: 'exercise'; readonly item: Exercise }
+
+export const previewSteps = (outline: readonly OutlineChapter[]): PreviewStep[] =>
+  outline.flatMap(({ lessons, exercises }) => [
+    ...lessons.map((item) => ({ kind: 'lesson' as const, item })),
+    ...exercises.map((item) => ({ kind: 'exercise' as const, item })),
+  ])
+
+export const previewPath = (trackId: number, step: PreviewStep): string =>
+  `/parcours/${trackId}/apercu/${step.kind === 'lesson' ? 'lecons' : 'exercices'}/${step.item.id}`
 
 export const STATUS_LABELS: Readonly<Record<ContentStatus, string>> = {
   draft: 'Brouillon',

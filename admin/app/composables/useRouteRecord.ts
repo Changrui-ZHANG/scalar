@@ -20,18 +20,35 @@ export async function useRouteChapter(track: Track): Promise<Chapter> {
   return (await store.findChapter(track.id, Number(route.params.chapterId))) ?? notFound('Chapitre')
 }
 
-/** L'exercice de l'URL dans la suite des exercices du parcours, et ses voisins dans cette suite. */
-export async function useRoutePreviewExercise(track: Track): Promise<{
-  exercise: Exercise
-  previous: Exercise | undefined
-  next: Exercise | undefined
-}> {
+interface PreviewNeighbours {
+  readonly previous: PreviewStep | undefined
+  readonly next: PreviewStep | undefined
+}
+
+/** L'etape de l'URL dans la suite des etapes du parcours, et ses voisines dans cette suite. */
+async function routePreviewStep(track: Track, kind: PreviewStep['kind'], param: string) {
   const route = useRoute()
   const store = useContentStore()
-  const sequence = (await store.loadOutline(track.id)).flatMap(({ exercises }) => exercises)
-  const index = sequence.findIndex(({ id }) => id === Number(route.params.exerciseId))
-  const exercise = sequence[index] ?? notFound('Exercice')
-  return { exercise, previous: sequence[index - 1], next: sequence[index + 1] }
+  const steps = previewSteps(await store.loadOutline(track.id))
+  const id = Number(route.params[param])
+  const index = steps.findIndex((s) => s.kind === kind && s.item.id === id)
+  return { step: steps[index], previous: steps[index - 1], next: steps[index + 1] }
+}
+
+export async function useRoutePreviewExercise(
+  track: Track,
+): Promise<PreviewNeighbours & { exercise: Exercise }> {
+  const { step, previous, next } = await routePreviewStep(track, 'exercise', 'exerciseId')
+  return step?.kind === 'exercise'
+    ? { exercise: step.item, previous, next }
+    : notFound('Exercice')
+}
+
+export async function useRoutePreviewLesson(
+  track: Track,
+): Promise<PreviewNeighbours & { lesson: Lesson }> {
+  const { step, previous, next } = await routePreviewStep(track, 'lesson', 'lessonId')
+  return step?.kind === 'lesson' ? { lesson: step.item, previous, next } : notFound('Leçon')
 }
 
 export async function useRouteLesson(chapter: Chapter): Promise<Lesson> {
