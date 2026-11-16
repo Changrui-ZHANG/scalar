@@ -106,6 +106,7 @@ export const viteNodeApp = buildApp({
   secureCookie: config.AUTH_COOKIE_SECURE,
   hasher,
   isDatabaseUp,
+  apiDocs: config.NODE_ENV !== 'production',
 })
 
 if (config.NODE_ENV === 'production') {

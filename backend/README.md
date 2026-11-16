@@ -26,6 +26,15 @@ Si le backend répond `502` après l'ajout d'une dépendance, l'image est périm
 docker compose up -d --build --renew-anon-volumes backend
 ```
 
+## Documentation de l'API (OpenAPI)
+
+La spécification complète (corps, réponses, codes d'erreur) est dans
+[`openapi.yaml`](openapi.yaml). Hors production, Swagger UI la sert sur
+<http://localhost:8080/api/v1/docs/> (brut : `/api/v1/docs/openapi.json`, pour générer un client).
+
+Toute route ajoutée ou retirée doit l'être aussi dans `openapi.yaml` :
+`tests/backend/http/api-docs.test.ts` échoue sinon, dans les deux sens.
+
 ## Routes
 
 | Méthode | Route                                                  | Rôle                                                           |

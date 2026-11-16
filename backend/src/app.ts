@@ -12,6 +12,7 @@ import { LearnerController } from './controller/learner.controller.ts'
 import { LessonController } from './controller/lesson.controller.ts'
 import { QuestionnaireController } from './controller/questionnaire.controller.ts'
 import { TrackController } from './controller/track.controller.ts'
+import { serveApiDocs } from './http/api-docs.ts'
 import { errorHandler, routeNotFound } from './http/errors.ts'
 import { learnerAccess } from './http/learner-access.ts'
 import { requireAdmin } from './http/require-admin.ts'
@@ -62,6 +63,8 @@ export interface AppDependencies {
   readonly secureCookie: boolean
   readonly hasher: PasswordHasher
   readonly isDatabaseUp: () => Promise<boolean>
+  /** Swagger UI sur /api/v1/docs : jamais en production, il donnerait la carte de l'API admin. */
+  readonly apiDocs?: boolean
 }
 
 export function buildApp(deps: AppDependencies): Express {
@@ -117,6 +120,10 @@ export function buildApp(deps: AppDependencies): Express {
       database: (await deps.isDatabaseUp()) ? 'connected' : 'disconnected',
     })
   })
+
+  if (deps.apiDocs) {
+    serveApiDocs(app)
+  }
 
   // Avant tout routeur admin : aucune route d'administration n'echappe au controle du role.
   app.use('/api/v1/admin', requireAdmin(session))
