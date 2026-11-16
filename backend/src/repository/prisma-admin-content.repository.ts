@@ -6,6 +6,7 @@ import { ORDER_BY_POSITION } from '../constants.ts'
 import type { AdminExercise } from '../entity/admin-exercise.entity.ts'
 import type { Chapter } from '../entity/chapter.entity.ts'
 import type { Exercise } from '../entity/exercise.entity.ts'
+import type { Lesson } from '../entity/lesson.entity.ts'
 import type { Track } from '../entity/track.entity.ts'
 import type {
   AdminContentRepository,
@@ -14,12 +15,14 @@ import type {
   DeleteOutcome,
   ExerciseChanges,
   ExerciseInput,
+  LessonChanges,
+  LessonInput,
   SaveOutcome,
   TestCaseInput,
   TrackChanges,
   TrackInput,
 } from './admin-content.repository.ts'
-import { toAdminExercise, toChapter, toTrack } from './prisma.mapper.ts'
+import { toAdminExercise, toChapter, toLesson, toTrack } from './prisma.mapper.ts'
 
 type Transaction = Prisma.TransactionClient
 
@@ -185,6 +188,47 @@ export class PrismaAdminContentRepository implements AdminContentRepository {
   async findChapterById(id: number): Promise<Chapter | null> {
     const row = await this.prisma.chapter.findUnique({ where: { id } })
     return row && toChapter(row)
+  }
+
+  async listLessons(chapterId: number): Promise<Lesson[]> {
+    const rows = await this.prisma.lesson.findMany({
+      where: { chapterId },
+      orderBy: ORDER_BY_POSITION,
+    })
+    return rows.map(toLesson)
+  }
+
+  async findLesson(id: number): Promise<Lesson | null> {
+    const row = await this.prisma.lesson.findUnique({ where: { id } })
+    return row && toLesson(row)
+  }
+
+  async createLesson(chapterId: number, input: LessonInput): Promise<SaveOutcome<Lesson>> {
+    const outcome = await save(() =>
+      this.prisma.$transaction(async (tx) => {
+        const { _max } = await tx.lesson.aggregate({
+          where: { chapterId },
+          _max: { position: true },
+        })
+        return toLesson(
+          await tx.lesson.create({
+            data: { ...input, chapterId, position: (_max.position ?? 0) + 1 },
+          }),
+        )
+      }),
+    )
+    // Ici, la seule cle etrangere est le chapitre.
+    return outcome.status === 'prerequisite-not-found' ? { status: 'not-found' } : outcome
+  }
+
+  async updateLesson(id: number, changes: LessonChanges): Promise<SaveOutcome<Lesson>> {
+    return save(async () =>
+      toLesson(await this.prisma.lesson.update({ where: { id }, data: changes })),
+    )
+  }
+
+  async deleteLesson(id: number): Promise<DeleteOutcome> {
+    return remove(() => this.prisma.lesson.delete({ where: { id } }))
   }
 
   async listExercises(chapterId: number): Promise<AdminExercise[]> {

@@ -350,3 +350,39 @@ Content-Type: application/json
   return 4
 }
 " }
+
+### 59. Nouvelle leçon dans le chapitre créé en 45 : 201, brouillon, relecture datée
+# @name adminLesson
+POST {{base}}/admin/chapters/{{adminChapter.response.body.data.id}}/lessons
+Content-Type: application/json
+
+{
+  "slug": "creer-une-liste",
+  "title": "Créer une liste",
+  "summary": "Déclarer une liste et lire ses éléments.",
+  "body": "## Créer une liste\n\n```js\nconst notes = [12, 15, 9]\nconsole.log(notes[0]) // 12\n```"
+}
+
+### 60. Les leçons du chapitre, brouillon compris
+GET {{base}}/admin/chapters/{{adminChapter.response.body.data.id}}/lessons
+
+### 61. Publication : firstPublishedAt est posé
+PATCH {{base}}/admin/lessons/{{adminLesson.response.body.data.id}}
+Content-Type: application/json
+
+{ "status": "published" }
+
+### 62. Cours corrigé en ligne : la leçon reste publiée, lastReviewedAt avance
+PATCH {{base}}/admin/lessons/{{adminLesson.response.body.data.id}}
+Content-Type: application/json
+
+{ "body": "## Créer une liste\n\n```js\nconst notes = [12, 15, 9]\nconsole.log(notes.length) // 3\n```" }
+
+### 63. Slug figé d'une leçon publiée : 409
+PATCH {{base}}/admin/lessons/{{adminLesson.response.body.data.id}}
+Content-Type: application/json
+
+{ "slug": "autre-slug" }
+
+### 64. Suppression d'une leçon publiée : 409 (on l'archive)
+DELETE {{base}}/admin/lessons/{{adminLesson.response.body.data.id}}

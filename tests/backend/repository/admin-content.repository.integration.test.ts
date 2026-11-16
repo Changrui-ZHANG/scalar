@@ -288,6 +288,88 @@ describe.each(BACKENDS)('exercices admin (%s)', (_name, open) => {
   })
 })
 
+describe.each(BACKENDS)('leçons admin (%s)', (_name, open) => {
+  const LESSON = CONTENT.lessons[0]!
+  const REVIEWED = new Date('2026-11-16T10:00:00Z')
+  const NEW_LESSON = {
+    slug: 'tableaux',
+    title: 'Les tableaux',
+    summary: 'Ranger plusieurs valeurs.',
+    body: '## Tableaux',
+    lastReviewedAt: REVIEWED,
+  }
+  let content: AdminContentRepository
+  beforeEach(() => {
+    ;({ content } = open())
+  })
+
+  it('crée en brouillon à la fin du chapitre, puis la relit', async () => {
+    const siblings = await content.listLessons(LESSON.chapterId)
+    const created = saved(await content.createLesson(LESSON.chapterId, NEW_LESSON))
+
+    expect(created).toMatchObject({
+      ...NEW_LESSON,
+      chapterId: LESSON.chapterId,
+      position: Math.max(...siblings.map((l) => l.position)) + 1,
+      status: 'draft',
+      firstPublishedAt: null,
+    })
+    expect(await content.findLesson(created.id)).toEqual(created)
+  })
+
+  it('liste les leçons d’un chapitre triées, brouillons compris', async () => {
+    const created = saved(await content.createLesson(LESSON.chapterId, NEW_LESSON))
+    const listed = await content.listLessons(LESSON.chapterId)
+
+    expect(listed.map((l) => l.position)).toEqual(
+      listed.map((l) => l.position).toSorted((a, b) => a - b),
+    )
+    expect(listed.at(-1)).toEqual(created)
+    expect(await content.listLessons(UNKNOWN)).toEqual([])
+  })
+
+  it('refuse un slug déjà pris dans le chapitre, et un chapitre inconnu', async () => {
+    expect(
+      await content.createLesson(LESSON.chapterId, { ...NEW_LESSON, slug: LESSON.slug }),
+    ).toEqual({ status: 'slug-taken' })
+    expect(await content.createLesson(UNKNOWN, NEW_LESSON)).toEqual({ status: 'not-found' })
+  })
+
+  it('modifie une leçon, refuse une inconnue et un slug déjà pris', async () => {
+    const created = saved(await content.createLesson(LESSON.chapterId, NEW_LESSON))
+    const changes = {
+      title: 'Tableaux',
+      body: 'Nouveau cours.',
+      status: 'published',
+      firstPublishedAt: REVIEWED,
+      lastReviewedAt: null,
+    } as const
+
+    expect(saved(await content.updateLesson(created.id, changes))).toMatchObject(changes)
+    expect(await content.updateLesson(UNKNOWN, { title: 'X' })).toEqual({ status: 'not-found' })
+    expect(await content.updateLesson(created.id, { slug: LESSON.slug })).toEqual({
+      status: 'slug-taken',
+    })
+  })
+
+  it('supprime une leçon, puis ne la trouve plus', async () => {
+    const created = saved(await content.createLesson(LESSON.chapterId, NEW_LESSON))
+
+    expect(await content.deleteLesson(created.id)).toBe('deleted')
+    expect(await content.findLesson(created.id)).toBeNull()
+    expect(await content.deleteLesson(created.id)).toBe('not-found')
+  })
+
+  it('ne supprime un chapitre qu’une fois sa dernière leçon supprimée', async () => {
+    const chapter = saved(await content.createChapter(TRACK.id, NEW_CHAPTER))
+    const created = saved(await content.createLesson(chapter.id, NEW_LESSON))
+
+    expect(await content.deleteChapter(TRACK.id, chapter.id)).toBe('in-use')
+    await content.deleteLesson(created.id)
+    expect(await content.deleteChapter(TRACK.id, chapter.id)).toBe('deleted')
+  })
+})
+
 describe.each(BACKENDS)('promotion admin (%s)', (_name, open) => {
   it('promeut un compte inscrit, quelle que soit la casse de l’email', async () => {
     const { users } = open()

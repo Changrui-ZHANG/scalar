@@ -29,6 +29,7 @@ tags:
   - name: Certificat
   - name: Compte
   - name: Admin — parcours et chapitres
+  - name: Admin — leçons
   - name: Admin — exercices
 
 paths:
@@ -740,6 +741,111 @@ paths:
         '409': { $ref: '#/components/responses/Conflict' }
         '500': { $ref: '#/components/responses/ContentUnavailable' }
 
+  # ---------------------------------------------------------------- Admin : leçons
+
+  /admin/chapters/{chapterId}/lessons:
+    parameters:
+      - $ref: '#/components/parameters/ChapterId'
+    get:
+      tags: [Admin — leçons]
+      summary: Les leçons d'un chapitre, brouillons compris
+      operationId: adminListLessons
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Leçons dans l'ordre.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/AdminLesson' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+    post:
+      tags: [Admin — leçons]
+      summary: Ajouter une leçon (brouillon, à la fin du chapitre)
+      description: La date de relecture (`lastReviewedAt`) est posée à la création.
+      operationId: adminCreateLesson
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewLesson' }
+      responses:
+        '201':
+          description: Leçon créée.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminLessonEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /admin/lessons/{lessonId}:
+    parameters:
+      - $ref: '#/components/parameters/LessonId'
+    get:
+      tags: [Admin — leçons]
+      summary: Une leçon
+      operationId: adminGetLesson
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: La leçon.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminLessonEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+    patch:
+      tags: [Admin — leçons]
+      summary: Modifier, publier ou archiver une leçon
+      description: |
+        Une leçon publiée reste modifiable. Changer le cours (`body`) met `lastReviewedAt` à
+        la date du jour. Le slug est figé dès la première publication (409).
+      operationId: adminUpdateLesson
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LessonChanges' }
+      responses:
+        '200':
+          description: Leçon modifiée.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminLessonEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+    delete:
+      tags: [Admin — leçons]
+      summary: Supprimer une leçon jamais publiée
+      operationId: adminDeleteLesson
+      security: [{ sessionCookie: [] }]
+      responses:
+        '204': { description: Supprimé. }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
   # ---------------------------------------------------------------- Admin : exercices
 
   /admin/chapters/{chapterId}/exercises:
@@ -955,6 +1061,11 @@ components:
       schema: { $ref: '#/components/schemas/Id' }
     ChapterId:
       name: chapterId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Id' }
+    LessonId:
+      name: lessonId
       in: path
       required: true
       schema: { $ref: '#/components/schemas/Id' }
@@ -1513,6 +1624,61 @@ components:
         level: { $ref: '#/components/schemas/ChapterLevel' }
         title: { type: string, minLength: 1, maxLength: 100 }
         summary: { type: string, minLength: 1, maxLength: 500 }
+        status: { $ref: '#/components/schemas/PublicationStatus' }
+
+    AdminLesson:
+      type: object
+      required:
+        [
+          id,
+          chapterId,
+          slug,
+          position,
+          title,
+          summary,
+          body,
+          lastReviewedAt,
+          status,
+          firstPublishedAt,
+          createdAt,
+          updatedAt,
+        ]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        chapterId: { $ref: '#/components/schemas/Id' }
+        slug: { $ref: '#/components/schemas/Slug' }
+        position: { type: integer }
+        title: { type: string }
+        summary: { type: string }
+        body: { type: string, description: Le cours, en Markdown. }
+        lastReviewedAt: { $ref: '#/components/schemas/NullableDateTime' }
+        status: { $ref: '#/components/schemas/PublicationStatus' }
+        firstPublishedAt: { $ref: '#/components/schemas/NullableDateTime' }
+        createdAt: { $ref: '#/components/schemas/DateTime' }
+        updatedAt: { $ref: '#/components/schemas/DateTime' }
+    AdminLessonEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - properties:
+            data: { $ref: '#/components/schemas/AdminLesson' }
+    NewLesson:
+      type: object
+      additionalProperties: false
+      required: [slug, title, summary, body]
+      properties:
+        slug: { $ref: '#/components/schemas/Slug' }
+        title: { type: string, minLength: 1, maxLength: 120 }
+        summary: { type: string, minLength: 1, maxLength: 300 }
+        body: { type: string, minLength: 1, maxLength: 20000, description: En Markdown. }
+    LessonChanges:
+      type: object
+      additionalProperties: false
+      description: Champs de `NewLesson`, tous facultatifs, plus `status`.
+      properties:
+        slug: { $ref: '#/components/schemas/Slug' }
+        title: { type: string, minLength: 1, maxLength: 120 }
+        summary: { type: string, minLength: 1, maxLength: 300 }
+        body: { type: string, minLength: 1, maxLength: 20000, description: En Markdown. }
         status: { $ref: '#/components/schemas/PublicationStatus' }
 
     TestCase:
