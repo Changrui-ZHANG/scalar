@@ -74,15 +74,28 @@ Toute route ajoutée ou retirée doit l'être aussi dans `openapi.yaml` :
 | DELETE  | `/admin/lessons/:lessonId`                             | admin : supprime une leçon jamais publiée                      |
 | GET     | `/admin/chapters/:chapterId/exercises`                 | admin : ses exercices, avec solution et cas cachés             |
 | POST    | `/admin/chapters/:chapterId/exercises`                 | admin : crée un exercice (en brouillon) et ses cas de test     |
+| POST    | `/admin/chapters/:chapterId/exercises/generate`        | admin : l'IA rédige un brouillon, sa solution est vérifiée     |
 | GET     | `/admin/exercises/:exerciseId`                         | admin : un exercice                                            |
 | PATCH   | `/admin/exercises/:exerciseId`                         | admin : modifie ou publie un exercice                          |
 | DELETE  | `/admin/exercises/:exerciseId`                         | admin : supprime un exercice jamais publié                     |
 | POST    | `/admin/exercises/:exerciseId/solution-check`          | admin : passe la solution dans ses cas de test                 |
 | POST    | `/admin/exercises/:exerciseId/verifications`           | admin : essaie un code comme un apprenant, rien d'enregistré   |
 
-Les six routes `POST` qui exécutent du code partagent une limite : `EXECUTION_RATE_LIMIT`
+Les sept routes `POST` qui exécutent du code partagent une limite : `EXECUTION_RATE_LIMIT`
 requêtes par minute et par adresse IP (30 par défaut), puis `429` avec `Retry-After`.
 `POST /learners` a son propre compteur : `LEARNER_CREATION_RATE_LIMIT` (10 par défaut).
+
+### Exercices générés par l'IA
+
+`POST /admin/chapters/:chapterId/exercises/generate` avec `{ "topic": "…", "level"?: "…" }` :
+Claude (`AI_MODEL`, `claude-opus-5-5` par défaut) rédige consigne, code de départ, solution,
+indices et cas de test. Le backend revalide cette sortie avec les règles d'une saisie admin,
+l'enregistre en **brouillon** marqué `generatedByAi`, puis vérifie aussitôt la solution avec le
+moteur (`solutionCheck`, `null` si Piston est injoignable). Rien n'est publié sans l'admin.
+
+La clé `ANTHROPIC_API_KEY` est facultative et ne quitte jamais le backend. Sans elle, hors
+production, un faux générateur rend un exercice d'exemple fixe (gratuit, hors ligne : utile pour
+essayer l'admin ou faire la démo sans réseau) ; en production, la route répond `503`. Une sortie inexploitable donne `502`.
 
 Une vérification ou un questionnaire envoyé avec l'en-tête `X-Learner-Id: <id>` est
 enregistré pour cet apprenant ; sans l'en-tête, il l'est pour le compte connecté, sinon pour

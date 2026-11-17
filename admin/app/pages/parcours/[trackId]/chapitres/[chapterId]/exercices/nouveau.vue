@@ -19,6 +19,8 @@ const EMPTY: ExerciseInput = {
   status: 'draft',
 }
 
+const { generate } = useExerciseGeneration(chapter.id)
+
 function onSaved(exercise: Exercise) {
   toast.add({ title: `Exercice « ${exercise.title} » créé`, color: 'success' })
   return navigateTo(`${back}/exercices/${exercise.id}`)
@@ -45,6 +47,7 @@ function onSaved(exercise: Exercise) {
       <ExerciseForm
         :initial="EMPTY"
         :save="(input) => store.createExercise(chapter.id, input)"
+        :generate="generate"
         submit-label="Créer l’exercice"
         :cancel-to="back"
         :code-language="track.programmingLanguage ?? 'javascript'"

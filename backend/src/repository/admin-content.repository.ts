@@ -73,6 +73,7 @@ export interface ExerciseInput {
   readonly hints: string[]
   /** L'ordre de la liste donne les positions. */
   readonly testCases: readonly TestCaseInput[]
+  readonly generatedByAi?: boolean
 }
 
 export interface ExerciseChanges extends Partial<ExerciseInput> {
@@ -365,6 +366,7 @@ export class InMemoryAdminContentRepository implements AdminContentRepository {
     }
     const now = new Date()
     const exercise: Exercise = {
+      generatedByAi: false,
       ...input,
       id: nextId(this.exercises),
       chapterId,

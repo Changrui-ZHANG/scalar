@@ -29,6 +29,8 @@ import type { QuestionnaireRepository } from './repository/questionnaire.reposit
 import type { TrackRepository } from './repository/track.repository.ts'
 import type { UserRepository } from './repository/user.repository.ts'
 import { AdminContentService } from './service/admin-content.service.ts'
+import type { ExerciseGenerator } from './service/exercise-generator.ts'
+import { ExerciseGenerationService } from './service/exercise-generation.service.ts'
 import { AuthService } from './service/auth.service.ts'
 import { CertificateService } from './service/certificate.service.ts'
 import { ExerciseService } from './service/exercise.service.ts'
@@ -65,6 +67,8 @@ export interface AppDependencies {
   readonly isDatabaseUp: () => Promise<boolean>
   /** Swagger UI sur /api/v1/docs : jamais en production, il donnerait la carte de l'API admin. */
   readonly apiDocs?: boolean
+  /** Absent sans cle d'API : la generation d'exercices repond alors 503. */
+  readonly exerciseGenerator?: ExerciseGenerator | null
 }
 
 export function buildApp(deps: AppDependencies): Express {
@@ -89,6 +93,7 @@ export function buildApp(deps: AppDependencies): Express {
       '/api/v1/questionnaire/results',
       '/api/v1/admin/exercises/:exerciseId/solution-check',
       '/api/v1/admin/exercises/:exerciseId/verifications',
+      '/api/v1/admin/chapters/:chapterId/exercises/generate',
     ],
     perMinuteLimiter(deps.executionRateLimit, MESSAGES.tooManyExecutions),
   )
@@ -127,10 +132,13 @@ export function buildApp(deps: AppDependencies): Express {
 
   // Avant tout routeur admin : aucune route d'administration n'echappe au controle du role.
   app.use('/api/v1/admin', requireAdmin(session))
-  app.use(
-    '/api/v1/admin',
-    new AdminContentController(new AdminContentService(deps.adminContent)).buildRouter(),
+  const adminContent = new AdminContentService(deps.adminContent)
+  const generation = new ExerciseGenerationService(
+    deps.adminContent,
+    adminContent,
+    deps.exerciseGenerator ?? null,
   )
+  app.use('/api/v1/admin', new AdminContentController(adminContent, generation).buildRouter())
   app.use(
     '/api/v1',
     new AuthController(session, {

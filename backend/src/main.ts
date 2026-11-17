@@ -24,6 +24,7 @@ import { InMemoryTrackRepository } from './repository/track.repository.ts'
 import { InMemoryUserRepository } from './repository/user.repository.ts'
 import { ensureConfiguredAdmin } from './service/configured-admin.service.ts'
 import { hasJavascriptRuntime } from './service/execution.service.ts'
+import { createExerciseGenerator } from './service/exercise-generator.factory.ts'
 import { Argon2PasswordHasher } from './service/password-hasher.service.ts'
 
 if (config.CONTENT_SOURCE === 'database' && !config.DATABASE_URL) {
@@ -107,6 +108,7 @@ export const viteNodeApp = buildApp({
   hasher,
   isDatabaseUp,
   apiDocs: config.NODE_ENV !== 'production',
+  exerciseGenerator: createExerciseGenerator(config),
 })
 
 if (config.NODE_ENV === 'production') {

@@ -137,6 +137,7 @@ model Exercise {
   solutionCode        String              @map("solution_code")
   /// Du plus vague au plus precis, trois au plus.
   hints               String[]            @default([])
+  generatedByAi       Boolean             @default(false) @map("generated_by_ai")
   /// Remis a `not_checked` des que le code ou un cas de test change.
   solutionCheckStatus SolutionCheckStatus @default(not_checked) @map("solution_check_status")
   solutionCheckedAt   DateTime?           @map("solution_checked_at") @db.Timestamptz(6)

@@ -20,6 +20,9 @@ const schema = z.object({
   AUTH_ACCOUNT_ATTEMPTS_LIMIT: z.coerce.number().int().positive().default(20),
   ADMIN_EMAIL: z.string().optional(),
   ADMIN_PASSWORD: z.string().optional(),
+  // Vide vaut absent : sans cle, seule la generation d'exercices par IA repond 503.
+  ANTHROPIC_API_KEY: z.preprocess((v) => (v === '' ? undefined : v), z.string().optional()),
+  AI_MODEL: z.string().default('claude-opus-5-5'),
 })
 
 export type Config = z.infer<typeof schema>

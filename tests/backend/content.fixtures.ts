@@ -92,6 +92,7 @@ export function exercise(
     starterCode: 'function f() {}',
     solutionCode: 'function f() { return 42 }',
     hints: [],
+    generatedByAi: false,
     solutionCheckStatus: 'passed',
     solutionCheckedAt: DATE,
     ...published,

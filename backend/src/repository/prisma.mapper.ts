@@ -89,6 +89,7 @@ export function toExercise(row: ExerciseRow): Exercise {
     starterCode: row.starterCode,
     solutionCode: row.solutionCode,
     hints: row.hints,
+    generatedByAi: row.generatedByAi,
     solutionCheckStatus: row.solutionCheckStatus,
     solutionCheckedAt: row.solutionCheckedAt,
     status: row.status,

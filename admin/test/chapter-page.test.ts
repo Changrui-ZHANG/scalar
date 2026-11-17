@@ -97,5 +97,63 @@ describe('page d’un chapitre', () => {
     const wrapper = await mountPage()
 
     expect(wrapper.text()).not.toContain('Nouvel exercice')
+    expect(wrapper.text()).not.toContain('Générer avec l’IA')
+  })
+})
+
+describe('page d’un chapitre : « Générer avec l’IA »', () => {
+  const TITLE_INPUT = 'input[aria-label="Titre de l’exercice à générer"]'
+  const generateButton = (wrapper: Awaited<ReturnType<typeof mountPage>>) =>
+    wrapper.findAll('button').find((b) => b.text().includes('Générer avec l’IA'))!
+  const currentPath = () => useRouter().currentRoute.value.path
+
+  async function generate(wrapper: Awaited<ReturnType<typeof mountPage>>, title: string) {
+    await wrapper.find(TITLE_INPUT).setValue(title)
+    await flushPromises()
+    await generateButton(wrapper).trigger('click')
+    await flushPromises()
+  }
+
+  it('reste désactivé tant que le titre est vide', async () => {
+    serve(TRACK)
+    const wrapper = await mountPage()
+
+    expect(generateButton(wrapper).attributes('disabled')).toBeDefined()
+  })
+
+  it('génère un brouillon à partir du titre, puis l’ouvre pour le relire', async () => {
+    serve(TRACK)
+    const wrapper = await mountPage()
+    apiMock.mockResolvedValue({
+      ok: true,
+      data: {
+        exercise: { ...EXERCISE, id: 9, generatedByAi: true },
+        solutionCheck: { passed: true, checks: [], stderr: '' },
+      },
+    })
+
+    await generate(wrapper, 'Somme des pairs')
+
+    const posts = (apiMock.mock.calls as [string, { method?: string; body?: unknown }?][]).filter(
+      ([, options]) => options?.method === 'POST',
+    )
+    expect(posts).toEqual([
+      [
+        '/admin/chapters/2/exercises/generate',
+        { method: 'POST', body: { topic: 'Somme des pairs' } },
+      ],
+    ])
+    await vi.waitFor(() => expect(currentPath()).toBe('/parcours/1/chapitres/2/exercices/9'))
+  })
+
+  it('reste sur le chapitre, titre conservé, si la génération échoue', async () => {
+    serve(TRACK)
+    const wrapper = await mountPage()
+    apiMock.mockResolvedValue({ ok: false, status: 503, message: 'L’IA est indisponible.' })
+
+    await generate(wrapper, 'Somme des pairs')
+
+    expect(currentPath()).toBe('/parcours/1/chapitres/2')
+    expect((wrapper.find(TITLE_INPUT).element as HTMLInputElement).value).toBe('Somme des pairs')
   })
 })

@@ -3,13 +3,15 @@ import type { Request, Response } from 'express'
 
 import { MESSAGES } from '../constants.ts'
 import { badRequest, fail, notFound, ok } from '../http/envelope.ts'
-import { contentUnavailable, engineUnavailable } from '../http/errors.ts'
+import { aiUnavailable, contentUnavailable, engineUnavailable } from '../http/errors.ts'
 import type {
   AdminContentService,
   AdminOutcome,
   Refusal,
 } from '../service/admin-content.service.ts'
+import { AiUnavailableError } from '../service/ai-unavailable.error.ts'
 import { EngineUnavailableError } from '../service/execution.service.ts'
+import type { ExerciseGenerationService } from '../service/exercise-generation.service.ts'
 
 type Params = { trackId?: string; chapterId?: string; lessonId?: string; exerciseId?: string }
 
@@ -34,13 +36,17 @@ const REFUSALS: Record<Exclude<Refusal, 'not-found'>, readonly [number, string]>
   'no-language': [409, MESSAGES.trackWithoutLanguage],
   'no-test-cases': [409, MESSAGES.noTestCases],
   'check-outdated': [409, MESSAGES.solutionCheckOutdated],
+  'ai-unavailable': [503, MESSAGES.aiUnavailable],
+  'ai-output-invalid': [502, MESSAGES.aiOutputInvalid],
 }
 
 export class AdminContentController {
   private readonly service: AdminContentService
+  private readonly generation: ExerciseGenerationService
 
-  constructor(service: AdminContentService) {
+  constructor(service: AdminContentService, generation: ExerciseGenerationService) {
     this.service = service
+    this.generation = generation
   }
 
   buildRouter() {
@@ -145,6 +151,16 @@ export class AdminContentController {
         ),
       ),
     )
+    router.post('/chapters/:chapterId/exercises/generate', (req: Request<Params>, res) =>
+      this.withIds(req, res, MESSAGES.chapterNotFound, ([chapterId]) =>
+        this.write(
+          res,
+          MESSAGES.chapterNotFound,
+          () => this.generation.generate(chapterId, req.body),
+          201,
+        ),
+      ),
+    )
     router.get('/exercises/:exerciseId', (req: Request<Params>, res) =>
       this.withIds(req, res, MESSAGES.exerciseNotFound, ([id]) =>
         this.read(res, MESSAGES.exerciseNotFound, () => this.service.findExercise(id)),
@@ -237,6 +253,8 @@ export class AdminContentController {
     } catch (error: unknown) {
       if (error instanceof EngineUnavailableError) {
         engineUnavailable(res, error)
+      } else if (error instanceof AiUnavailableError) {
+        aiUnavailable(res, error)
       } else {
         contentUnavailable(res, error)
       }

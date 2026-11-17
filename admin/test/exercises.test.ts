@@ -88,6 +88,30 @@ describe('store des exercices', () => {
     expect(body).toEqual({ status: 'published' })
   })
 
+  it('demande à l’IA un brouillon à partir du titre, sous le chapitre', async () => {
+    const draft = { exercise: { id: 3 }, solutionCheck: null }
+    apiMock.mockResolvedValue({ ok: true, data: draft })
+
+    expect(await useContentStore().generateExercise(7, 'Somme d’un tableau')).toEqual({
+      ok: true,
+      data: draft,
+    })
+    const { path, method, body } = lastCall()
+    expect([method, path]).toEqual(['POST', '/admin/chapters/7/exercises/generate'])
+    expect(body).toEqual({ topic: 'Somme d’un tableau' })
+  })
+
+  it('remonte le refus de l’IA indisponible', async () => {
+    const message = 'L’IA est momentanément indisponible.'
+    apiMock.mockResolvedValue({ ok: false, status: 503, message })
+
+    expect(await useContentStore().generateExercise(7, 'Somme')).toEqual({
+      ok: false,
+      status: 503,
+      message,
+    })
+  })
+
   it('renvoie null pour un exercice inconnu', async () => {
     apiMock.mockResolvedValue({ ok: false, status: 404, message: 'Exercice introuvable.' })
 

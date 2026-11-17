@@ -30,6 +30,7 @@ const EXERCISE: Exercise = {
   solutionCode: 'function somme() { return 5 }\n',
   hints: [],
   testCases: [{ arguments: [], expectedResult: 5, description: null, isHidden: false }],
+  generatedByAi: false,
   solutionCheckStatus: 'passed',
   status: 'draft',
 }
@@ -104,6 +105,57 @@ describe('page de création d’un exercice', () => {
     wrapper.findComponent(ExerciseForm).vm.$emit('saved', EXERCISE)
 
     await vi.waitFor(() => expect(currentPath()).toBe(EXERCISE_URL))
+  })
+
+  describe('« Générer avec l’IA »', () => {
+    const generateButton = (wrapper: Awaited<ReturnType<typeof mountPage>>) =>
+      wrapper.findAll('button').find((b) => b.text().includes('Générer avec l’IA'))!
+
+    async function typeTitle(wrapper: Awaited<ReturnType<typeof mountPage>>, title: string) {
+      await wrapper.find('input[placeholder="Aire d’un rectangle"]').setValue(title)
+      await flushPromises()
+    }
+
+    it('reste désactivé tant que le titre est vide', async () => {
+      const wrapper = await mountPage()
+
+      expect(generateButton(wrapper).attributes('disabled')).toBeDefined()
+      await typeTitle(wrapper, '   ')
+      expect(generateButton(wrapper).attributes('disabled')).toBeDefined()
+    })
+
+    it('génère un brouillon à partir du titre, puis l’ouvre pour le relire', async () => {
+      const wrapper = await mountPage()
+      await typeTitle(wrapper, 'Somme d’un tableau')
+      apiMock.mockResolvedValue({
+        ok: true,
+        data: {
+          exercise: { ...EXERCISE, generatedByAi: true },
+          solutionCheck: { passed: true, checks: [], stderr: '' },
+        },
+      })
+
+      await generateButton(wrapper).trigger('click')
+      await flushPromises()
+
+      const [path, options] = apiMock.mock.lastCall as [string, { method: string; body: unknown }]
+      expect([options.method, path]).toEqual(['POST', '/admin/chapters/2/exercises/generate'])
+      expect(options.body).toEqual({ topic: 'Somme d’un tableau' })
+      await vi.waitFor(() => expect(currentPath()).toBe(EXERCISE_URL))
+    })
+
+    it('reste sur la page, titre conservé, si l’IA est indisponible', async () => {
+      const wrapper = await mountPage()
+      await typeTitle(wrapper, 'Somme d’un tableau')
+      apiMock.mockResolvedValue({ ok: false, status: 503, message: 'L’IA est indisponible.' })
+
+      await generateButton(wrapper).trigger('click')
+      await flushPromises()
+
+      expect(currentPath()).toBe(`${CHAPTER_URL}/exercices/nouveau`)
+      const title = wrapper.find('input[placeholder="Aire d’un rectangle"]')
+      expect((title.element as HTMLInputElement).value).toBe('Somme d’un tableau')
+    })
   })
 })
 
@@ -199,6 +251,16 @@ describe('page d’édition d’un exercice', () => {
     const wrapper = await mountSuspended(EditExercisePage, { route: `${EXERCISE_URL}?demo=1` })
 
     expect(backLinks(wrapper)).toEqual(['/parcours/1/apercu/exercices/3?demo=1'])
+  })
+
+  it('signale un brouillon généré par l’IA, à relire', async () => {
+    serve({ ...EXERCISE, generatedByAi: true })
+
+    expect((await mountPage()).text()).toContain('Généré par l’IA')
+  })
+
+  it('ne signale rien pour un exercice écrit à la main', async () => {
+    expect((await mountPage()).text()).not.toContain('Généré par l’IA')
   })
 
   it('hors démo : pas de retour à la démo', async () => {

@@ -33,6 +33,22 @@ describe('parseConfig', () => {
     expect(config.ADMIN_PASSWORD).toBe('test')
   })
 
+  it('lit la clé de l’API Claude, facultative : sans elle, pas de génération IA', () => {
+    expect(parseConfig(SECRET).ANTHROPIC_API_KEY).toBeUndefined()
+    // Une ligne « ANTHROPIC_API_KEY= » laissee vide dans .env vaut absence de cle.
+    expect(parseConfig({ ...SECRET, ANTHROPIC_API_KEY: '' }).ANTHROPIC_API_KEY).toBeUndefined()
+    expect(parseConfig({ ...SECRET, ANTHROPIC_API_KEY: 'sk-ant-test' }).ANTHROPIC_API_KEY).toBe(
+      'sk-ant-test',
+    )
+  })
+
+  it('choisit le modèle Claude, Opus 5.5 par défaut', () => {
+    expect(parseConfig(SECRET).AI_MODEL).toBe('claude-opus-5-5')
+    expect(parseConfig({ ...SECRET, AI_MODEL: 'claude-sonnet-5-5' }).AI_MODEL).toBe(
+      'claude-sonnet-5-5',
+    )
+  })
+
   it('convertit les chaînes de l’environnement', () => {
     const config = parseConfig({
       ...SECRET,
