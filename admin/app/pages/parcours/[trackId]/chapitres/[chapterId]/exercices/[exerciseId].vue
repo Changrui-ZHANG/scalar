@@ -7,12 +7,16 @@ const toast = useToast()
 
 useSeoMeta({ title: `Modifier ${exercise.value.title} — Backoffice Scalar` })
 
+const back = `/parcours/${track.id}/chapitres/${chapter.id}`
+
 // Le titre suit l'exercice enregistre.
 const crumbs = computed(() =>
-  breadcrumb({ track, chapter, extra: [{ label: exercise.value.title }] }),
+  breadcrumb({
+    track,
+    chapter,
+    extra: [{ label: exercise.value.title, to: `${back}/exercices/${exercise.value.id}` }],
+  }),
 )
-
-const back = `/parcours/${track.id}/chapitres/${chapter.id}`
 const initial = toExerciseInput(exercise.value)
 const demoUrl =
   useRoute().query.demo === '1'

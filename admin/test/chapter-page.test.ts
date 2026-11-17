@@ -85,13 +85,13 @@ describe('page d’un chapitre', () => {
     expect(wrapper.text()).toContain('En échec')
   })
 
-  it('montre le fil d’Ariane : la liste et le parcours en liens, le chapitre en page courante', async () => {
+  it('montre le fil d’Ariane : chaque étape cliquable, jusqu’au chapitre', async () => {
     serve(TRACK)
     const nav = (await mountPage()).find('nav[aria-label="Fil d’Ariane"]')
 
     expect(nav.exists()).toBe(true)
     const hrefs = nav.findAll('a').map((a) => a.attributes('href')?.replace(/^\/admin/, ''))
-    expect(hrefs).toEqual(['/parcours', '/parcours/1'])
+    expect(hrefs).toEqual(['/parcours', '/parcours/1', '/parcours/1/chapitres/2'])
     expect(nav.text()).toContain('JavaScript')
     expect(nav.text()).toContain('Bases')
   })

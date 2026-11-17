@@ -5,7 +5,10 @@ const outline = await store.loadOutline(track.id)
 
 useSeoMeta({ title: `Tester ${track.name} — Backoffice Scalar` })
 
-const crumbs = breadcrumb({ track, extra: [{ label: 'Tester' }] })
+const crumbs = breadcrumb({
+  track,
+  extra: [{ label: 'Tester', to: `/parcours/${track.id}/apercu` }],
+})
 
 const back = `/parcours/${track.id}`
 </script>

@@ -5,7 +5,10 @@ const toast = useToast()
 
 useSeoMeta({ title: `Modifier ${track.name} — Backoffice Scalar` })
 
-const crumbs = breadcrumb({ track, extra: [{ label: 'Modifier' }] })
+const crumbs = breadcrumb({
+  track,
+  extra: [{ label: 'Modifier', to: `/parcours/${track.id}/modifier` }],
+})
 
 const back = `/parcours/${track.id}`
 const initial: TrackInput = {

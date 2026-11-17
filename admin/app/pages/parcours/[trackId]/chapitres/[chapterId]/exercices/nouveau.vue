@@ -6,9 +6,13 @@ const toast = useToast()
 
 useSeoMeta({ title: `Nouvel exercice · ${chapter.title} — Backoffice Scalar` })
 
-const crumbs = breadcrumb({ track, chapter, extra: [{ label: 'Nouvel exercice' }] })
-
 const back = `/parcours/${track.id}/chapitres/${chapter.id}`
+
+const crumbs = breadcrumb({
+  track,
+  chapter,
+  extra: [{ label: 'Nouvel exercice', to: `${back}/exercices/nouveau` }],
+})
 const EMPTY: ExerciseInput = {
   title: '',
   slug: '',

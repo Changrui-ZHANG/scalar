@@ -257,7 +257,7 @@ describe('page d’édition d’un exercice', () => {
     const nav = (await mountPage()).find('nav[aria-label="Fil d’Ariane"]')
 
     const hrefs = nav.findAll('a').map((a) => a.attributes('href')?.replace(/^\/admin/, ''))
-    expect(hrefs).toEqual(['/parcours', '/parcours/1', CHAPTER_URL])
+    expect(hrefs).toEqual(['/parcours', '/parcours/1', CHAPTER_URL, EXERCISE_URL])
     expect(nav.text()).toContain('Somme')
   })
 

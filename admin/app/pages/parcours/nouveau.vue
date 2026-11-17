@@ -1,7 +1,7 @@
 <script setup lang="ts">
 useSeoMeta({ title: 'Nouveau parcours — Backoffice Scalar' })
 
-const crumbs = breadcrumb({ extra: [{ label: 'Nouveau parcours' }] })
+const crumbs = breadcrumb({ extra: [{ label: 'Nouveau parcours', to: '/parcours/nouveau' }] })
 
 const store = useContentStore()
 const toast = useToast()

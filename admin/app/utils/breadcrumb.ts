@@ -1,7 +1,7 @@
 export interface Crumb {
   readonly label: string
   readonly icon?: string
-  readonly to?: string
+  readonly to: string
 }
 
 interface Trail {
@@ -11,7 +11,7 @@ interface Trail {
   readonly extra?: readonly Crumb[]
 }
 
-/** Parcours › parcours › chapitre › … : chaque niveau mene a sa page, sauf la page courante. */
+/** Parcours › parcours › chapitre › … : chaque niveau mene a sa page, la page courante comprise. */
 export function breadcrumb({ track, chapter, extra = [] }: Trail): Crumb[] {
   const crumbs: Crumb[] = [{ label: 'Parcours', icon: 'i-lucide-route', to: '/parcours' }]
   if (track) {
@@ -20,7 +20,5 @@ export function breadcrumb({ track, chapter, extra = [] }: Trail): Crumb[] {
       crumbs.push({ label: chapter.title, to: `/parcours/${track.id}/chapitres/${chapter.id}` })
     }
   }
-  crumbs.push(...extra)
-  const { to: _, ...current } = crumbs.at(-1)!
-  return [...crumbs.slice(0, -1), current]
+  return [...crumbs, ...extra]
 }

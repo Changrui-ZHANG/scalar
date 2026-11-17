@@ -6,7 +6,10 @@ useSeoMeta({ title: `Tester ${lesson.title} — Backoffice Scalar` })
 
 const crumbs = breadcrumb({
   track,
-  extra: [{ label: 'Tester', to: `/parcours/${track.id}/apercu` }, { label: lesson.title }],
+  extra: [
+    { label: 'Tester', to: `/parcours/${track.id}/apercu` },
+    { label: lesson.title, to: previewPath(track.id, { kind: 'lesson', item: lesson }) },
+  ],
 })
 
 const base = `/parcours/${track.id}/apercu`

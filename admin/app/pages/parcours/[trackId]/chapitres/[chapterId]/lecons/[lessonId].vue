@@ -7,9 +7,13 @@ const toast = useToast()
 
 useSeoMeta({ title: `Modifier ${lesson.title} — Backoffice Scalar` })
 
-const crumbs = breadcrumb({ track, chapter, extra: [{ label: lesson.title }] })
-
 const back = `/parcours/${track.id}/chapitres/${chapter.id}`
+
+const crumbs = breadcrumb({
+  track,
+  chapter,
+  extra: [{ label: lesson.title, to: `${back}/lecons/${lesson.id}` }],
+})
 const demoUrl =
   useRoute().query.demo === '1'
     ? { path: `/parcours/${track.id}/apercu/lecons/${lesson.id}`, query: { demo: '1' } }
