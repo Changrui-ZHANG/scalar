@@ -12,6 +12,8 @@ export interface Exercise {
   // Jamais renvoyee au navigateur avant une premiere soumission.
   solutionCode: string
   hints: string[]
+  /** Brouillon cree par l'IA : a relire avant publication. */
+  generatedByAi: boolean
   solutionCheckStatus: SolutionCheckStatus
   solutionCheckedAt: Date | null
   status: PublicationStatus

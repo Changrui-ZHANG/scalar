@@ -65,6 +65,8 @@ export interface Exercise {
   readonly solutionCode: string
   readonly hints: readonly string[]
   readonly testCases: readonly TestCase[]
+  /** Brouillon redige par l'IA : a relire avant publication. */
+  readonly generatedByAi: boolean
   readonly solutionCheckStatus: SolutionCheckStatus
   readonly status: ContentStatus
 }
@@ -80,6 +82,12 @@ export interface SolutionCheck {
   readonly passed: boolean
   readonly checks: readonly Check[]
   readonly stderr: string
+}
+
+export interface GeneratedDraft {
+  readonly exercise: Exercise
+  /** Null si le moteur etait injoignable : la solution reste a verifier. */
+  readonly solutionCheck: Omit<SolutionCheck, 'exercise'> | null
 }
 
 /** Verdict d'un essai comme un apprenant : cas caches masques. */

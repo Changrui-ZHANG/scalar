@@ -17,6 +17,8 @@ import { InMemoryProgressRepository } from '../../../backend/src/repository/prog
 import { InMemoryQuestionnaireRepository } from '../../../backend/src/repository/questionnaire.repository.ts'
 import { InMemoryTrackRepository } from '../../../backend/src/repository/track.repository.ts'
 import { InMemoryUserRepository } from '../../../backend/src/repository/user.repository.ts'
+import { AiUnavailableError } from '../../../backend/src/service/ai-unavailable.error.ts'
+import type { ExerciseGenerator } from '../../../backend/src/service/exercise-generator.ts'
 
 interface Envelope {
   readonly success: boolean
@@ -30,6 +32,7 @@ let server: Server
 let base: string
 let adminCookie: string
 let learnerCookie: string
+let nextGeneration: ExerciseGenerator['generate'] = async () => null
 
 async function register(email: string): Promise<string> {
   const res = await fetch(`${base}/auth/register`, {
@@ -72,6 +75,7 @@ beforeAll(async () => {
     learnerCreationRateLimit: 1_000,
     ...AUTH_DEPENDENCIES,
     isDatabaseUp: async () => false,
+    exerciseGenerator: { generate: (brief) => nextGeneration(brief) },
   })
   server = await new Promise<Server>((resolve) => {
     const s = app.listen(0, () => resolve(s))
@@ -356,6 +360,91 @@ describe('exercices', () => {
 
     expect(res.status).toBe(expected)
     expect(res.body).toMatchObject({ success: false, data: null, error: expect.any(String) })
+  })
+
+  describe('génération par l’IA', () => {
+    const GENERATED = {
+      ...NEW_EXERCISE,
+      slug: 'double-ia',
+      hints: [],
+      testCases: NEW_EXERCISE.testCases.map((t) => ({
+        isHidden: false,
+        description: null,
+        ...t,
+      })),
+    }
+    const GENERATE = '/chapters/1/exercises/generate'
+
+    it('401 sans session, 403 pour un apprenant', async () => {
+      expect((await call('POST', `/admin${GENERATE}`)).status).toBe(401)
+      expect((await call('POST', `/admin${GENERATE}`, learnerCookie)).status).toBe(403)
+    })
+
+    it('201 : un brouillon généré, marqué IA, dont la solution est déjà vérifiée', async () => {
+      nextGeneration = async () => GENERATED
+      fakePiston(runInNode)
+
+      const res = await admin('POST', GENERATE, { topic: 'doubler un nombre' })
+
+      expect(res).toMatchObject({
+        status: 201,
+        body: {
+          success: true,
+          data: {
+            exercise: {
+              slug: 'double-ia',
+              status: 'draft',
+              generatedByAi: true,
+              solutionCheckStatus: 'passed',
+              testCases: [{ position: 1 }, { position: 2, isHidden: true }],
+            },
+            solutionCheck: { passed: true },
+          },
+        },
+      })
+      const id = res.body!.data.exercise.id
+      expect((await admin('GET', `/exercises/${id}`)).body!.data.generatedByAi).toBe(true)
+    })
+
+    it('201 avec solutionCheck null si le moteur est en panne : le brouillon reste', async () => {
+      nextGeneration = async () => ({ ...GENERATED, slug: 'double-ia-panne' })
+      fakePiston(async () => new Response('panne', { status: 500 }))
+
+      const res = await admin('POST', GENERATE, { topic: 'doubler un nombre' })
+
+      expect(res).toMatchObject({
+        status: 201,
+        body: { data: { exercise: { solutionCheckStatus: 'not_checked' }, solutionCheck: null } },
+      })
+    })
+
+    it('503 quand l’API IA est indisponible', async () => {
+      nextGeneration = async () => {
+        throw new AiUnavailableError(new Error('529 overloaded'))
+      }
+
+      expect(await admin('POST', GENERATE, { topic: 'x' })).toMatchObject({
+        status: 503,
+        body: { success: false, error: MESSAGES.aiUnavailable },
+      })
+    })
+
+    it('502 quand la sortie de l’IA est inutilisable', async () => {
+      nextGeneration = async () => null
+
+      expect(await admin('POST', GENERATE, { topic: 'x' })).toMatchObject({
+        status: 502,
+        body: { success: false, error: MESSAGES.aiOutputInvalid },
+      })
+    })
+
+    it.each([
+      ['400 sans sujet', '/chapters/1/exercises/generate', {}, 400],
+      ['404 sur un chapitre inconnu', '/chapters/999/exercises/generate', { topic: 'x' }, 404],
+      ['404 sur un id mal formé', '/chapters/abc/exercises/generate', { topic: 'x' }, 404],
+    ])('%s', async (_name, path, body, expected) => {
+      expect((await admin('POST', path, body)).status).toBe(expected)
+    })
   })
 })
 

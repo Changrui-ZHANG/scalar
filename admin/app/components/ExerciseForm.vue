@@ -10,6 +10,8 @@ const props = defineProps<{
   /** Coloration du code de depart et de la solution : celle du parcours. */
   codeLanguage: 'javascript' | 'typescript'
   editing?: boolean
+  /** Creation seulement : l'IA redige un brouillon a partir du titre. */
+  generate?: (title: string) => Promise<Exercise | null>
 }>()
 const emit = defineEmits<{ saved: [exercise: Exercise] }>()
 
@@ -50,6 +52,20 @@ async function saveNow(): Promise<Exercise | null> {
   return data ? persist(data as ExerciseInput) : null
 }
 
+const generating = ref(false)
+
+async function onGenerate() {
+  generating.value = true
+  try {
+    const draft = await props.generate?.(state.title.trim())
+    if (draft) {
+      emit('saved', draft)
+    }
+  } finally {
+    generating.value = false
+  }
+}
+
 defineExpose({ saveNow })
 </script>
 
@@ -62,8 +78,26 @@ defineExpose({ saveNow })
     @submit="onSubmit"
   >
     <div class="grid gap-5 sm:grid-cols-2">
-      <UFormField label="Titre" name="title" required>
-        <UInput v-model="state.title" placeholder="Aire d’un rectangle" class="w-full" />
+      <UFormField
+        label="Titre"
+        name="title"
+        required
+        :help="generate ? 'Ou tapez un titre et laissez l’IA rédiger un brouillon.' : undefined"
+      >
+        <div class="flex gap-2">
+          <UInput v-model="state.title" placeholder="Aire d’un rectangle" class="w-full" />
+          <UButton
+            v-if="generate"
+            icon="i-lucide-sparkles"
+            label="Générer avec l’IA"
+            color="neutral"
+            variant="outline"
+            class="shrink-0"
+            :loading="generating"
+            :disabled="!state.title.trim() || generating"
+            @click="onGenerate"
+          />
+        </div>
       </UFormField>
       <UFormField label="Slug" name="slug" required>
         <UInput

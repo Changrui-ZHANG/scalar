@@ -14,6 +14,11 @@ export function engineUnavailable(res: Response, error: unknown): void {
   fail(res, 503, MESSAGES.engineUnavailable)
 }
 
+export function aiUnavailable(res: Response, error: unknown): void {
+  logger.error({ err: error }, 'Échec de l’appel à l’API IA')
+  fail(res, 503, MESSAGES.aiUnavailable)
+}
+
 export const routeNotFound: RequestHandler = (_req, res) => {
   fail(res, 404, MESSAGES.routeNotFound)
 }

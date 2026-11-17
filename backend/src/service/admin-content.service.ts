@@ -48,6 +48,8 @@ export type Refusal =
   | 'no-language'
   | 'no-test-cases'
   | 'check-outdated'
+  | 'ai-unavailable'
+  | 'ai-output-invalid'
 
 export interface SolutionCheck {
   readonly exercise: AdminExercise
@@ -63,7 +65,7 @@ export type AdminOutcome<T> =
   | { readonly status: Refusal }
 
 const slug = z.string().regex(SLUG_PATTERN).max(64)
-const text = (max: number) => z.string().trim().min(1).max(max)
+export const text = (max: number) => z.string().trim().min(1).max(max)
 const status = z.enum(PUBLICATION_STATUSES)
 
 const trackFields = {
@@ -127,7 +129,7 @@ const exerciseFields = {
   hints: z.array(text(MAX_HINT_LENGTH)).max(MAX_HINTS),
   testCases: z.array(testCase).max(MAX_TEST_CASES),
 }
-const newExercise = z.strictObject({
+export const newExercise = z.strictObject({
   ...exerciseFields,
   hints: exerciseFields.hints.default([]),
   testCases: exerciseFields.testCases.default([]),
@@ -140,7 +142,7 @@ const exerciseChanges = z
 type Parsed<T> =
   { ok: true; data: T } | { ok: false; outcome: { status: 'invalid'; error: string } }
 
-function parse<T>(schema: z.ZodType<T>, body: unknown): Parsed<T> {
+export function parse<T>(schema: z.ZodType<T>, body: unknown): Parsed<T> {
   const parsed = schema.safeParse(body ?? {})
   if (parsed.success) {
     return { ok: true, data: parsed.data }

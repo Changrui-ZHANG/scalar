@@ -44,6 +44,13 @@ function onSaved(saved: Exercise) {
           />
         </template>
         <template #right>
+          <UBadge
+            v-if="exercise.generatedByAi"
+            icon="i-lucide-sparkles"
+            label="Généré par l’IA : à relire"
+            color="warning"
+            variant="subtle"
+          />
           <StatusBadge :status="exercise.status" />
           <UButton
             v-if="demoUrl"

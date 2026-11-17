@@ -3,6 +3,7 @@ import type { ExerciseTestCase } from '../entity/exercise-test-case.entity.ts'
 
 const DATE = new Date('2026-09-25T00:00:00Z')
 const stamps = { createdAt: DATE, updatedAt: DATE }
+const written = { ...stamps, generatedByAi: false }
 
 export const EXERCISES: readonly Exercise[] = [
   {
@@ -21,7 +22,7 @@ export const EXERCISES: readonly Exercise[] = [
     solutionCheckedAt: DATE,
     status: 'published',
     firstPublishedAt: DATE,
-    ...stamps,
+    ...written,
   },
   {
     id: 2,
@@ -38,7 +39,7 @@ export const EXERCISES: readonly Exercise[] = [
     solutionCheckedAt: DATE,
     status: 'published',
     firstPublishedAt: DATE,
-    ...stamps,
+    ...written,
   },
   {
     id: 3,
@@ -59,7 +60,7 @@ export const EXERCISES: readonly Exercise[] = [
     solutionCheckedAt: DATE,
     status: 'published',
     firstPublishedAt: DATE,
-    ...stamps,
+    ...written,
   },
   {
     id: 4,
@@ -80,7 +81,7 @@ export const EXERCISES: readonly Exercise[] = [
     solutionCheckedAt: DATE,
     status: 'published',
     firstPublishedAt: DATE,
-    ...stamps,
+    ...written,
   },
   {
     id: 5,
@@ -99,7 +100,7 @@ export const EXERCISES: readonly Exercise[] = [
     solutionCheckedAt: DATE,
     status: 'published',
     firstPublishedAt: DATE,
-    ...stamps,
+    ...written,
   },
   {
     id: 6,
@@ -121,7 +122,7 @@ export const EXERCISES: readonly Exercise[] = [
     solutionCheckedAt: DATE,
     status: 'published',
     firstPublishedAt: DATE,
-    ...stamps,
+    ...written,
   },
   {
     id: 7,
@@ -140,7 +141,7 @@ export const EXERCISES: readonly Exercise[] = [
     solutionCheckedAt: DATE,
     status: 'published',
     firstPublishedAt: DATE,
-    ...stamps,
+    ...written,
   },
   {
     id: 8,
@@ -162,7 +163,7 @@ export const EXERCISES: readonly Exercise[] = [
     solutionCheckedAt: DATE,
     status: 'published',
     firstPublishedAt: DATE,
-    ...stamps,
+    ...written,
   },
   {
     id: 9,
@@ -181,7 +182,7 @@ export const EXERCISES: readonly Exercise[] = [
     solutionCheckedAt: DATE,
     status: 'published',
     firstPublishedAt: DATE,
-    ...stamps,
+    ...written,
   },
   {
     id: 10,
@@ -201,7 +202,7 @@ export const EXERCISES: readonly Exercise[] = [
     solutionCheckedAt: DATE,
     status: 'published',
     firstPublishedAt: DATE,
-    ...stamps,
+    ...written,
   },
 ]
 

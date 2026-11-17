@@ -144,6 +144,12 @@ export const useContentStore = defineStore('content', () => {
   const checkSolution = (id: number): Promise<ApiResult<SolutionCheck>> =>
     api<SolutionCheck>(`/admin/exercises/${id}/solution-check`, { method: 'POST' })
 
+  const generateExercise = (chapterId: number, topic: string): Promise<ApiResult<GeneratedDraft>> =>
+    api<GeneratedDraft>(`/admin/chapters/${chapterId}/exercises/generate`, {
+      method: 'POST',
+      body: { topic },
+    })
+
   return {
     tracks,
     chapters,
@@ -169,6 +175,7 @@ export const useContentStore = defineStore('content', () => {
     updateExercise,
     setExerciseStatus,
     checkSolution,
+    generateExercise,
   }
 })
 

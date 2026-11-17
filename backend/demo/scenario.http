@@ -386,3 +386,13 @@ Content-Type: application/json
 
 ### 64. Suppression d'une leçon publiée : 409 (on l'archive)
 DELETE {{base}}/admin/lessons/{{adminLesson.response.body.data.id}}
+
+### 65. L'IA rédige un exercice en brouillon, solution vérifiée (503 sans ANTHROPIC_API_KEY)
+# @name generated
+POST {{base}}/admin/chapters/{{adminChapter.response.body.data.id}}/exercises/generate
+Content-Type: application/json
+
+{ "topic": "somme des nombres pairs d'un tableau, avec une boucle" }
+
+### 66. Le brouillon généré : relu, corrigé, puis publié par l'admin seulement
+GET {{base}}/admin/exercises/{{generated.response.body.data.exercise.id}}
