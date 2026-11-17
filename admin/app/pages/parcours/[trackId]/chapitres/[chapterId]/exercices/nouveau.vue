@@ -19,22 +19,7 @@ const EMPTY: ExerciseInput = {
   status: 'draft',
 }
 
-const CHECK_TOASTS = {
-  passed: { title: 'Solution de l’IA vérifiée : relisez avant de publier.', color: 'success' },
-  failed: { title: 'La solution de l’IA échoue à ses cas de test : à corriger.', color: 'warning' },
-  unchecked: { title: 'Moteur injoignable : vérifiez la solution plus tard.', color: 'warning' },
-} as const
-
-async function generate(title: string): Promise<Exercise | null> {
-  const result = await store.generateExercise(chapter.id, title)
-  if (!result.ok) {
-    toast.add({ title: result.message, color: 'error' })
-    return null
-  }
-  const check = result.data.solutionCheck
-  toast.add(CHECK_TOASTS[check === null ? 'unchecked' : check.passed ? 'passed' : 'failed'])
-  return result.data.exercise
-}
+const { generate } = useExerciseGeneration(chapter.id)
 
 function onSaved(exercise: Exercise) {
   toast.add({ title: `Exercice « ${exercise.title} » créé`, color: 'success' })

@@ -28,6 +28,19 @@ const columns: TableColumn<Exercise>[] = [
   { id: 'actions', header: '' },
 ]
 
+const { generate, generating } = useExerciseGeneration(chapter.id)
+const topic = ref('')
+
+async function onGenerate() {
+  if (!topic.value.trim() || generating.value) {
+    return
+  }
+  const draft = await generate(topic.value)
+  if (draft) {
+    await navigateTo(`${base}/exercices/${draft.id}`)
+  }
+}
+
 function replaceExercise(updated: Exercise) {
   store.exercises = store.exercises.map((e) => (e.id === updated.id ? updated : e))
 }
@@ -103,6 +116,25 @@ function replaceExercise(updated: Exercise) {
       </UTable>
 
       <h2 class="font-semibold">Exercices</h2>
+      <div v-if="track.programmingLanguage" class="flex max-w-2xl gap-2">
+        <UInput
+          v-model="topic"
+          placeholder="Titre d’un exercice, par ex. « Somme des nombres pairs »"
+          aria-label="Titre de l’exercice à générer"
+          class="w-full"
+          @keydown.enter="onGenerate"
+        />
+        <UButton
+          icon="i-lucide-sparkles"
+          label="Générer avec l’IA"
+          color="neutral"
+          variant="outline"
+          class="shrink-0"
+          :loading="generating"
+          :disabled="!topic.trim() || generating"
+          @click="onGenerate"
+        />
+      </div>
       <UTable :data="[...store.exercises]" :columns="columns" empty="Aucun exercice.">
         <template #position-cell="{ row }">
           <span class="text-muted tabular-nums">{{ row.original.position }}</span>
