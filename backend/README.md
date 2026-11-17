@@ -33,7 +33,7 @@ La spécification complète (corps, réponses, codes d'erreur) est dans
 <http://localhost:8080/api/v1/docs/> (brut : `/api/v1/docs/openapi.json`, pour générer un client).
 
 Toute route ajoutée ou retirée doit l'être aussi dans `openapi.yaml` :
-`tests/backend/http/api-docs.test.ts` échoue sinon, dans les deux sens.
+`tests/unit/backend/src/http/api-docs.test.ts` échoue sinon, dans les deux sens.
 
 ## Routes
 

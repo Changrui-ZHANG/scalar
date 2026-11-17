@@ -191,8 +191,8 @@ npm run test --workspace backend
 npm run typecheck --workspace backend
 ```
 
-Les tests du backend sont rangés dans `tests/backend/`. Une partie d'entre eux
-tourne sur une vraie base PostgreSQL, celle du compose
+Tous les tests sont rangés dans `tests/` (`unit/` et `integration/`). Ceux
+d'intégration tournent sur une vraie base PostgreSQL, celle du compose
 (`docker compose up -d postgres`) : voir `tests/README.md`. L'exécution réelle
 par Piston n'est pas testée automatiquement ; elle se vérifie à la main, pile
 démarrée :
