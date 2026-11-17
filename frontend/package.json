@@ -10,9 +10,9 @@
     "postinstall": "nuxt prepare",
     "test": "vitest run",
     "typecheck": "nuxt typecheck",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write ."
+    "lint": "eslint . ../tests/unit/frontend",
+    "lint:fix": "eslint . ../tests/unit/frontend --fix",
+    "format": "prettier --write . ../tests/unit/frontend"
   },
   "dependencies": {
     "@scalar/shared": "*",

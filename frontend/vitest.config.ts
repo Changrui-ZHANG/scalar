@@ -11,6 +11,7 @@ const SRC = fileURLToPath(new URL('./app', import.meta.url))
 export default defineVitestConfig({
   test: {
     environment: 'nuxt',
+    dir: '../tests/unit/frontend',
   },
   resolve: {
     alias: {
