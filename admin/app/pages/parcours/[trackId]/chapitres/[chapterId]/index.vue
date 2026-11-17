@@ -8,6 +8,8 @@ await Promise.all([store.loadLessons(chapter.id), store.loadExercises(chapter.id
 
 useSeoMeta({ title: `${chapter.title} — Backoffice Scalar` })
 
+const crumbs = breadcrumb({ track, chapter })
+
 const back = `/parcours/${track.id}`
 const base = `${back}/chapitres/${chapter.id}`
 
@@ -49,7 +51,10 @@ function replaceExercise(updated: Exercise) {
 <template>
   <UDashboardPanel :id="`chapitre-${chapter.id}`">
     <template #header>
-      <UDashboardNavbar :title="`${track.name} · ${chapter.title}`">
+      <UDashboardNavbar>
+        <template #title>
+          <AdminBreadcrumb :items="crumbs" />
+        </template>
         <template #leading>
           <UButton
             icon="i-lucide-arrow-left"

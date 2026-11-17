@@ -8,6 +8,12 @@ const toast = useToast()
 useSeoMeta({ title: `Modifier ${lesson.title} — Backoffice Scalar` })
 
 const back = `/parcours/${track.id}/chapitres/${chapter.id}`
+
+const crumbs = breadcrumb({
+  track,
+  chapter,
+  extra: [{ label: lesson.title, to: `${back}/lecons/${lesson.id}` }],
+})
 const demoUrl =
   useRoute().query.demo === '1'
     ? { path: `/parcours/${track.id}/apercu/lecons/${lesson.id}`, query: { demo: '1' } }
@@ -22,7 +28,10 @@ function onSaved(saved: Lesson) {
 <template>
   <UDashboardPanel :id="`lecon-${lesson.id}`">
     <template #header>
-      <UDashboardNavbar :title="`Modifier · ${lesson.title}`">
+      <UDashboardNavbar>
+        <template #title>
+          <AdminBreadcrumb :items="crumbs" />
+        </template>
         <template #leading>
           <UButton
             icon="i-lucide-arrow-left"

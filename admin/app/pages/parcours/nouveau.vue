@@ -1,6 +1,8 @@
 <script setup lang="ts">
 useSeoMeta({ title: 'Nouveau parcours — Backoffice Scalar' })
 
+const crumbs = breadcrumb({ extra: [{ label: 'Nouveau parcours', to: '/parcours/nouveau' }] })
+
 const store = useContentStore()
 const toast = useToast()
 
@@ -21,7 +23,10 @@ function onSaved(track: Track) {
 <template>
   <UDashboardPanel id="nouveau-parcours">
     <template #header>
-      <UDashboardNavbar title="Nouveau parcours">
+      <UDashboardNavbar>
+        <template #title>
+          <AdminBreadcrumb :items="crumbs" />
+        </template>
         <template #leading>
           <UButton
             icon="i-lucide-arrow-left"

@@ -7,6 +7,12 @@ const toast = useToast()
 useSeoMeta({ title: `Modifier ${chapter.title} — Backoffice Scalar` })
 
 const back = `/parcours/${track.id}/chapitres/${chapter.id}`
+
+const crumbs = breadcrumb({
+  track,
+  chapter,
+  extra: [{ label: 'Modifier', to: `${back}/modifier` }],
+})
 const initial: ChapterInput = {
   title: chapter.title,
   slug: chapter.slug,
@@ -24,7 +30,10 @@ function onSaved(saved: Chapter) {
 <template>
   <UDashboardPanel :id="`modifier-chapitre-${chapter.id}`">
     <template #header>
-      <UDashboardNavbar :title="`Modifier · ${chapter.title}`">
+      <UDashboardNavbar>
+        <template #title>
+          <AdminBreadcrumb :items="crumbs" />
+        </template>
         <template #leading>
           <UButton
             icon="i-lucide-arrow-left"

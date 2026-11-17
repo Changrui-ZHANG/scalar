@@ -253,6 +253,14 @@ describe('page d’édition d’un exercice', () => {
     expect(backLinks(wrapper)).toEqual(['/parcours/1/apercu/exercices/3?demo=1'])
   })
 
+  it('le fil d’Ariane ramène au parcours et au chapitre de l’exercice', async () => {
+    const nav = (await mountPage()).find('nav[aria-label="Fil d’Ariane"]')
+
+    const hrefs = nav.findAll('a').map((a) => a.attributes('href')?.replace(/^\/admin/, ''))
+    expect(hrefs).toEqual(['/parcours', '/parcours/1', CHAPTER_URL, EXERCISE_URL])
+    expect(nav.text()).toContain('Somme')
+  })
+
   it('signale un brouillon généré par l’IA, à relire', async () => {
     serve({ ...EXERCISE, generatedByAi: true })
 

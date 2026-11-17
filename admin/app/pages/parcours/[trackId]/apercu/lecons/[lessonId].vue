@@ -4,6 +4,14 @@ const { lesson, previous, next } = await useRoutePreviewLesson(track)
 
 useSeoMeta({ title: `Tester ${lesson.title} — Backoffice Scalar` })
 
+const crumbs = breadcrumb({
+  track,
+  extra: [
+    { label: 'Tester', to: `/parcours/${track.id}/apercu` },
+    { label: lesson.title, to: previewPath(track.id, { kind: 'lesson', item: lesson }) },
+  ],
+})
+
 const base = `/parcours/${track.id}/apercu`
 const demo = useRoute().query.demo === '1'
 const query = demo ? { demo: '1' } : {}
@@ -17,7 +25,10 @@ const editUrl = {
 <template>
   <UDashboardPanel :id="`apercu-lecon-${lesson.id}`">
     <template #header>
-      <UDashboardNavbar :title="`Tester · ${lesson.title}`">
+      <UDashboardNavbar>
+        <template #title>
+          <AdminBreadcrumb :items="crumbs" />
+        </template>
         <template #leading>
           <UButton
             icon="i-lucide-arrow-left"

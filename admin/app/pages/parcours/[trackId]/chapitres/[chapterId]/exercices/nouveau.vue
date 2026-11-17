@@ -7,6 +7,12 @@ const toast = useToast()
 useSeoMeta({ title: `Nouvel exercice · ${chapter.title} — Backoffice Scalar` })
 
 const back = `/parcours/${track.id}/chapitres/${chapter.id}`
+
+const crumbs = breadcrumb({
+  track,
+  chapter,
+  extra: [{ label: 'Nouvel exercice', to: `${back}/exercices/nouveau` }],
+})
 const EMPTY: ExerciseInput = {
   title: '',
   slug: '',
@@ -30,7 +36,10 @@ function onSaved(exercise: Exercise) {
 <template>
   <UDashboardPanel id="nouvel-exercice">
     <template #header>
-      <UDashboardNavbar :title="`Nouvel exercice · ${chapter.title}`">
+      <UDashboardNavbar>
+        <template #title>
+          <AdminBreadcrumb :items="crumbs" />
+        </template>
         <template #leading>
           <UButton
             icon="i-lucide-arrow-left"

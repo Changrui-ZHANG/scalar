@@ -3,6 +3,8 @@ import type { TableColumn } from '@nuxt/ui'
 
 useSeoMeta({ title: 'Parcours — Backoffice Scalar' })
 
+const crumbs = breadcrumb({})
+
 const store = useContentStore()
 await store.loadTracks()
 
@@ -19,7 +21,10 @@ const columns: TableColumn<Track>[] = [
 <template>
   <UDashboardPanel id="parcours">
     <template #header>
-      <UDashboardNavbar title="Parcours">
+      <UDashboardNavbar>
+        <template #title>
+          <AdminBreadcrumb :items="crumbs" />
+        </template>
         <template #right>
           <UButton icon="i-lucide-plus" label="Nouveau parcours" to="/parcours/nouveau" />
         </template>
