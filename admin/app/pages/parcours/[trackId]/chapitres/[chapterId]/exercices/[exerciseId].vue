@@ -7,6 +7,11 @@ const toast = useToast()
 
 useSeoMeta({ title: `Modifier ${exercise.value.title} — Backoffice Scalar` })
 
+// Le titre suit l'exercice enregistre.
+const crumbs = computed(() =>
+  breadcrumb({ track, chapter, extra: [{ label: exercise.value.title }] }),
+)
+
 const back = `/parcours/${track.id}/chapitres/${chapter.id}`
 const initial = toExerciseInput(exercise.value)
 const demoUrl =
@@ -33,7 +38,10 @@ function onSaved(saved: Exercise) {
 <template>
   <UDashboardPanel :id="`exercice-${exercise.id}`">
     <template #header>
-      <UDashboardNavbar :title="`${chapter.title} · ${exercise.title}`">
+      <UDashboardNavbar>
+        <template #title>
+          <AdminBreadcrumb :items="crumbs" />
+        </template>
         <template #leading>
           <UButton
             icon="i-lucide-arrow-left"

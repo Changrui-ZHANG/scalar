@@ -6,6 +6,11 @@ const { exercise, previous, next } = await useRoutePreviewExercise(track)
 
 useSeoMeta({ title: `Tester ${exercise.title} — Backoffice Scalar` })
 
+const crumbs = breadcrumb({
+  track,
+  extra: [{ label: 'Tester', to: `/parcours/${track.id}/apercu` }, { label: exercise.title }],
+})
+
 const base = `/parcours/${track.id}/apercu`
 const demo = useRoute().query.demo === '1'
 const linkTo = (step: PreviewStep) => ({
@@ -41,7 +46,10 @@ const consoleOutput = computed(() =>
 <template>
   <UDashboardPanel :id="`apercu-exercice-${exercise.id}`">
     <template #header>
-      <UDashboardNavbar :title="`Tester · ${exercise.title}`">
+      <UDashboardNavbar>
+        <template #title>
+          <AdminBreadcrumb :items="crumbs" />
+        </template>
         <template #leading>
           <UButton
             icon="i-lucide-arrow-left"

@@ -5,6 +5,8 @@ const toast = useToast()
 
 useSeoMeta({ title: `Nouveau chapitre ${track.name} — Backoffice Scalar` })
 
+const crumbs = breadcrumb({ track, extra: [{ label: 'Nouveau chapitre' }] })
+
 const back = `/parcours/${track.id}`
 const EMPTY: ChapterInput = {
   title: '',
@@ -23,7 +25,10 @@ function onSaved(chapter: Chapter) {
 <template>
   <UDashboardPanel id="nouveau-chapitre">
     <template #header>
-      <UDashboardNavbar :title="`Nouveau chapitre · ${track.name}`">
+      <UDashboardNavbar>
+        <template #title>
+          <AdminBreadcrumb :items="crumbs" />
+        </template>
         <template #leading>
           <UButton
             icon="i-lucide-arrow-left"

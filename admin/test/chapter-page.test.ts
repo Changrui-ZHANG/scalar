@@ -85,6 +85,17 @@ describe('page d’un chapitre', () => {
     expect(wrapper.text()).toContain('En échec')
   })
 
+  it('montre le fil d’Ariane : la liste et le parcours en liens, le chapitre en page courante', async () => {
+    serve(TRACK)
+    const nav = (await mountPage()).find('nav[aria-label="Fil d’Ariane"]')
+
+    expect(nav.exists()).toBe(true)
+    const hrefs = nav.findAll('a').map((a) => a.attributes('href')?.replace(/^\/admin/, ''))
+    expect(hrefs).toEqual(['/parcours', '/parcours/1'])
+    expect(nav.text()).toContain('JavaScript')
+    expect(nav.text()).toContain('Bases')
+  })
+
   it('propose de créer un exercice', async () => {
     serve(TRACK)
     const wrapper = await mountPage()

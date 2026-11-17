@@ -6,6 +6,8 @@ const toast = useToast()
 
 useSeoMeta({ title: `Nouvelle leçon · ${chapter.title} — Backoffice Scalar` })
 
+const crumbs = breadcrumb({ track, chapter, extra: [{ label: 'Nouvelle leçon' }] })
+
 const back = `/parcours/${track.id}/chapitres/${chapter.id}`
 const EMPTY: LessonInput = { title: '', slug: '', summary: '', body: '', status: 'draft' }
 
@@ -18,7 +20,10 @@ function onSaved(lesson: Lesson) {
 <template>
   <UDashboardPanel id="nouvelle-lecon">
     <template #header>
-      <UDashboardNavbar :title="`Nouvelle leçon · ${chapter.title}`">
+      <UDashboardNavbar>
+        <template #title>
+          <AdminBreadcrumb :items="crumbs" />
+        </template>
         <template #leading>
           <UButton
             icon="i-lucide-arrow-left"

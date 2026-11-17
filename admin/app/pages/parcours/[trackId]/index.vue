@@ -7,6 +7,8 @@ await store.loadChapters(track.id)
 
 useSeoMeta({ title: `${track.name} — Backoffice Scalar` })
 
+const crumbs = breadcrumb({ track })
+
 const base = `/parcours/${track.id}`
 
 const columns: TableColumn<Chapter>[] = [
@@ -22,7 +24,10 @@ const columns: TableColumn<Chapter>[] = [
 <template>
   <UDashboardPanel :id="`parcours-${track.id}`">
     <template #header>
-      <UDashboardNavbar :title="track.name">
+      <UDashboardNavbar>
+        <template #title>
+          <AdminBreadcrumb :items="crumbs" />
+        </template>
         <template #leading>
           <UButton
             icon="i-lucide-arrow-left"
