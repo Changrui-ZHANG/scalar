@@ -132,7 +132,8 @@ X-Learner-Id: {{learner.response.body.data.id}}
   ]
 }
 
-### 21. Sa progression : son niveau, puis 2 essais et l'exercice réussi
+### 21. Sa progression : son niveau, son parcours conseillé (path : chapitres acquis, prochain
+# exercice) et son premier badge, après 2 essais dont un réussi
 GET {{base}}/learners/{{learner.response.body.data.id}}/progress
 
 ### 22. Certificat sans Premium : 403, il est réservé aux abonnés
@@ -464,3 +465,6 @@ Content-Type: application/json
 Stripe-Signature: t=1,v1=fausse
 
 { "type": "customer.subscription.updated" }
+
+### 81. Sa progression : badges « chapitre terminé » et « parcours terminé », plus de conseil
+GET {{base}}/learners/{{learner.response.body.data.id}}/progress

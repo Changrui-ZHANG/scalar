@@ -40,6 +40,7 @@ import { AuthService } from './service/auth.service.ts'
 import { CertificateService } from './service/certificate.service.ts'
 import { ExerciseService } from './service/exercise.service.ts'
 import { LearnerService } from './service/learner.service.ts'
+import { LearningPathService } from './service/learning-path.service.ts'
 import { LessonService } from './service/lesson.service.ts'
 import type { PasswordHasher } from './service/password-hasher.service.ts'
 import { PremiumService } from './service/premium.service.ts'
@@ -85,8 +86,16 @@ export interface AppDependencies {
 export function buildApp(deps: AppDependencies): Express {
   const { tracks, lessons, exercises, questionnaire, placements, users, progress } = deps
   const certificates = new CertificateService(deps.certificates, users, progress, tracks, exercises)
-  const learners = new LearnerService(users, progress, tracks, exercises, placements, certificates)
   const premium = new PremiumService(users, deps.subscriptions, deps.freeChapters)
+  const learners = new LearnerService(
+    users,
+    progress,
+    tracks,
+    exercises,
+    placements,
+    certificates,
+    new LearningPathService(tracks, exercises, premium),
+  )
   const tokens = new SessionTokenService(deps.jwtSecret)
   const session: SessionSettings = {
     auth: new AuthService(users, deps.hasher, tokens),
@@ -184,7 +193,7 @@ export function buildApp(deps: AppDependencies): Express {
     new ExerciseController(new ExerciseService(tracks, exercises), learners).buildRouter(),
   )
   app.use('/api/v1', new LearnerController(learners).buildRouter())
-  app.use('/api/v1', new CertificateController(certificates, premium).buildRouter())
+  app.use('/api/v1', new CertificateController(certificates, premium, tracks).buildRouter())
   app.use(
     '/api/v1',
     new QuestionnaireController(

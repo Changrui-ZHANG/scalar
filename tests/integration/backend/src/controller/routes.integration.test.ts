@@ -6,7 +6,6 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 
 import { migrateTestDatabase } from '../../../../fixtures/backend/database.fixtures.ts'
 import { AUTH_DEPENDENCIES } from '../../../../fixtures/backend/auth.fixtures.ts'
-import { subscription } from '../../../../fixtures/backend/premium.fixtures.ts'
 import { buildApp } from '../../../../../backend/src/app.ts'
 import { config } from '../../../../../backend/src/config.ts'
 import { MESSAGES } from '../../../../../backend/src/constants.ts'
@@ -188,7 +187,7 @@ describe.skipIf(!url)('API sur la vraie base', () => {
     })
   })
 
-  it('délivre un certificat vérifiable à un Premium qui a réussi tout le parcours JavaScript', async () => {
+  it('délivre un certificat vérifiable une fois tout le parcours JavaScript réussi', async () => {
     fakePiston()
     const created = await realFetch(`${base}/learners`, { method: 'POST' })
     const { id } = ((await created.json()) as { data: { id: string } }).data
@@ -227,8 +226,7 @@ describe.skipIf(!url)('API sur la vraie base', () => {
         headers: { 'content-type': 'application/json', cookie },
         body: JSON.stringify({ track: 'javascript', holderName: 'Ada Lovelace' }),
       })
-    expect((await ask()).status).toBe(403)
-    await new PrismaSubscriptionRepository(prisma).save(subscription(id))
+    // Tous les chapitres sont gratuits ici (freeChapters infini) : le certificat aussi.
 
     const issued = await ask()
     const again = await ask()

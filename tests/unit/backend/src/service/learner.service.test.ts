@@ -4,11 +4,14 @@ import { InMemoryCertificateRepository } from '../../../../../backend/src/reposi
 import { InMemoryExerciseRepository } from '../../../../../backend/src/repository/exercise.repository.ts'
 import { InMemoryPlacementRepository } from '../../../../../backend/src/repository/placement.repository.ts'
 import { InMemoryProgressRepository } from '../../../../../backend/src/repository/progress.repository.ts'
+import { InMemorySubscriptionRepository } from '../../../../../backend/src/repository/subscription.repository.ts'
 import { InMemoryTrackRepository } from '../../../../../backend/src/repository/track.repository.ts'
 import { InMemoryUserRepository } from '../../../../../backend/src/repository/user.repository.ts'
 import { EXERCISES } from '../../../../../backend/src/content/exercises.ts'
 import { CertificateService } from '../../../../../backend/src/service/certificate.service.ts'
 import { LearnerService } from '../../../../../backend/src/service/learner.service.ts'
+import { LearningPathService } from '../../../../../backend/src/service/learning-path.service.ts'
+import { PremiumService } from '../../../../../backend/src/service/premium.service.ts'
 
 describe('LearnerService.getProgress', () => {
   const open = () => {
@@ -24,9 +27,48 @@ describe('LearnerService.getProgress', () => {
       tracks,
       exercises,
     )
-    const service = new LearnerService(users, progress, tracks, exercises, placements, certificates)
+    const path = new LearningPathService(
+      tracks,
+      exercises,
+      new PremiumService(users, new InMemorySubscriptionRepository(), 2),
+    )
+    const service = new LearnerService(
+      users,
+      progress,
+      tracks,
+      exercises,
+      placements,
+      certificates,
+      path,
+    )
     return { service, progress, placements }
   }
+
+  it('ajoute le parcours conseillé et les badges à la progression', async () => {
+    const { service, placements } = open()
+    const { id } = await service.createLearner()
+    const saved = await placements.save({
+      score: 30,
+      level: 'beginner',
+      trackId: 1,
+      declared: 0,
+      knowledge: 0,
+      practical: 0,
+      createdAt: new Date('2026-11-06T10:00:00Z'),
+    })
+    await placements.assignToUser(saved.id, id)
+    await service.recordAttempt(id, 1, true)
+
+    const result = await service.getProgress(id)
+
+    expect(result?.path?.track.slug).toBe('javascript')
+    expect(result?.path?.nextExercise).toMatchObject({
+      chapter: 'variables',
+      exercise: 'aire-rectangle',
+      free: true,
+    })
+    expect(result?.badges.map((b) => b.kind)).toEqual(['first_exercise'])
+  })
 
   it('n’affiche plus un exercice retiré du catalogue depuis la tentative', async () => {
     const { service, progress } = open()
@@ -77,6 +119,11 @@ describe('LearnerService.access', () => {
     exercises,
     new InMemoryPlacementRepository(),
     new CertificateService(new InMemoryCertificateRepository(), users, progress, tracks, exercises),
+    new LearningPathService(
+      tracks,
+      exercises,
+      new PremiumService(users, new InMemorySubscriptionRepository(), 2),
+    ),
   )
   const account = { email: 'ada@example.org', passwordHash: 'hash' }
 

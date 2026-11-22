@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { AUTH_DEPENDENCIES } from '../../../../fixtures/backend/auth.fixtures.ts'
+import { chapter, exercise, track } from '../../../../fixtures/backend/content.fixtures.ts'
 import { PAST, subscription } from '../../../../fixtures/backend/premium.fixtures.ts'
 import { buildApp } from '../../../../../backend/src/app.ts'
 import { config } from '../../../../../backend/src/config.ts'
@@ -231,5 +232,87 @@ describe('verrou Premium sur le contenu', () => {
         cookie: premium.cookie,
       }),
     ).toMatchObject({ status: 404, body: { error: MESSAGES.trackNotFound } })
+  })
+})
+
+describe('certificat d’une formation entièrement gratuite', () => {
+  let server: Server
+  let base: string
+  const progress = new InMemoryProgressRepository()
+
+  beforeAll(async () => {
+    // « mini » tient dans le seuil gratuit (2 chapitres) ; « longue » le dépasse d'un chapitre.
+    const tracks = new InMemoryTrackRepository(
+      [track(1, 'mini', 1), track(2, 'longue', 2)],
+      [
+        chapter(11, 1, 'un', 'beginner', 1),
+        chapter(12, 1, 'deux', 'beginner', 2),
+        chapter(21, 2, 'un', 'beginner', 1),
+        chapter(22, 2, 'deux', 'beginner', 2),
+        chapter(23, 2, 'trois', 'beginner', 3),
+      ],
+    )
+    const exercises = new InMemoryExerciseRepository(
+      [exercise(1, 11, 'e1', 1), exercise(2, 12, 'e2', 1), exercise(3, 21, 'e3', 1)],
+      [],
+    )
+    const app = buildApp({
+      tracks,
+      lessons: new InMemoryLessonRepository([]),
+      exercises,
+      questionnaire: new InMemoryQuestionnaireRepository(),
+      placements: new InMemoryPlacementRepository(),
+      users: new InMemoryUserRepository(),
+      progress,
+      certificates: new InMemoryCertificateRepository(),
+      adminContent: new InMemoryAdminContentRepository(),
+      subscriptions: new InMemorySubscriptionRepository(),
+      freeChapters: 2,
+      contentSource: 'mock',
+      executionRateLimit: 1_000,
+      learnerCreationRateLimit: 1_000,
+      ...AUTH_DEPENDENCIES,
+      isDatabaseUp: async () => false,
+    })
+    server = await new Promise<Server>((resolve) => {
+      const s = app.listen(0, () => resolve(s))
+    })
+    base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/v1`
+  })
+  afterAll(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        server.close((err) => (err ? reject(err) : resolve()))
+      }),
+  )
+
+  const ask = async (learnerId: string, trackSlug: string) => {
+    const res = await realFetch(`${base}/learners/${learnerId}/certificates`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ track: trackSlug, holderName: 'Ada' }),
+    })
+    return { status: res.status, error: ((await res.json()) as Envelope).error }
+  }
+
+  it('délivre sans Premium le certificat d’une formation dont tous les chapitres sont gratuits', async () => {
+    const id = (
+      (await (await realFetch(`${base}/learners`, { method: 'POST' })).json()) as Envelope
+    ).data.id as string
+
+    expect(await ask(id, 'mini')).toEqual({ status: 403, error: MESSAGES.trackNotCompleted })
+    for (const exerciseId of [1, 2]) {
+      await progress.recordAttempt(id, exerciseId, true, new Date())
+    }
+    expect((await ask(id, 'mini')).status).toBe(201)
+  })
+
+  it('garde le certificat Premium dès qu’un chapitre dépasse le seuil', async () => {
+    const id = (
+      (await (await realFetch(`${base}/learners`, { method: 'POST' })).json()) as Envelope
+    ).data.id as string
+    await progress.recordAttempt(id, 3, true, new Date())
+
+    expect(await ask(id, 'longue')).toEqual({ status: 403, error: MESSAGES.premiumRequired })
   })
 })

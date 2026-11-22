@@ -1,10 +1,11 @@
-import type { PlacementLevel } from '../entity/placement.entity.ts'
+import type { Placement, PlacementLevel } from '../entity/placement.entity.ts'
 import type { ExerciseRepository } from '../repository/exercise.repository.ts'
 import type { PlacementRepository } from '../repository/placement.repository.ts'
 import type { ProgressRepository } from '../repository/progress.repository.ts'
 import type { TrackRepository } from '../repository/track.repository.ts'
 import type { UserRepository } from '../repository/user.repository.ts'
 import type { CertificateService, CertificateView } from './certificate.service.ts'
+import type { Badge, LearningPath, LearningPathService } from './learning-path.service.ts'
 import type { TrackLink } from './track.service.ts'
 import { toTrackLink } from './track.service.ts'
 
@@ -32,6 +33,9 @@ export interface LearnerProgress {
   readonly passedCount: number
   readonly exercises: readonly ExerciseProgressView[]
   readonly certificates: readonly CertificateView[]
+  /** Parcours conseille : celui du positionnement, sinon celui de la derniere tentative. */
+  readonly path: LearningPath | null
+  readonly badges: readonly Badge[]
 }
 
 export type LearnerAccess = 'allowed' | 'not-found' | 'unauthenticated' | 'forbidden'
@@ -50,6 +54,7 @@ export class LearnerService {
   private readonly exercises: ExerciseRepository
   private readonly placements: PlacementRepository
   private readonly certificates: CertificateService
+  private readonly learningPath: LearningPathService
 
   constructor(
     users: UserRepository,
@@ -58,6 +63,7 @@ export class LearnerService {
     exercises: ExerciseRepository,
     placements: PlacementRepository,
     certificates: CertificateService,
+    learningPath: LearningPathService,
   ) {
     this.users = users
     this.progress = progress
@@ -65,6 +71,7 @@ export class LearnerService {
     this.exercises = exercises
     this.placements = placements
     this.certificates = certificates
+    this.learningPath = learningPath
   }
 
   async createLearner(): Promise<{ readonly id: string }> {
@@ -97,7 +104,9 @@ export class LearnerService {
       return null
     }
     const links = await this.linkExercises()
-    const exercises = (await this.progress.listProgress(learnerId)).flatMap((p) => {
+    const rows = await this.progress.listProgress(learnerId)
+    const placement = await this.placements.findLatestByUser(learnerId)
+    const exercises = rows.flatMap((p) => {
       const link = links.get(p.exerciseId)
       // Exercice retire du catalogue depuis la tentative : plus rien a afficher.
       return link
@@ -113,15 +122,15 @@ export class LearnerService {
         : []
     })
     return {
-      placement: await this.latestPlacement(learnerId),
+      placement: await this.toPlacementView(placement),
       passedCount: exercises.filter((e) => e.passed).length,
       exercises,
       certificates: await this.certificates.listForLearner(learnerId),
+      ...(await this.learningPath.describe(placement, rows)),
     }
   }
 
-  private async latestPlacement(learnerId: string): Promise<PlacementView | null> {
-    const placement = await this.placements.findLatestByUser(learnerId)
+  private async toPlacementView(placement: Placement | null): Promise<PlacementView | null> {
     if (!placement) {
       return null
     }
