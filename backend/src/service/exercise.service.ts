@@ -129,6 +129,7 @@ export class ExerciseService {
     chapterSlug: string,
     exerciseSlug: string,
     code: string,
+    onRun: () => void = () => {},
   ): Promise<ExerciseVerification | null> {
     const target = await this.findForVerification(trackSlug, chapterSlug, exerciseSlug)
     if (!target) {
@@ -140,6 +141,7 @@ export class ExerciseService {
     }
     const marker = `__scalar_${randomUUID()}__`
     const harness = buildHarness(converted.code, target.functionName, target.cases, marker)
+    onRun()
     const execution = await executeCode(harness)
     return {
       ok: true,

@@ -103,6 +103,7 @@ export const MESSAGES = {
   aiUnavailable: 'L’IA est momentanément indisponible : réessayez, ou écrivez l’exercice vous-même.',
   aiOutputInvalid: 'L’IA a rendu un exercice inutilisable : relancez la génération.',
   tooManyExecutions: 'Trop d’exécutions : réessayez dans une minute.',
+  verificationInProgress: 'Une vérification est déjà en cours : attendez son verdict.',
   tooManyLearners: 'Trop de créations d’apprenant : réessayez dans une minute.',
   invalidRequest: 'Requête invalide.',
   internalError: 'Erreur interne du serveur.',

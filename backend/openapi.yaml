@@ -21,6 +21,10 @@ info:
     Premium, sauf dans une formation dont tous les chapitres sont gratuits. Un compte `admin` passe partout. L'abonnement se prend par Stripe Checkout
     (`POST /billing/checkout`) ; Stripe l'annonce ensuite par webhook.
 
+    **Temps réel.** La vérification d'un exercice existe aussi en WebSocket sur `/api/v1/ws`
+    (hors de cette spécification, voir `backend/README.md`) : mêmes règles et même verdict, mais
+    poussé étape par étape. La route HTTP `…/verifications` reste le repli.
+
     **Dates.** Chaînes ISO 8601 en UTC (`2026-11-16T09:12:00.000Z`).
 servers:
   - url: /api/v1

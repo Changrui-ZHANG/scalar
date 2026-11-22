@@ -1,4 +1,5 @@
-import type { CookieOptions, Request, Response } from 'express'
+import type { IncomingMessage } from 'node:http'
+import type { CookieOptions, Response } from 'express'
 import { parseCookie } from 'cookie'
 
 import { SESSION_COOKIE } from '../constants.ts'
@@ -12,7 +13,7 @@ const options = (secure: boolean): CookieOptions => ({
   path: '/',
 })
 
-export function readSessionToken(req: Request): string | null {
+export function readSessionToken(req: Pick<IncomingMessage, 'headers'>): string | null {
   return parseCookie(req.headers.cookie ?? '')[SESSION_COOKIE] ?? null
 }
 

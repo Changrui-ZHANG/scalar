@@ -1,3 +1,4 @@
+import type { IncomingMessage } from 'node:http'
 import type { Request, RequestHandler, Response } from 'express'
 
 import { MESSAGES } from '../constants.ts'
@@ -40,6 +41,15 @@ export async function resolveSession(
     setSessionCookie(res, authentication.renewedToken, tokens.lifetimeSeconds, secureCookie)
   }
   return authentication.user
+}
+
+/** Pour une poignee de main WebSocket : pas de reponse HTTP ou renouveler le cookie. */
+export async function sessionUserOf(
+  { auth }: SessionSettings,
+  req: Pick<IncomingMessage, 'headers'>,
+): Promise<PublicUser | null> {
+  const token = readSessionToken(req)
+  return token === null ? null : ((await auth.authenticate(token))?.user ?? null)
 }
 
 /** 401 sans session valide. */

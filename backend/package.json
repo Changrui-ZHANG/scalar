@@ -39,6 +39,7 @@
     "pino": "^10.3.1",
     "stripe": "^23.1.0",
     "swagger-ui-express": "^5.0.1",
+    "ws": "^8.22.1",
     "yaml": "^2.8.1",
     "zod": "^4.6.5"
   },
@@ -46,6 +47,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^24.13.3",
     "@types/swagger-ui-express": "^4.1.8",
+    "@types/ws": "^8.18.2",
     "@vitest/coverage-v8": "^4.1.12",
     "eslint": "^10.12.0",
     "prettier": "^3.9.6",
