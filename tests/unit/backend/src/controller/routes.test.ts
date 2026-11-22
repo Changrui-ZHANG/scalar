@@ -428,6 +428,8 @@ describe('progression de l’apprenant anonyme', () => {
       passedCount: 0,
       exercises: [],
       certificates: [],
+      path: null,
+      badges: [],
     })
   })
 
@@ -458,7 +460,7 @@ describe('progression de l’apprenant anonyme', () => {
     expect(body.data.exercises[0].firstPassedAt < body.data.exercises[0].lastAttemptAt).toBe(true)
   })
 
-  it('certificat : refuse une demande invalide, un inconnu, puis un apprenant sans Premium', async () => {
+  it('certificat : refuse une demande invalide, un inconnu ou un parcours pas terminé', async () => {
     const id = await createLearner()
     const ask = async (learnerId: string, body: unknown) => {
       const res = await realFetch(`${base}/learners/${learnerId}/certificates`, {
@@ -482,7 +484,8 @@ describe('progression de l’apprenant anonyme', () => {
       status: 403,
       error: MESSAGES.premiumRequired,
     })
-    expect(await ask(id, valid)).toEqual({ status: 403, error: MESSAGES.premiumRequired })
+    // Tous les chapitres sont gratuits ici : la formation l'est entièrement, certificat compris.
+    expect(await ask(id, valid)).toEqual({ status: 403, error: MESSAGES.trackNotCompleted })
 
     const unknown = await realFetch(`${base}/certificates/AAAAA-AAAAA`)
     expect(unknown.status).toBe(404)

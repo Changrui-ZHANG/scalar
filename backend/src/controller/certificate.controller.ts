@@ -4,6 +4,7 @@ import type { Request, Response } from 'express'
 import { MESSAGES } from '../constants.ts'
 import { badRequest, fail, notFound, ok, respond } from '../http/envelope.ts'
 import { contentUnavailable } from '../http/errors.ts'
+import type { TrackRepository } from '../repository/track.repository.ts'
 import type { CertificateService } from '../service/certificate.service.ts'
 import { certificateRequestSchema } from '../service/certificate.service.ts'
 import type { PremiumService } from '../service/premium.service.ts'
@@ -11,10 +12,12 @@ import type { PremiumService } from '../service/premium.service.ts'
 export class CertificateController {
   private readonly service: CertificateService
   private readonly premium: PremiumService
+  private readonly tracks: TrackRepository
 
-  constructor(service: CertificateService, premium: PremiumService) {
+  constructor(service: CertificateService, premium: PremiumService, tracks: TrackRepository) {
     this.service = service
     this.premium = premium
+    this.tracks = tracks
   }
 
   async issueCertificate(req: Request<{ learnerId: string }>, res: Response) {
@@ -24,7 +27,10 @@ export class CertificateController {
       return
     }
     try {
-      if (!(await this.premium.isPremium(req.params.learnerId))) {
+      if (
+        !(await this.isFreeTrack(parsed.data.track)) &&
+        !(await this.premium.isPremium(req.params.learnerId))
+      ) {
         fail(res, 403, MESSAGES.premiumRequired)
         return
       }
@@ -46,6 +52,13 @@ export class CertificateController {
     } catch (error: unknown) {
       contentUnavailable(res, error)
     }
+  }
+
+  private async isFreeTrack(slug: string): Promise<boolean> {
+    const track = await this.tracks.findTrackBySlug(slug)
+    return (
+      track !== null && this.premium.isFreeTrack((await this.tracks.listChapters(track.id)).length)
+    )
   }
 
   async verifyCertificate(req: Request<{ code: string }>, res: Response) {

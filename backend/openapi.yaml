@@ -18,7 +18,7 @@ info:
     **Premium.** Dans chaque parcours, les chapitres au-delà du seuil gratuit (`free: false` dans
     `GET /tracks/{track}`, 2 premiers chapitres par défaut) répondent `403` sans abonnement
     Premium actif : leçons, exercices et vérifications. Le certificat est lui aussi réservé au
-    Premium. Un compte `admin` passe partout. L'abonnement se prend par Stripe Checkout
+    Premium, sauf dans une formation dont tous les chapitres sont gratuits. Un compte `admin` passe partout. L'abonnement se prend par Stripe Checkout
     (`POST /billing/checkout`) ; Stripe l'annonce ensuite par webhook.
 
     **Dates.** Chaînes ISO 8601 en UTC (`2026-11-16T09:12:00.000Z`).
@@ -406,8 +406,8 @@ paths:
       summary: Obtenir le certificat d'un parcours terminé
       description: |
         Idempotent : un certificat déjà délivré pour ce parcours est renvoyé tel quel (200).
-        Mêmes règles d'accès que la progression. Réservé au Premium : un apprenant anonyme ou
-        sans abonnement actif reçoit `403`, avant même que le parcours soit cherché.
+        Mêmes règles d'accès que la progression. Réservé au Premium, sauf pour une formation dont tous
+        les chapitres sont gratuits : sinon, un apprenant sans abonnement actif reçoit `403`.
       operationId: issueCertificate
       parameters:
         - $ref: '#/components/parameters/LearnerIdPath'
@@ -1668,7 +1668,7 @@ components:
 
     LearnerProgress:
       type: object
-      required: [placement, passedCount, exercises, certificates]
+      required: [placement, passedCount, exercises, certificates, path, badges]
       properties:
         placement:
           description: Dernier questionnaire passé, null s'il n'y en a aucun.
@@ -1703,6 +1703,67 @@ components:
         certificates:
           type: array
           items: { $ref: '#/components/schemas/Certificate' }
+        path:
+          description: |
+            Parcours conseillé : celui du dernier positionnement, sinon celui de la dernière
+            tentative ; null sans l'un ni l'autre. Les chapitres sous le niveau du positionnement
+            sont `acquired` (affichés comme connus, sautés par le conseil, sans valoir pour le
+            certificat). `nextExercise` est le premier exercice non réussi hors des chapitres
+            acquis, même dans un chapitre Premium (`free: false`) ; null quand tout est réussi.
+          oneOf:
+            - type: object
+              required: [track, level, chapters, nextExercise]
+              properties:
+                track: { $ref: '#/components/schemas/TrackLink' }
+                level:
+                  oneOf:
+                    - $ref: '#/components/schemas/PlacementLevel'
+                    - type: 'null'
+                chapters:
+                  type: array
+                  items:
+                    type: object
+                    required: [slug, title, level, number, free, acquired, completed]
+                    properties:
+                      slug: { $ref: '#/components/schemas/Slug' }
+                      title: { type: string }
+                      level: { $ref: '#/components/schemas/ChapterLevel' }
+                      number: { type: integer }
+                      free: { type: boolean }
+                      acquired: { type: boolean }
+                      completed:
+                        type: boolean
+                        description: Au moins un exercice, et tous réussis.
+                nextExercise:
+                  oneOf:
+                    - type: object
+                      required: [chapter, exercise, title, free]
+                      properties:
+                        chapter: { $ref: '#/components/schemas/Slug' }
+                        exercise: { $ref: '#/components/schemas/Slug' }
+                        title: { type: string }
+                        free: { type: boolean }
+                    - type: 'null'
+            - type: 'null'
+        badges:
+          description: |
+            Calculés à chaque lecture, du plus ancien au plus récent ; datés de la réussite qui
+            les a débloqués, jamais retirés (une réussite n'est jamais effacée).
+          type: array
+          items:
+            type: object
+            required: [kind, track, chapter, earnedAt]
+            properties:
+              kind: { type: string, enum: [first_exercise, chapter_completed, track_completed] }
+              track:
+                oneOf:
+                  - $ref: '#/components/schemas/Slug'
+                  - type: 'null'
+              chapter:
+                oneOf:
+                  - $ref: '#/components/schemas/Slug'
+                  - type: 'null'
+              earnedAt: { $ref: '#/components/schemas/DateTime' }
     Certificate:
       type: object
       required: [code, holderName, track, issuedAt]

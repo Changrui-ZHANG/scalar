@@ -43,4 +43,9 @@ export class PremiumService {
   isFreeChapter(number: number): boolean {
     return number <= this.freeChapters
   }
+
+  /** Tous ses chapitres publies dans le seuil : son certificat aussi est gratuit. */
+  isFreeTrack(chapterCount: number): boolean {
+    return this.isFreeChapter(chapterCount)
+  }
 }

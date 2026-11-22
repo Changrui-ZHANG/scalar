@@ -134,8 +134,9 @@ plus : c'est le prix d'une protection contre une attaque distribuée.
 Variables : `JWT_SECRET` (obligatoire, 32 caractères au moins), `AUTH_COOKIE_SECURE`
 (`true` par défaut ; `false` pour un site servi en http, comme le compose).
 
-Un certificat n'est délivré (`201`) qu'à un compte Premium dont tous les exercices publiés
-du parcours sont réussis (`403` sinon). Redemandé, il est renvoyé tel quel (`200`) : le nom affiché est figé.
+Un certificat n'est délivré (`201`) que si tous les exercices publiés du parcours sont réussis,
+et à un compte Premium, sauf dans une formation dont tous les chapitres sont gratuits (`403`
+sinon). Redemandé, il est renvoyé tel quel (`200`) : le nom affiché est figé.
 
 ### Administration
 
@@ -185,11 +186,25 @@ Exercices, en plus de ces règles :
 
 `npm run db:seed` remplace tout le contenu, modifications de l'admin comprises.
 
+### Parcours adapté et badges
+
+`GET /learners/:id/progress` ajoute `path` et `badges`, calculés à chaque lecture (sans table).
+
+- `path` suit le parcours du dernier positionnement (sinon celui de la dernière tentative).
+  Les chapitres sous le niveau trouvé sont `acquired` : un intermédiaire a déjà les chapitres
+  débutants, un avancé aussi les intermédiaires, jamais l'écosystème. Ils sont affichés comme
+  connus et sautés par le conseil, mais ne valent pas pour le certificat.
+- `path.nextExercise` est le premier exercice non réussi hors des chapitres acquis. Il est
+  conseillé même dans un chapitre Premium, avec `free: false` : le front y montre l'offre.
+- `badges` : premier exercice réussi, chapitre terminé, parcours terminé, datés de la réussite
+  qui les a débloqués. Une réussite n'étant jamais effacée, un badge ne se perd pas.
+
 ### Premium (Stripe, mode test)
 
 Dans chaque parcours, les `FREE_CHAPTERS` premiers chapitres (2 par défaut) sont ouverts à tous.
 Au-delà, leçons, exercices et vérifications répondent `403` sans Premium ; `GET /tracks/:track`
-l'annonce par `free` sur chaque chapitre. Le certificat est lui aussi réservé au Premium. Est
+l'annonce par `free` sur chaque chapitre. Le certificat est lui aussi réservé au Premium, sauf
+dans une formation dont tous les chapitres tiennent dans le seuil gratuit. Est
 Premium un compte dont l'abonnement est `active` et dont la période n'est pas finie, ou un
 admin. Un impayé (`past_due`) reverrouille aussitôt, sans délai de grâce.
 
@@ -222,9 +237,9 @@ le verrou s'applique toujours. Mise en route, en mode test :
 `demo/scenario.http` rejoue l'API dans l'ordre de la démo : contenu, correction d'un
 exercice, isolation du moteur, questionnaire, erreurs, progression d'un apprenant, certificat,
 compte, administration. Il s'ouvre avec l'extension VS Code « REST Client » (« Send Request »
-au-dessus de chaque requête) : les requêtes 18 à 39 et 67 à 80 réutilisent l'apprenant créé
+au-dessus de chaque requête) : les requêtes 18 à 39 et 67 à 81 réutilisent l'apprenant créé
 en 17. Avant la requête 41, promouvoir le compte admin (commande de la section
-Administration). Les requêtes 22 et 25 à 28 montrent le verrou Premium. Les requêtes 67 à 80
+Administration). Les requêtes 22 et 25 à 28 montrent le verrou Premium. Les requêtes 67 à 81
 font payer Ada (section Premium : `stripe listen` doit tourner), puis terminer le parcours et
 obtenir son certificat.
 
