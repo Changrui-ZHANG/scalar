@@ -1,4 +1,4 @@
-import { buildApp } from './app.ts'
+import { buildServer } from './app.ts'
 import { config } from './config.ts'
 import { isDatabaseUp, prisma } from './database/client.ts'
 import { migrateDatabase } from './database/migrate.ts'
@@ -100,7 +100,7 @@ async function prepare(): Promise<void> {
 // Avant l'export : en dev, Vite ne sert aucune requete tant que la base n'est pas migree.
 await prepare()
 
-export const viteNodeApp = buildApp({
+const scalar = buildServer({
   ...repositories,
   contentSource: config.CONTENT_SOURCE,
   freeChapters: config.FREE_CHAPTERS,
@@ -118,8 +118,13 @@ export const viteNodeApp = buildApp({
   billingGateway: createBillingGateway(config),
 })
 
+export const viteNodeApp = scalar.app
+/** En dev, le plugin `scalar-realtime` de vite.config.ts y envoie les poignees de main de /api/v1/ws. */
+export const realtimeUpgrade = scalar.upgrade
+
 if (config.NODE_ENV === 'production') {
-  viteNodeApp.listen(config.PORT, () => {
+  const server = viteNodeApp.listen(config.PORT, () => {
     logger.info({ port: config.PORT, content: config.CONTENT_SOURCE }, 'Backend Express en écoute')
   })
+  server.on('upgrade', realtimeUpgrade)
 }

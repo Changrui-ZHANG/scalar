@@ -1,3 +1,6 @@
+import type { IncomingMessage } from 'node:http'
+import type { Duplex } from 'node:stream'
+
 import express from 'express'
 import type { Express } from 'express'
 
@@ -17,6 +20,7 @@ import { TrackController } from './controller/track.controller.ts'
 import { serveApiDocs } from './http/api-docs.ts'
 import { errorHandler, routeNotFound } from './http/errors.ts'
 import { learnerAccess } from './http/learner-access.ts'
+import { RealtimeVerdictGateway } from './http/realtime-verdict.ts'
 import { requireAdmin } from './http/require-admin.ts'
 import { requirePremiumChapter } from './http/require-premium.ts'
 import { perMinuteLimiter } from './http/rate-limit.ts'
@@ -85,7 +89,17 @@ export interface AppDependencies {
   readonly billingGateway?: BillingGateway | null
 }
 
+export interface ScalarServer {
+  readonly app: Express
+  /** A brancher sur l'evenement `upgrade` du serveur HTTP : le WebSocket de /api/v1/ws. */
+  readonly upgrade: (req: IncomingMessage, socket: Duplex, head: Buffer) => void
+}
+
 export function buildApp(deps: AppDependencies): Express {
+  return buildServer(deps).app
+}
+
+export function buildServer(deps: AppDependencies): ScalarServer {
   const { tracks, lessons, exercises, questionnaire, placements, users, progress } = deps
   const certificates = new CertificateService(deps.certificates, users, progress, tracks, exercises)
   const premium = new PremiumService(users, deps.subscriptions, deps.freeChapters)
@@ -108,6 +122,15 @@ export function buildApp(deps: AppDependencies): Express {
     new BillingService(users, deps.subscriptions, premium, deps.billingGateway ?? null),
     session,
   )
+  const exerciseService = new ExerciseService(tracks, exercises)
+  const realtime = new RealtimeVerdictGateway({
+    session,
+    learners,
+    exercises: exerciseService,
+    tracks,
+    premium,
+    executionRateLimit: deps.executionRateLimit,
+  })
   const app = express()
   secure(app)
   app.use('/api/v1', billing.buildWebhookRouter())
@@ -196,10 +219,7 @@ export function buildApp(deps: AppDependencies): Express {
     new TrackController(new TrackService(tracks, lessons, exercises), premium).buildRouter(),
   )
   app.use('/api/v1', new LessonController(new LessonService(tracks, lessons)).buildRouter())
-  app.use(
-    '/api/v1',
-    new ExerciseController(new ExerciseService(tracks, exercises), learners).buildRouter(),
-  )
+  app.use('/api/v1', new ExerciseController(exerciseService, learners).buildRouter())
   app.use('/api/v1', new LearnerController(learners).buildRouter())
   app.use('/api/v1', new CertificateController(certificates, premium, tracks).buildRouter())
   app.use(
@@ -211,5 +231,5 @@ export function buildApp(deps: AppDependencies): Express {
 
   app.use(routeNotFound)
   app.use(errorHandler)
-  return app
+  return { app, upgrade: realtime.handleUpgrade }
 }

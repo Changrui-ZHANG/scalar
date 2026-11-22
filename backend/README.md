@@ -188,6 +188,54 @@ Exercices, en plus de ces règles :
 
 `npm run db:seed` remplace tout le contenu, modifications de l'admin comprises.
 
+### Verdict en temps réel (WebSocket)
+
+`ws://…/api/v1/ws` corrige un exercice comme `POST …/verifications`, mais pousse le verdict étape
+par étape. Le client envoie, autant de fois qu'il veut sur la même connexion :
+
+```json
+{
+  "type": "verify",
+  "track": "javascript",
+  "chapter": "variables",
+  "exercise": "aire-rectangle",
+  "code": "function area(w, h) { return w * h }",
+  "learnerId": "facultatif"
+}
+```
+
+Le serveur répond, dans l'ordre : `{ "type": "received" }`, `{ "type": "running" }` (juste avant
+l'appel à Piston), un `{ "type": "check", "index", "total", "check" }` par vérification, puis
+`{ "type": "verdict", "result" }`, le même objet que la route HTTP. Un refus arrive à la place sous
+la forme `{ "type": "error", "status", "error" }`, avec les statuts de la route HTTP : `400`, `401`,
+`403` (accès, Premium), `404`, `429`, `503`, et `409` si une vérification tourne déjà sur la
+connexion. La connexion reste ouverte après une erreur.
+
+Les règles sont celles de la route HTTP : session lue dans le cookie de la poignée de main,
+apprenant dans `learnerId` (un navigateur ne peut pas ajouter `X-Learner-Id` à un WebSocket),
+verrou Premium, enregistrement de la progression, `EXECUTION_RATE_LIMIT` par minute et par IP
+(compteur à part de celui du HTTP). Piston rend tous les cas d'un coup : les `check` arrivent à la
+suite, juste après l'exécution, pas pendant. Le front peut s'en passer : la route HTTP reste le
+repli. En dev, Vite sert le HTTP ; le plugin `scalar-realtime` de `vite.config.ts` lui passe les
+poignées de main de `/api/v1/ws`.
+
+Essai depuis la console du navigateur, sur `http://localhost:8080` :
+
+```js
+const ws = new WebSocket('ws://localhost:8080/api/v1/ws')
+ws.onmessage = (e) => console.log(JSON.parse(e.data))
+ws.onopen = () =>
+  ws.send(
+    JSON.stringify({
+      type: 'verify',
+      track: 'javascript',
+      chapter: 'variables',
+      exercise: 'aire-rectangle',
+      code: 'function area(w, h) { return w * h }',
+    }),
+  )
+```
+
 ### Parcours adapté et badges
 
 `GET /learners/:id/progress` ajoute `path` et `badges`, calculés à chaque lecture (sans table).
