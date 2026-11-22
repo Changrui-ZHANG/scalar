@@ -39,6 +39,8 @@ tags:
   - name: Admin — parcours et chapitres
   - name: Admin — leçons
   - name: Admin — exercices
+  - name: Admin — utilisateurs et métriques
+    description: Lecture seule.
 
 paths:
   /:
@@ -1194,6 +1196,68 @@ paths:
         '500': { $ref: '#/components/responses/ContentUnavailable' }
         '503': { $ref: '#/components/responses/EngineUnavailable' }
 
+  # ---------------------------------------------------------------- Admin : utilisateurs et métriques
+
+  /admin/users:
+    get:
+      tags: [Admin — utilisateurs et métriques]
+      summary: Les comptes inscrits et leur abonnement
+      description: |
+        Comptes avec un email (admins compris, jamais les apprenants anonymes), du plus récent
+        au plus ancien, 100 au plus ; `total` compte tous ceux qui répondent aux filtres.
+      operationId: adminListUsers
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: email
+          in: query
+          description: Un morceau de l'email, sans tenir compte de la casse.
+          schema: { type: string }
+        - name: subscription
+          in: query
+          description: État enregistré de l'abonnement, ou `none` pour un compte jamais abonné.
+          schema: { type: string, enum: [active, past_due, canceled, none] }
+      responses:
+        '200':
+          description: Les comptes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data:
+                    type: object
+                    required: [total, users]
+                    properties:
+                      total: { type: integer }
+                      users:
+                        type: array
+                        items: { $ref: '#/components/schemas/AdminAccount' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /admin/metrics:
+    get:
+      tags: [Admin — utilisateurs et métriques]
+      summary: Les métriques globales du tableau de bord
+      operationId: adminMetrics
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Les chiffres du moment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data: { $ref: '#/components/schemas/AdminMetrics' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
 components:
   securitySchemes:
     sessionCookie:
@@ -1458,6 +1522,57 @@ components:
     SubscriptionPlan:
       type: string
       enum: [monthly, yearly]
+    AdminAccount:
+      type: object
+      required: [id, email, role, createdAt, premium, subscription]
+      properties:
+        id: { $ref: '#/components/schemas/LearnerId' }
+        email: { type: string }
+        role: { type: string, enum: [learner, admin] }
+        createdAt: { $ref: '#/components/schemas/DateTime' }
+        premium:
+          type: boolean
+          description: Abonnement `active` dont la période court encore, ou compte admin.
+        subscription:
+          oneOf:
+            - type: object
+              required: [status, plan, currentPeriodEnd]
+              properties:
+                status: { type: string, enum: [active, past_due, canceled] }
+                plan: { $ref: '#/components/schemas/SubscriptionPlan' }
+                currentPeriodEnd: { $ref: '#/components/schemas/DateTime' }
+            - type: 'null'
+    AdminMetrics:
+      type: object
+      required:
+        [
+          learners,
+          registered,
+          premium,
+          attemptedExercises,
+          passedExercises,
+          certificates,
+          subscriptions,
+        ]
+      properties:
+        learners:
+          type: integer
+          description: Comptes de rôle `learner`, anonymes compris.
+        registered: { type: integer, description: Apprenants avec un email. }
+        premium: { type: integer, description: Abonnements actifs dont la période court encore. }
+        attemptedExercises:
+          type: integer
+          description: Couples apprenant / exercice tentés au moins une fois.
+        passedExercises: { type: integer, description: Les mêmes, réussis. }
+        certificates: { type: integer }
+        subscriptions:
+          type: object
+          description: Par statut enregistré, période finie ou non.
+          required: [active, past_due, canceled]
+          properties:
+            active: { type: integer }
+            past_due: { type: integer }
+            canceled: { type: integer }
     SubscriptionView:
       type: object
       required: [premium, subscription]

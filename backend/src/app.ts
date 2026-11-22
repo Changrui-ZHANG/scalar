@@ -5,6 +5,7 @@ import type { Config } from './config.ts'
 import { MAX_BODY_BYTES, MESSAGES } from './constants.ts'
 import { ExecutionController } from './controller/execution.controller.ts'
 import { AdminContentController } from './controller/admin-content.controller.ts'
+import { AdminUsersController } from './controller/admin-users.controller.ts'
 import { AuthController } from './controller/auth.controller.ts'
 import { BillingController } from './controller/billing.controller.ts'
 import { CertificateController } from './controller/certificate.controller.ts'
@@ -32,6 +33,7 @@ import type { SubscriptionRepository } from './repository/subscription.repositor
 import type { TrackRepository } from './repository/track.repository.ts'
 import type { UserRepository } from './repository/user.repository.ts'
 import { AdminContentService } from './service/admin-content.service.ts'
+import { AdminUsersService } from './service/admin-users.service.ts'
 import type { BillingGateway } from './service/billing-gateway.ts'
 import { BillingService } from './service/billing.service.ts'
 import type { ExerciseGenerator } from './service/exercise-generator.ts'
@@ -173,6 +175,12 @@ export function buildApp(deps: AppDependencies): Express {
     deps.exerciseGenerator ?? null,
   )
   app.use('/api/v1/admin', new AdminContentController(adminContent, generation).buildRouter())
+  app.use(
+    '/api/v1/admin',
+    new AdminUsersController(
+      new AdminUsersService(users, deps.subscriptions, progress, deps.certificates),
+    ).buildRouter(),
+  )
   app.use(
     '/api/v1',
     new AuthController(session, {

@@ -84,6 +84,8 @@ Toute route ajoutée ou retirée doit l'être aussi dans `openapi.yaml` :
 | DELETE  | `/admin/exercises/:exerciseId`                         | admin : supprime un exercice jamais publié                     |
 | POST    | `/admin/exercises/:exerciseId/solution-check`          | admin : passe la solution dans ses cas de test                 |
 | POST    | `/admin/exercises/:exerciseId/verifications`           | admin : essaie un code comme un apprenant, rien d'enregistré   |
+| GET     | `/admin/users?email=&subscription=`                    | admin : comptes inscrits, leur abonnement, recherche et filtre |
+| GET     | `/admin/metrics`                                       | admin : métriques globales du tableau de bord                  |
 
 Les sept routes `POST` qui exécutent du code partagent une limite : `EXECUTION_RATE_LIMIT`
 requêtes par minute et par adresse IP (30 par défaut), puis `429` avec `Retry-After`.
@@ -239,7 +241,8 @@ exercice, isolation du moteur, questionnaire, erreurs, progression d'un apprenan
 compte, administration. Il s'ouvre avec l'extension VS Code « REST Client » (« Send Request »
 au-dessus de chaque requête) : les requêtes 18 à 39 et 67 à 81 réutilisent l'apprenant créé
 en 17. Avant la requête 41, promouvoir le compte admin (commande de la section
-Administration). Les requêtes 22 et 25 à 28 montrent le verrou Premium. Les requêtes 67 à 81
+Administration). Les requêtes 82 à 86 montrent le tableau de bord et les comptes, en admin.
+Les requêtes 22 et 25 à 28 montrent le verrou Premium. Les requêtes 67 à 81
 font payer Ada (section Premium : `stripe listen` doit tourner), puis terminer le parcours et
 obtenir son certificat.
 

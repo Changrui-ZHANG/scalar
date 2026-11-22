@@ -127,6 +127,8 @@ export const MESSAGES = {
   noSubscription: 'Ce compte n’a jamais été abonné à Premium.',
   billingUnavailable: 'Le paiement est momentanément indisponible.',
   invalidWebhookSignature: 'Signature du webhook Stripe invalide.',
+  invalidSubscriptionFilter:
+    'Le filtre « subscription » doit valoir active, past_due, canceled ou none.',
   tooManyAuthAttempts: 'Trop de tentatives : réessayez dans quelques minutes.',
   invalidField: 'Champ invalide ou inconnu :',
   chapterNotFound: 'Chapitre introuvable.',

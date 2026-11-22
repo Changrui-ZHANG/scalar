@@ -100,6 +100,24 @@ export class PrismaUserRepository implements UserRepository {
     return rows[0] ? toUser(rows[0]) : null
   }
 
+  async listRegistered(email?: string): Promise<readonly User[]> {
+    // Prisma passe `contains` tel quel a LIKE : sans echappement, « % » trouverait tout le monde.
+    const pattern = email?.toLowerCase().replace(/[\\%_]/g, (c) => `\\${c}`)
+    const rows = await this.prisma.user.findMany({
+      where: { email: pattern === undefined ? { not: null } : { contains: pattern } },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+    })
+    return rows.map(toUser)
+  }
+
+  async countLearners(): Promise<{ readonly anonymous: number; readonly registered: number }> {
+    const [anonymous, registered] = await Promise.all([
+      this.prisma.user.count({ where: { role: 'learner', email: null } }),
+      this.prisma.user.count({ where: { role: 'learner', email: { not: null } } }),
+    ])
+    return { anonymous, registered }
+  }
+
   async upsertAdmin(user: NewUser): Promise<User> {
     const email = user.email.toLowerCase()
     const account = { passwordHash: user.passwordHash, role: 'admin' as const }

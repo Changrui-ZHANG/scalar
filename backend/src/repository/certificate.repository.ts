@@ -14,6 +14,7 @@ export interface CertificateRepository {
   findByCode(code: string): Promise<Certificate | null>
   /** Du plus ancien au plus recent. */
   listCertificates(userId: string): Promise<readonly Certificate[]>
+  countCertificates(): Promise<number>
 }
 
 export class InMemoryCertificateRepository implements CertificateRepository {
@@ -37,6 +38,10 @@ export class InMemoryCertificateRepository implements CertificateRepository {
   async findByCode(code: string): Promise<Certificate | null> {
     const found = this.certificates.find((c) => c.code === code)
     return found ? { ...found } : null
+  }
+
+  async countCertificates(): Promise<number> {
+    return this.certificates.length
   }
 
   async listCertificates(userId: string): Promise<readonly Certificate[]> {
