@@ -11,6 +11,8 @@ import {
   STAT_METRICS,
   STAT_PERIODS,
   STAT_SUBJECTS,
+  SUBSCRIPTION_PLANS,
+  SUBSCRIPTION_STATUSES,
 } from '../../../../../packages/shared/src/enums.ts'
 
 describe('enums', () => {
@@ -28,6 +30,11 @@ describe('enums', () => {
 
   it('defines SOLUTION_CHECK_STATUSES correctly', () => {
     expect(SOLUTION_CHECK_STATUSES).toEqual(['not_checked', 'passed', 'failed'])
+  })
+
+  it('defines SUBSCRIPTION_STATUSES and SUBSCRIPTION_PLANS like the Prisma enums', () => {
+    expect(SUBSCRIPTION_STATUSES).toEqual(['active', 'past_due', 'canceled'])
+    expect(SUBSCRIPTION_PLANS).toEqual(['monthly', 'yearly'])
   })
 
   it('defines STAT_SUBJECTS and STAT_METRICS correctly', () => {

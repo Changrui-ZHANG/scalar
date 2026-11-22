@@ -57,6 +57,10 @@ Toute route ajoutée ou retirée doit l'être aussi dans `openapi.yaml` :
 | POST    | `/auth/login`                                          | ouvre une session (cookie)                                     |
 | POST    | `/auth/logout`                                         | ferme la session et révoque tous les jetons du compte          |
 | GET     | `/auth/me`                                             | le compte de la session                                        |
+| POST    | `/billing/checkout`                                    | ouvre une page de paiement Stripe (`monthly` ou `yearly`)      |
+| POST    | `/billing/portal`                                      | ouvre le portail Stripe : gérer ou résilier l'abonnement       |
+| GET     | `/billing/subscription`                                | l'abonnement du compte, et s'il ouvre le Premium               |
+| POST    | `/billing/webhook`                                     | appelé par Stripe seulement (corps brut signé)                 |
 | GET     | `/admin/tracks`                                        | admin : tous les parcours, brouillons compris                  |
 | POST    | `/admin/tracks`                                        | admin : crée un parcours (en brouillon)                        |
 | GET     | `/admin/tracks/:trackId`                               | admin : un parcours                                            |
@@ -130,8 +134,8 @@ plus : c'est le prix d'une protection contre une attaque distribuée.
 Variables : `JWT_SECRET` (obligatoire, 32 caractères au moins), `AUTH_COOKIE_SECURE`
 (`true` par défaut ; `false` pour un site servi en http, comme le compose).
 
-Un certificat n'est délivré (`201`) que si tous les exercices publiés du parcours sont réussis
-(`403` sinon). Redemandé, il est renvoyé tel quel (`200`) : le nom affiché est figé.
+Un certificat n'est délivré (`201`) qu'à un compte Premium dont tous les exercices publiés
+du parcours sont réussis (`403` sinon). Redemandé, il est renvoyé tel quel (`200`) : le nom affiché est figé.
 
 ### Administration
 
@@ -181,14 +185,48 @@ Exercices, en plus de ces règles :
 
 `npm run db:seed` remplace tout le contenu, modifications de l'admin comprises.
 
+### Premium (Stripe, mode test)
+
+Dans chaque parcours, les `FREE_CHAPTERS` premiers chapitres (2 par défaut) sont ouverts à tous.
+Au-delà, leçons, exercices et vérifications répondent `403` sans Premium ; `GET /tracks/:track`
+l'annonce par `free` sur chaque chapitre. Le certificat est lui aussi réservé au Premium. Est
+Premium un compte dont l'abonnement est `active` et dont la période n'est pas finie, ou un
+admin. Un impayé (`past_due`) reverrouille aussitôt, sans délai de grâce.
+
+Le paiement passe par Stripe Checkout : `POST /billing/checkout` renvoie l'URL où envoyer le
+navigateur, puis Stripe revient sur `FRONTEND_URL/premium?checkout=success`. Le Premium
+s'ouvre au webhook (`customer.subscription.created`, `.updated`, `.deleted`). Le backend vérifie
+sa signature, puis relit l'abonnement chez Stripe. Un événement rejoué, ou arrivé dans le
+désordre, recopie donc le même état : le webhook est idempotent sans mémoriser les événements.
+Un compte a un seul abonnement (table `subscription`) ; le suivant remplace le précédent.
+
+Sans les quatre variables `STRIPE_*`, les routes de paiement et le webhook répondent `503` ;
+le verrou s'applique toujours. Mise en route, en mode test :
+
+1. Sur le tableau de bord Stripe (mode test), créer un produit « Premium » avec deux prix
+   récurrents, mensuel et annuel. Noter leurs `price_…`.
+2. Dans `.env.local` à la racine (ou `backend/.env` hors Docker) : `STRIPE_SECRET_KEY`
+   (`sk_test_…`), `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY`.
+3. Faire suivre les webhooks au backend local avec la CLI Stripe, puis copier le secret
+   `whsec_…` qu'elle affiche dans `STRIPE_WEBHOOK_SECRET` :
+
+   ```bash
+   stripe listen --forward-to localhost:8080/api/v1/billing/webhook
+   ```
+
+4. Redémarrer le backend. Payer avec la carte de test `4242 4242 4242 4242` (date future,
+   CVC au choix). La résiliation se fait depuis le portail (`POST /billing/portal`).
+
 ## Démonstration
 
 `demo/scenario.http` rejoue l'API dans l'ordre de la démo : contenu, correction d'un
 exercice, isolation du moteur, questionnaire, erreurs, progression d'un apprenant, certificat,
 compte, administration. Il s'ouvre avec l'extension VS Code « REST Client » (« Send Request »
-au-dessus de chaque requête) : les requêtes 18 à 29 et 31 à 39 réutilisent l'apprenant créé
+au-dessus de chaque requête) : les requêtes 18 à 39 et 67 à 80 réutilisent l'apprenant créé
 en 17. Avant la requête 41, promouvoir le compte admin (commande de la section
-Administration).
+Administration). Les requêtes 22 et 25 à 28 montrent le verrou Premium. Les requêtes 67 à 80
+font payer Ada (section Premium : `stripe listen` doit tourner), puis terminer le parcours et
+obtenir son certificat.
 
 Limitation de débit, en une commande (30 fois `200`, puis `429`) :
 

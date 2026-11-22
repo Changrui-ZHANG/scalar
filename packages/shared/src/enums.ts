@@ -14,6 +14,12 @@ export type SolutionCheckStatus = (typeof SOLUTION_CHECK_STATUSES)[number]
 export const USER_ROLES = ['learner', 'admin'] as const
 export type UserRole = (typeof USER_ROLES)[number]
 
+export const SUBSCRIPTION_STATUSES = ['active', 'past_due', 'canceled'] as const
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number]
+
+export const SUBSCRIPTION_PLANS = ['monthly', 'yearly'] as const
+export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number]
+
 export const STAT_SUBJECTS = ['exercise', 'lesson', 'chapter', 'sandbox'] as const
 export type StatSubject = (typeof STAT_SUBJECTS)[number]
 

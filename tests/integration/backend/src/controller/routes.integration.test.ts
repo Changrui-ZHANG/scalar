@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 
 import { migrateTestDatabase } from '../../../../fixtures/backend/database.fixtures.ts'
 import { AUTH_DEPENDENCIES } from '../../../../fixtures/backend/auth.fixtures.ts'
+import { subscription } from '../../../../fixtures/backend/premium.fixtures.ts'
 import { buildApp } from '../../../../../backend/src/app.ts'
 import { config } from '../../../../../backend/src/config.ts'
 import { MESSAGES } from '../../../../../backend/src/constants.ts'
@@ -18,6 +19,7 @@ import { PrismaPlacementRepository } from '../../../../../backend/src/repository
 import { PrismaProgressRepository } from '../../../../../backend/src/repository/prisma-progress.repository.ts'
 import { PrismaQuestionnaireRepository } from '../../../../../backend/src/repository/prisma-questionnaire.repository.ts'
 import { PrismaTrackRepository } from '../../../../../backend/src/repository/prisma-track.repository.ts'
+import { PrismaSubscriptionRepository } from '../../../../../backend/src/repository/prisma-subscription.repository.ts'
 import { PrismaUserRepository } from '../../../../../backend/src/repository/prisma-user.repository.ts'
 
 // L'application telle que main.ts la monte en CONTENT_SOURCE=database ; seul Piston est simule.
@@ -86,6 +88,8 @@ describe.skipIf(!url)('API sur la vraie base', () => {
       contentSource: 'database',
       executionRateLimit: 1_000,
       learnerCreationRateLimit: 1_000,
+      subscriptions: new PrismaSubscriptionRepository(prisma),
+      freeChapters: Number.POSITIVE_INFINITY,
       ...AUTH_DEPENDENCIES,
       isDatabaseUp: async () => (await prisma.$queryRaw`SELECT 1`) !== null,
     })
@@ -184,7 +188,7 @@ describe.skipIf(!url)('API sur la vraie base', () => {
     })
   })
 
-  it('délivre un certificat vérifiable une fois tout le parcours JavaScript réussi', async () => {
+  it('délivre un certificat vérifiable à un Premium qui a réussi tout le parcours JavaScript', async () => {
     fakePiston()
     const created = await realFetch(`${base}/learners`, { method: 'POST' })
     const { id } = ((await created.json()) as { data: { id: string } }).data
@@ -206,12 +210,25 @@ describe.skipIf(!url)('API sur la vraie base', () => {
         true,
       )
     }
+    const registered = await realFetch(`${base}/auth/register`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-learner-id': id },
+      // Le seed ne vide pas les comptes : un email fixe serait deja pris au lancement suivant.
+      body: JSON.stringify({
+        email: `ada.${crypto.randomUUID()}@example.com`,
+        password: 'mot de passe solide',
+      }),
+    })
+    expect(registered.status).toBe(201)
+    const cookie = registered.headers.getSetCookie()[0]!.split(';')[0]!
     const ask = () =>
       realFetch(`${base}/learners/${id}/certificates`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', cookie },
         body: JSON.stringify({ track: 'javascript', holderName: 'Ada Lovelace' }),
       })
+    expect((await ask()).status).toBe(403)
+    await new PrismaSubscriptionRepository(prisma).save(subscription(id))
 
     const issued = await ask()
     const again = await ask()
@@ -226,7 +243,9 @@ describe.skipIf(!url)('API sur la vraie base', () => {
       track: { slug: 'javascript', name: 'JavaScript' },
       issuedAt: certificate.issuedAt,
     })
-    expect((await get(`/learners/${id}/progress`)).data.certificates).toEqual([certificate])
+    const progress = await realFetch(`${base}/learners/${id}/progress`, { headers: { cookie } })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- charge utile de la route
+    expect(((await progress.json()) as { data: any }).data.certificates).toEqual([certificate])
     expect(await prisma.certificate.count({ where: { userId: id } })).toBe(1)
   })
 

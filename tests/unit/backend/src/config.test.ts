@@ -19,6 +19,43 @@ describe('parseConfig', () => {
     expect(config.AUTH_ATTEMPTS_LIMIT).toBe(10)
   })
 
+  it('ouvre les deux premiers chapitres de chaque parcours sans Premium, sauf réglage', () => {
+    expect(parseConfig(SECRET).FREE_CHAPTERS).toBe(2)
+    expect(parseConfig({ ...SECRET, FREE_CHAPTERS: '3' }).FREE_CHAPTERS).toBe(3)
+    expect(() => parseConfig({ ...SECRET, FREE_CHAPTERS: '0' })).toThrow(/FREE_CHAPTERS/)
+  })
+
+  it('lit les réglages Stripe, facultatifs : une ligne vide vaut absence', () => {
+    const empty = parseConfig({
+      ...SECRET,
+      STRIPE_SECRET_KEY: '',
+      STRIPE_WEBHOOK_SECRET: '',
+      STRIPE_PRICE_MONTHLY: '',
+      STRIPE_PRICE_YEARLY: '',
+    })
+    expect(empty.STRIPE_SECRET_KEY).toBeUndefined()
+    expect(empty.STRIPE_WEBHOOK_SECRET).toBeUndefined()
+    expect(empty.STRIPE_PRICE_MONTHLY).toBeUndefined()
+    expect(empty.STRIPE_PRICE_YEARLY).toBeUndefined()
+    expect(empty.FRONTEND_URL).toBe('http://localhost:3000')
+
+    const config = parseConfig({
+      ...SECRET,
+      STRIPE_SECRET_KEY: 'sk_test_x',
+      STRIPE_WEBHOOK_SECRET: 'whsec_x',
+      STRIPE_PRICE_MONTHLY: 'price_m',
+      STRIPE_PRICE_YEARLY: 'price_y',
+      FRONTEND_URL: 'https://scalar.example',
+    })
+    expect(config).toMatchObject({
+      STRIPE_SECRET_KEY: 'sk_test_x',
+      STRIPE_WEBHOOK_SECRET: 'whsec_x',
+      STRIPE_PRICE_MONTHLY: 'price_m',
+      STRIPE_PRICE_YEARLY: 'price_y',
+      FRONTEND_URL: 'https://scalar.example',
+    })
+  })
+
   it('lit le compte admin local, facultatif', () => {
     expect(parseConfig(SECRET).ADMIN_EMAIL).toBeUndefined()
     expect(parseConfig(SECRET).ADMIN_PASSWORD).toBeUndefined()

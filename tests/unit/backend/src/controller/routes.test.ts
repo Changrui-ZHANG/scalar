@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { AUTH_DEPENDENCIES } from '../../../../fixtures/backend/auth.fixtures.ts'
+import { allChaptersFree } from '../../../../fixtures/backend/premium.fixtures.ts'
 import { buildApp } from '../../../../../backend/src/app.ts'
 import { config } from '../../../../../backend/src/config.ts'
 import { MAX_CODE_BYTES, MESSAGES } from '../../../../../backend/src/constants.ts'
@@ -50,6 +51,7 @@ async function start(
     contentSource: 'mock',
     executionRateLimit: 1_000,
     learnerCreationRateLimit: 1_000,
+    ...allChaptersFree(),
     ...AUTH_DEPENDENCIES,
     isDatabaseUp,
   })
@@ -456,7 +458,7 @@ describe('progression de l’apprenant anonyme', () => {
     expect(body.data.exercises[0].firstPassedAt < body.data.exercises[0].lastAttemptAt).toBe(true)
   })
 
-  it('certificat : refuse une demande invalide, un inconnu ou un parcours pas terminé', async () => {
+  it('certificat : refuse une demande invalide, un inconnu, puis un apprenant sans Premium', async () => {
     const id = await createLearner()
     const ask = async (learnerId: string, body: unknown) => {
       const res = await realFetch(`${base}/learners/${learnerId}/certificates`, {
@@ -477,10 +479,10 @@ describe('progression de l’apprenant anonyme', () => {
       error: MESSAGES.learnerNotFound,
     })
     expect(await ask(id, { ...valid, track: 'python' })).toEqual({
-      status: 404,
-      error: MESSAGES.trackNotFound,
+      status: 403,
+      error: MESSAGES.premiumRequired,
     })
-    expect(await ask(id, valid)).toEqual({ status: 403, error: MESSAGES.trackNotCompleted })
+    expect(await ask(id, valid)).toEqual({ status: 403, error: MESSAGES.premiumRequired })
 
     const unknown = await realFetch(`${base}/certificates/AAAAA-AAAAA`)
     expect(unknown.status).toBe(404)

@@ -1,6 +1,9 @@
 import 'dotenv/config'
 import { z } from 'zod'
 
+// Vide vaut absent : une ligne « CLE= » laissee dans .env ne compte pas.
+const optionalSecret = z.preprocess((v) => (v === '' ? undefined : v), z.string().optional())
+
 const schema = z.object({
   NODE_ENV: z.string().default('development'),
   PORT: z.coerce.number().int().positive().default(3001),
@@ -18,11 +21,20 @@ const schema = z.object({
   AUTH_ATTEMPTS_LIMIT: z.coerce.number().int().positive().default(10),
   AUTH_IP_ATTEMPTS_LIMIT: z.coerce.number().int().positive().default(30),
   AUTH_ACCOUNT_ATTEMPTS_LIMIT: z.coerce.number().int().positive().default(20),
+  // Rang des chapitres ouverts sans Premium, dans chaque parcours.
+  FREE_CHAPTERS: z.coerce.number().int().positive().default(2),
   ADMIN_EMAIL: z.string().optional(),
   ADMIN_PASSWORD: z.string().optional(),
   // Vide vaut absent : sans cle, seule la generation d'exercices par IA repond 503.
   ANTHROPIC_API_KEY: z.preprocess((v) => (v === '' ? undefined : v), z.string().optional()),
   AI_MODEL: z.string().default('claude-opus-5-5'),
+  // Sans l'un des quatre, le paiement Premium repond 503 ; le verrou Premium, lui, s'applique toujours.
+  STRIPE_SECRET_KEY: optionalSecret,
+  STRIPE_WEBHOOK_SECRET: optionalSecret,
+  STRIPE_PRICE_MONTHLY: optionalSecret,
+  STRIPE_PRICE_YEARLY: optionalSecret,
+  // Stripe y renvoie l'apprenant apres le paiement ou le portail.
+  FRONTEND_URL: z.url().default('http://localhost:3000'),
 })
 
 export type Config = z.infer<typeof schema>

@@ -17,11 +17,14 @@ import { PrismaPlacementRepository } from './repository/prisma-placement.reposit
 import { PrismaProgressRepository } from './repository/prisma-progress.repository.ts'
 import { PrismaQuestionnaireRepository } from './repository/prisma-questionnaire.repository.ts'
 import { PrismaTrackRepository } from './repository/prisma-track.repository.ts'
+import { PrismaSubscriptionRepository } from './repository/prisma-subscription.repository.ts'
 import { PrismaUserRepository } from './repository/prisma-user.repository.ts'
 import { InMemoryProgressRepository } from './repository/progress.repository.ts'
 import { InMemoryQuestionnaireRepository } from './repository/questionnaire.repository.ts'
+import { InMemorySubscriptionRepository } from './repository/subscription.repository.ts'
 import { InMemoryTrackRepository } from './repository/track.repository.ts'
 import { InMemoryUserRepository } from './repository/user.repository.ts'
+import { createBillingGateway } from './service/billing-gateway.factory.ts'
 import { ensureConfiguredAdmin } from './service/configured-admin.service.ts'
 import { hasJavascriptRuntime } from './service/execution.service.ts'
 import { createExerciseGenerator } from './service/exercise-generator.factory.ts'
@@ -42,6 +45,7 @@ const repositories =
         users: new InMemoryUserRepository(),
         progress: new InMemoryProgressRepository(),
         certificates: new InMemoryCertificateRepository(),
+        subscriptions: new InMemorySubscriptionRepository(),
         // Ses modifications restent invisibles de l'API publique : chaque depot a sa copie du contenu.
         adminContent: new InMemoryAdminContentRepository(),
       }
@@ -54,6 +58,7 @@ const repositories =
         users: new PrismaUserRepository(prisma),
         progress: new PrismaProgressRepository(prisma),
         certificates: new PrismaCertificateRepository(prisma),
+        subscriptions: new PrismaSubscriptionRepository(prisma),
         adminContent: new PrismaAdminContentRepository(prisma),
       }
 
@@ -98,6 +103,7 @@ await prepare()
 export const viteNodeApp = buildApp({
   ...repositories,
   contentSource: config.CONTENT_SOURCE,
+  freeChapters: config.FREE_CHAPTERS,
   executionRateLimit: config.EXECUTION_RATE_LIMIT,
   learnerCreationRateLimit: config.LEARNER_CREATION_RATE_LIMIT,
   authAttemptsLimit: config.AUTH_ATTEMPTS_LIMIT,
@@ -109,6 +115,7 @@ export const viteNodeApp = buildApp({
   isDatabaseUp,
   apiDocs: config.NODE_ENV !== 'production',
   exerciseGenerator: createExerciseGenerator(config),
+  billingGateway: createBillingGateway(config),
 })
 
 if (config.NODE_ENV === 'production') {

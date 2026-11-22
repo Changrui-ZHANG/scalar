@@ -195,8 +195,42 @@ model User {
   progress     ExerciseProgress[]
   certificates Certificate[]
   placements   Placement[]
+  subscription Subscription?
 
   @@map("users")
+}
+
+/// Etat d'un abonnement Premium, recopie des webhooks Stripe : seul `active` ouvre le Premium.
+enum SubscriptionStatus {
+  active
+  past_due
+  canceled
+
+  @@map("subscription_status")
+}
+
+enum SubscriptionPlan {
+  monthly
+  yearly
+
+  @@map("subscription_plan")
+}
+
+model Subscription {
+  id                   Int                @id @default(autoincrement())
+  /// Un seul abonnement par compte : le suivant remplace le precedent.
+  userId               String             @unique @map("user") @db.Uuid
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status               SubscriptionStatus
+  plan                 SubscriptionPlan
+  /// Le Premium s'arrete a cette date, meme si le statut est encore `active`.
+  currentPeriodEnd     DateTime           @map("current_period_end") @db.Timestamptz(6)
+  stripeCustomerId     String             @map("stripe_customer_id")
+  stripeSubscriptionId String             @unique @map("stripe_subscription_id")
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("subscription")
 }
 
 /// Ou en est un apprenant sur un exercice ; la ligne nait a sa premiere soumission.

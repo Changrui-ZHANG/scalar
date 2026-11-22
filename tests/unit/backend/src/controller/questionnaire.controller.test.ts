@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { AUTH_DEPENDENCIES } from '../../../../fixtures/backend/auth.fixtures.ts'
+import { allChaptersFree } from '../../../../fixtures/backend/premium.fixtures.ts'
 import { buildApp } from '../../../../../backend/src/app.ts'
 import { config } from '../../../../../backend/src/config.ts'
 import { MESSAGES } from '../../../../../backend/src/constants.ts'
@@ -69,6 +70,7 @@ async function start(
     contentSource: 'mock',
     executionRateLimit: 1_000,
     learnerCreationRateLimit: 1_000,
+    ...allChaptersFree(),
     ...AUTH_DEPENDENCIES,
     isDatabaseUp: async () => false,
   })
