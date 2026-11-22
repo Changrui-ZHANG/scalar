@@ -68,8 +68,8 @@ describe('safeRedirect', () => {
     ['une adresse avec antislash', '/\\evil.example'],
     ['une valeur absente', undefined],
     ['une valeur répétée', ['/a', '/b']],
-  ])('ramène à la liste pour %s', (_name, target) => {
-    expect(safeRedirect(target)).toBe('/parcours')
+  ])('ramène au tableau de bord pour %s', (_name, target) => {
+    expect(safeRedirect(target)).toBe('/')
   })
 })
 

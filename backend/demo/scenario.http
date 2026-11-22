@@ -468,3 +468,21 @@ Stripe-Signature: t=1,v1=fausse
 
 ### 81. Sa progression : badges « chapitre terminé » et « parcours terminé », plus de conseil
 GET {{base}}/learners/{{learner.response.body.data.id}}/progress
+
+### 82. Retour en admin (la session d'Ada de 67 est remplacée)
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin@scalar.local", "password": "admin scalar demo" }
+
+### 83. Tableau de bord : apprenants, inscrits, Premium, exercices, certificats, abonnements
+GET {{base}}/admin/metrics
+
+### 84. Les comptes inscrits, du plus récent au plus ancien, avec leur abonnement
+GET {{base}}/admin/users
+
+### 85. Les abonnés actifs seulement (aussi : past_due, canceled, none)
+GET {{base}}/admin/users?subscription=active
+
+### 86. Recherche par morceau d'email ; un filtre inconnu donne 400
+GET {{base}}/admin/users?email=ada

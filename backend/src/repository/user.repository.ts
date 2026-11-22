@@ -27,6 +27,10 @@ export interface UserRepository {
   /** Null si aucun compte n'a cet email : un anonyme ne peut pas devenir admin. */
   promoteToAdmin(email: string): Promise<User | null>
   upsertAdmin(user: NewUser): Promise<User>
+  /** Comptes avec un email, admins compris, du plus recent au plus ancien ; `email` : un morceau, sans casse. */
+  listRegistered(email?: string): Promise<readonly User[]>
+  /** Role `learner` seulement : un admin n'est pas un apprenant. */
+  countLearners(): Promise<{ readonly anonymous: number; readonly registered: number }>
 }
 
 export class InMemoryUserRepository implements UserRepository {
@@ -104,6 +108,20 @@ export class InMemoryUserRepository implements UserRepository {
     }
     user.role = 'admin'
     return { ...user }
+  }
+
+  async listRegistered(email?: string): Promise<readonly User[]> {
+    const wanted = email?.toLowerCase()
+    return [...this.users.values()]
+      .filter((u) => u.email !== null && (wanted === undefined || u.email.includes(wanted)))
+      .toSorted((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .map((u) => ({ ...u }))
+  }
+
+  async countLearners(): Promise<{ readonly anonymous: number; readonly registered: number }> {
+    const learners = [...this.users.values()].filter((u) => u.role === 'learner')
+    const anonymous = learners.filter((u) => u.email === null).length
+    return { anonymous, registered: learners.length - anonymous }
   }
 
   async upsertAdmin(user: NewUser): Promise<User> {

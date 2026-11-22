@@ -1,5 +1,22 @@
+import type { UserRole } from '@scalar/shared/enums'
+
+import type { Subscription } from '../entity/subscription.entity.ts'
 import type { SubscriptionRepository } from '../repository/subscription.repository.ts'
 import type { UserRepository } from '../repository/user.repository.ts'
+
+/** Un admin relit tout sans payer ; sinon, un abonnement `active` dont la periode court encore. */
+export function opensPremium(
+  role: UserRole,
+  subscription: Subscription | null,
+  now: Date,
+): boolean {
+  return (
+    role === 'admin' ||
+    (subscription !== null &&
+      subscription.status === 'active' &&
+      subscription.currentPeriodEnd > now)
+  )
+}
 
 export class PremiumService {
   private readonly users: UserRepository
@@ -19,7 +36,6 @@ export class PremiumService {
     this.now = now
   }
 
-  /** Un admin relit tout le contenu sans payer. */
   async isPremium(userId: string | null): Promise<boolean> {
     if (userId === null) {
       return false
@@ -28,15 +44,8 @@ export class PremiumService {
     if (!user) {
       return false
     }
-    if (user.role === 'admin') {
-      return true
-    }
-    const subscription = await this.subscriptions.findByUser(userId)
-    return (
-      subscription !== null &&
-      subscription.status === 'active' &&
-      subscription.currentPeriodEnd > this.now()
-    )
+    const subscription = user.role === 'admin' ? null : await this.subscriptions.findByUser(userId)
+    return opensPremium(user.role, subscription, this.now())
   }
 
   /** `number` est le rang du chapitre dans son parcours, a partir de 1. */

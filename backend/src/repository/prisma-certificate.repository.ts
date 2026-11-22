@@ -26,6 +26,10 @@ export class PrismaCertificateRepository implements CertificateRepository {
     return row && toCertificate(row)
   }
 
+  async countCertificates(): Promise<number> {
+    return this.prisma.certificate.count()
+  }
+
   async listCertificates(userId: string): Promise<Certificate[]> {
     const rows = await this.prisma.certificate.findMany({
       where: { userId },

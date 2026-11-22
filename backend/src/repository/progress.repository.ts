@@ -11,6 +11,8 @@ export interface ProgressRepository {
   findProgress(userId: string, exerciseId: number): Promise<ExerciseProgress | null>
   /** Par exercice croissant. */
   listProgress(userId: string): Promise<readonly ExerciseProgress[]>
+  /** Couples apprenant / exercice : tentes au moins une fois, et reussis. */
+  countAttempts(): Promise<{ readonly attempted: number; readonly passed: number }>
 }
 
 const key = (userId: string, exerciseId: number): string => `${userId}/${exerciseId}`
@@ -39,6 +41,11 @@ export class InMemoryProgressRepository implements ProgressRepository {
   async findProgress(userId: string, exerciseId: number): Promise<ExerciseProgress | null> {
     const found = this.progress.get(key(userId, exerciseId))
     return found ? { ...found } : null
+  }
+
+  async countAttempts(): Promise<{ readonly attempted: number; readonly passed: number }> {
+    const rows = [...this.progress.values()]
+    return { attempted: rows.length, passed: rows.filter((p) => p.firstPassedAt !== null).length }
   }
 
   async listProgress(userId: string): Promise<readonly ExerciseProgress[]> {

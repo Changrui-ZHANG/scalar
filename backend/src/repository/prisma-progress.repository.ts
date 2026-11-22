@@ -46,6 +46,14 @@ export class PrismaProgressRepository implements ProgressRepository {
     return row && toExerciseProgress(row)
   }
 
+  async countAttempts(): Promise<{ readonly attempted: number; readonly passed: number }> {
+    const [attempted, passed] = await Promise.all([
+      this.prisma.exerciseProgress.count(),
+      this.prisma.exerciseProgress.count({ where: { firstPassedAt: { not: null } } }),
+    ])
+    return { attempted, passed }
+  }
+
   async listProgress(userId: string): Promise<ExerciseProgress[]> {
     const rows = await this.prisma.exerciseProgress.findMany({
       where: { userId },

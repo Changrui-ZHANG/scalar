@@ -198,26 +198,24 @@ export class LearningPathService {
     return null
   }
 
+  // Une requete apres l'autre : en parallele, Prisma ouvre une connexion par requete, bien plus lent.
   private async catalog(): Promise<readonly CatalogTrack[]> {
-    const tracks = await this.tracks.listTracks()
-    return Promise.all(
-      tracks.map(async (track) => {
-        const chapters = await this.tracks.listChapters(track.id)
-        return {
-          track,
-          chapters: await Promise.all(
-            chapters.map(async (chapter, i) => ({
-              chapter,
-              number: i + 1,
-              exercises:
-                track.programmingLanguage === null
-                  ? []
-                  : await this.exercises.listExercises(chapter.id),
-            })),
-          ),
-        }
-      }),
-    )
+    const catalog: CatalogTrack[] = []
+    for (const track of await this.tracks.listTracks()) {
+      const chapters: CatalogChapter[] = []
+      for (const [i, chapter] of (await this.tracks.listChapters(track.id)).entries()) {
+        chapters.push({
+          chapter,
+          number: i + 1,
+          exercises:
+            track.programmingLanguage === null
+              ? []
+              : await this.exercises.listExercises(chapter.id),
+        })
+      }
+      catalog.push({ track, chapters })
+    }
+    return catalog
   }
 }
 

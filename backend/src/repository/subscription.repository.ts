@@ -6,6 +6,7 @@ export interface SubscriptionRepository {
   findByUser(userId: string): Promise<Subscription | null>
   /** Un seul abonnement par compte : remplace celui qui existe deja. */
   save(subscription: NewSubscription): Promise<Subscription>
+  listAll(): Promise<readonly Subscription[]>
 }
 
 export class InMemorySubscriptionRepository implements SubscriptionRepository {
@@ -14,6 +15,10 @@ export class InMemorySubscriptionRepository implements SubscriptionRepository {
   async findByUser(userId: string): Promise<Subscription | null> {
     const found = this.subscriptions.get(userId)
     return found ? { ...found } : null
+  }
+
+  async listAll(): Promise<readonly Subscription[]> {
+    return [...this.subscriptions.values()].map((s) => ({ ...s }))
   }
 
   async save(subscription: NewSubscription): Promise<Subscription> {

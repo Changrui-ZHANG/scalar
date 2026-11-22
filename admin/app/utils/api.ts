@@ -25,7 +25,7 @@ export const toSaveResult = <T>(result: ApiResult<T>): SaveResult<T> =>
     ? { ok: true, item: result.data }
     : { ok: false, field: /slug/i.test(result.message) ? 'slug' : null, message: result.message }
 
-const DEFAULT_PAGE = '/parcours'
+const DEFAULT_PAGE = '/'
 
 /** Seul un chemin de l'application est suivi : jamais une adresse venue d'un lien forge. */
 export const safeRedirect = (target: unknown): string =>

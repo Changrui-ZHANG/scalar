@@ -25,14 +25,27 @@ describe('en-tête du backoffice', () => {
     expect(logo.attributes('alt')).toBe('')
   })
 
-  it('nomme la marque et le backoffice, et ramène aux parcours', async () => {
+  it('nomme la marque et le backoffice, et ramène au tableau de bord', async () => {
     const wrapper = await mountLayout()
     const home = wrapper.find('a[aria-label="Scalar Backoffice, accueil"]')
 
     expect(home.exists()).toBe(true)
-    expect(home.attributes('href')).toMatch(/\/parcours$/)
+    expect(home.attributes('href')).toBe('/admin/')
     expect(home.text()).toContain('Scalar')
     expect(home.text()).toContain('Backoffice')
     expect(wrapper.text()).not.toContain('Scalar · Backoffice')
+  })
+
+  it('mène au tableau de bord, aux parcours et aux utilisateurs', async () => {
+    const wrapper = await mountLayout()
+    const nav = (label: string) =>
+      wrapper
+        .findAll('nav a')
+        .find((a) => a.text().includes(label))
+        ?.attributes('href')
+
+    expect(nav('Tableau de bord')).toBe('/admin/')
+    expect(nav('Parcours')).toBe('/admin/parcours')
+    expect(nav('Utilisateurs')).toBe('/admin/utilisateurs')
   })
 })

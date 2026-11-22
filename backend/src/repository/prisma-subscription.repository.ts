@@ -14,6 +14,10 @@ export class PrismaSubscriptionRepository implements SubscriptionRepository {
     return this.prisma.subscription.findUnique({ where: { userId } })
   }
 
+  async listAll(): Promise<readonly Subscription[]> {
+    return this.prisma.subscription.findMany()
+  }
+
   async save(subscription: NewSubscription): Promise<Subscription> {
     return this.prisma.subscription.upsert({
       where: { userId: subscription.userId },

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 
+// `exact` : sans lui, « / » serait actif sur toutes les pages.
 const NAVIGATION: NavigationMenuItem[] = [
+  { label: 'Tableau de bord', icon: 'i-lucide-layout-dashboard', to: '/', exact: true },
   { label: 'Parcours', icon: 'i-lucide-route', to: '/parcours' },
+  { label: 'Utilisateurs', icon: 'i-lucide-users', to: '/utilisateurs' },
 ]
 
 const auth = useAuthStore()
@@ -20,7 +23,7 @@ async function logout() {
     <UDashboardSidebar collapsible>
       <template #header="{ collapsed }">
         <NuxtLink
-          to="/parcours"
+          to="/"
           aria-label="Scalar Backoffice, accueil"
           class="flex min-w-0 items-center gap-2"
         >
