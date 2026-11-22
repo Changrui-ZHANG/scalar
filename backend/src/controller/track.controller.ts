@@ -4,13 +4,16 @@ import type { Request, Response } from 'express'
 import { MESSAGES } from '../constants.ts'
 import { ok, respond } from '../http/envelope.ts'
 import { contentUnavailable } from '../http/errors.ts'
+import type { PremiumService } from '../service/premium.service.ts'
 import type { TrackService } from '../service/track.service.ts'
 
 export class TrackController {
   private readonly service: TrackService
+  private readonly premium: PremiumService
 
-  constructor(service: TrackService) {
+  constructor(service: TrackService, premium: PremiumService) {
     this.service = service
+    this.premium = premium
   }
 
   async listTracks(_req: Request, res: Response) {
@@ -22,7 +25,18 @@ export class TrackController {
   }
 
   async getTrack(req: Request<{ track: string }>, res: Response) {
-    await respond(res, MESSAGES.trackNotFound, () => this.service.getTrack(req.params.track))
+    await respond(res, MESSAGES.trackNotFound, async () => {
+      const view = await this.service.getTrack(req.params.track)
+      return (
+        view && {
+          ...view,
+          chapters: view.chapters.map((c) => ({
+            ...c,
+            free: this.premium.isFreeChapter(c.number),
+          })),
+        }
+      )
+    })
   }
 
   buildRouter() {

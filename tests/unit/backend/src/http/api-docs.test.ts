@@ -2,9 +2,10 @@ import type { Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import express from 'express'
 import type { Express } from 'express'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { AUTH_DEPENDENCIES } from '../../../../fixtures/backend/auth.fixtures.ts'
+import { allChaptersFree } from '../../../../fixtures/backend/premium.fixtures.ts'
 import { buildApp } from '../../../../../backend/src/app.ts'
 import { loadOpenApiSpec } from '../../../../../backend/src/http/api-docs.ts'
 import { InMemoryAdminContentRepository } from '../../../../../backend/src/repository/admin-content.repository.ts'
@@ -40,6 +41,7 @@ const build = (apiDocs?: boolean): Express =>
     contentSource: 'mock',
     executionRateLimit: 1_000,
     learnerCreationRateLimit: 1_000,
+    ...allChaptersFree(),
     ...AUTH_DEPENDENCIES,
     isDatabaseUp: async () => false,
     apiDocs,
@@ -104,14 +106,20 @@ function specOperations(): Set<string> {
 }
 
 describe('documentation OpenAPI', () => {
+  // Une seule fois : construire l'app et relire le YAML coute plusieurs secondes sur une machine chargee.
+  let routes: Set<string>
+  let documented: Set<string>
+  beforeAll(() => {
+    routes = expressOperations()
+    documented = specOperations()
+  }, 30_000)
+
   it('décrit chaque route de l’API', () => {
-    const missing = [...expressOperations()].filter((op) => !specOperations().has(op))
-    expect(missing).toEqual([])
+    expect([...routes].filter((op) => !documented.has(op))).toEqual([])
   })
 
   it('ne décrit aucune route qui n’existe pas', () => {
-    const unknown = [...specOperations()].filter((op) => !expressOperations().has(op))
-    expect(unknown).toEqual([])
+    expect([...documented].filter((op) => !routes.has(op))).toEqual([])
   })
 
   it('annonce OpenAPI 3.1 et le préfixe de l’API', () => {

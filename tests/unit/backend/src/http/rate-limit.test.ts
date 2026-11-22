@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { AUTH_DEPENDENCIES } from '../../../../fixtures/backend/auth.fixtures.ts'
+import { allChaptersFree } from '../../../../fixtures/backend/premium.fixtures.ts'
 import { CountingHasher } from '../../../../fixtures/backend/counting-hasher.ts'
 import { buildApp } from '../../../../../backend/src/app.ts'
 import { MESSAGES } from '../../../../../backend/src/constants.ts'
@@ -52,6 +53,7 @@ describe('limitation de débit', () => {
       contentSource: 'mock',
       executionRateLimit: 2,
       learnerCreationRateLimit: 2,
+      ...allChaptersFree(),
       ...AUTH_DEPENDENCIES,
       hasher,
       authAttemptsLimit: 2,

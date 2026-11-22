@@ -15,6 +15,12 @@ info:
 
     **Administration.** Les routes `/admin/...` exigent une session d'un compte `admin`.
 
+    **Premium.** Dans chaque parcours, les chapitres au-delà du seuil gratuit (`free: false` dans
+    `GET /tracks/{track}`, 2 premiers chapitres par défaut) répondent `403` sans abonnement
+    Premium actif : leçons, exercices et vérifications. Le certificat est lui aussi réservé au
+    Premium. Un compte `admin` passe partout. L'abonnement se prend par Stripe Checkout
+    (`POST /billing/checkout`) ; Stripe l'annonce ensuite par webhook.
+
     **Dates.** Chaînes ISO 8601 en UTC (`2026-11-16T09:12:00.000Z`).
 servers:
   - url: /api/v1
@@ -28,6 +34,8 @@ tags:
   - name: Apprenant
   - name: Certificat
   - name: Compte
+  - name: Premium
+    description: Abonnement Premium payé par Stripe (mode test).
   - name: Admin — parcours et chapitres
   - name: Admin — leçons
   - name: Admin — exercices
@@ -128,6 +136,7 @@ paths:
                 $ref: '#/components/schemas/Envelope'
                 properties:
                   data: { $ref: '#/components/schemas/LessonDetail' }
+        '403': { $ref: '#/components/responses/PremiumRequired' }
         '404': { $ref: '#/components/responses/NotFound' }
         '500': { $ref: '#/components/responses/ContentUnavailable' }
 
@@ -150,6 +159,7 @@ paths:
                 $ref: '#/components/schemas/Envelope'
                 properties:
                   data: { $ref: '#/components/schemas/PublicExercise' }
+        '403': { $ref: '#/components/responses/PremiumRequired' }
         '404': { $ref: '#/components/responses/NotFound' }
         '500': { $ref: '#/components/responses/ContentUnavailable' }
 
@@ -190,7 +200,11 @@ paths:
                   data: { $ref: '#/components/schemas/VerificationResult' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
-        '403': { $ref: '#/components/responses/Forbidden' }
+        '403':
+          description: Session d'un autre compte, ou chapitre réservé au Premium.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Failure' }
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
         '500': { $ref: '#/components/responses/ContentUnavailable' }
@@ -392,7 +406,8 @@ paths:
       summary: Obtenir le certificat d'un parcours terminé
       description: |
         Idempotent : un certificat déjà délivré pour ce parcours est renvoyé tel quel (200).
-        Mêmes règles d'accès que la progression.
+        Mêmes règles d'accès que la progression. Réservé au Premium : un apprenant anonyme ou
+        sans abonnement actif reçoit `403`, avant même que le parcours soit cherché.
       operationId: issueCertificate
       parameters:
         - $ref: '#/components/parameters/LearnerIdPath'
@@ -423,7 +438,7 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403':
-          description: Accès refusé, ou parcours pas encore terminé.
+          description: Accès refusé, Premium requis, ou parcours pas encore terminé.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Failure' }
@@ -542,6 +557,125 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/UserEnvelope' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  # ---------------------------------------------------------------- Premium
+
+  /billing/checkout:
+    post:
+      tags: [Premium]
+      summary: Ouvrir une page de paiement Stripe
+      description: |
+        Renvoie l'URL de Stripe Checkout où envoyer le navigateur. Après le paiement, Stripe
+        revient sur `{FRONTEND_URL}/premium?checkout=success` (ou `cancel`) ; le Premium s'ouvre
+        dès que le webhook de Stripe arrive, quelques secondes plus tard.
+      operationId: checkout
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [plan]
+              properties:
+                plan: { $ref: '#/components/schemas/SubscriptionPlan' }
+      responses:
+        '201':
+          description: Page de paiement créée.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RedirectEnvelope' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '409':
+          description: Compte déjà Premium.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Failure' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+        '503': { $ref: '#/components/responses/BillingUnavailable' }
+
+  /billing/portal:
+    post:
+      tags: [Premium]
+      summary: Ouvrir le portail Stripe (gérer ou résilier l'abonnement)
+      operationId: billingPortal
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Portail ouvert ; retour sur `{FRONTEND_URL}/premium`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RedirectEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404':
+          description: Compte jamais abonné.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Failure' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+        '503': { $ref: '#/components/responses/BillingUnavailable' }
+
+  /billing/subscription:
+    get:
+      tags: [Premium]
+      summary: L'abonnement du compte connecté
+      operationId: subscription
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: L'abonnement, ou `null` pour un compte jamais abonné.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data: { $ref: '#/components/schemas/SubscriptionView' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
+  /billing/webhook:
+    post:
+      tags: [Premium]
+      summary: Webhook appelé par Stripe, jamais par le front
+      description: |
+        Corps brut signé (en-tête `Stripe-Signature`). Seuls `customer.subscription.created`,
+        `.updated` et `.deleted` sont lus ; l'abonnement est alors relu chez Stripe, si bien
+        qu'un événement rejoué ou arrivé dans le désordre ne change rien.
+      operationId: stripeWebhook
+      parameters:
+        - name: Stripe-Signature
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200':
+          description: Événement reçu (lu ou ignoré).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data:
+                    type: object
+                    required: [received]
+                    properties:
+                      received: { type: boolean, const: true }
+        '400':
+          description: Signature absente ou invalide.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Failure' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+        '503': { $ref: '#/components/responses/BillingUnavailable' }
 
   # ---------------------------------------------------------------- Admin : parcours et chapitres
 
@@ -1164,6 +1298,17 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Failure' }
 
+    PremiumRequired:
+      description: Contenu réservé aux abonnés Premium.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Failure' }
+    BillingUnavailable:
+      description: Stripe injoignable, ou pas configuré (clés `STRIPE_*` absentes).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Failure' }
+
     AiUnavailable:
       description: API Claude injoignable, ou aucune clé `ANTHROPIC_API_KEY` en production.
       content:
@@ -1283,12 +1428,15 @@ components:
           type: array
           items:
             type: object
-            required: [slug, title, level, number, lessons, exercises]
+            required: [slug, title, level, number, free, lessons, exercises]
             properties:
               slug: { $ref: '#/components/schemas/Slug' }
               title: { type: string }
               level: { $ref: '#/components/schemas/ChapterLevel' }
               number: { type: integer }
+              free:
+                type: boolean
+                description: Ouvert sans Premium ; le même pour tout le monde.
               lessons:
                 type: array
                 items:
@@ -1307,6 +1455,33 @@ components:
                     slug: { $ref: '#/components/schemas/Slug' }
                     title: { type: string }
                     instructions: { type: string }
+    SubscriptionPlan:
+      type: string
+      enum: [monthly, yearly]
+    SubscriptionView:
+      type: object
+      required: [premium, subscription]
+      properties:
+        premium:
+          type: boolean
+          description: Abonnement `active` dont la période court encore (ou compte admin).
+        subscription:
+          type: [object, 'null']
+          required: [status, plan, currentPeriodEnd]
+          properties:
+            status: { type: string, enum: [active, past_due, canceled] }
+            plan: { $ref: '#/components/schemas/SubscriptionPlan' }
+            currentPeriodEnd: { type: string, format: date-time }
+    RedirectEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string, format: uri }
     LessonDetail:
       type: object
       required: [slug, title, summary, body, lastReviewedAt, number, track, chapter]

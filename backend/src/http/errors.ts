@@ -19,6 +19,11 @@ export function aiUnavailable(res: Response, error: unknown): void {
   fail(res, 503, MESSAGES.aiUnavailable)
 }
 
+export function billingUnavailable(res: Response, error: unknown): void {
+  logger.error({ err: error }, 'Échec de l’appel à Stripe')
+  fail(res, 503, MESSAGES.billingUnavailable)
+}
+
 export const routeNotFound: RequestHandler = (_req, res) => {
   fail(res, 404, MESSAGES.routeNotFound)
 }
