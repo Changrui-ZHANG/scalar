@@ -273,10 +273,12 @@ le verrou s'applique toujours. Mise en route, en mode test :
 2. Dans `.env.local` à la racine (ou `backend/.env` hors Docker) : `STRIPE_SECRET_KEY`
    (`sk_test_…`), `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY`.
 3. Faire suivre les webhooks au backend local avec la CLI Stripe, puis copier le secret
-   `whsec_…` qu'elle affiche dans `STRIPE_WEBHOOK_SECRET` :
+   `whsec_…` qu'elle affiche dans `STRIPE_WEBHOOK_SECRET`. Depuis la CLI 1.55, `--events` est
+   obligatoire :
 
    ```bash
-   stripe listen --forward-to localhost:8080/api/v1/billing/webhook
+   stripe listen --forward-to localhost:8080/api/v1/billing/webhook \
+     --events customer.subscription.created,customer.subscription.updated,customer.subscription.deleted
    ```
 
 4. Redémarrer le backend. Payer avec la carte de test `4242 4242 4242 4242` (date future,
