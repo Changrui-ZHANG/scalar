@@ -1,5 +1,5 @@
 {
-  "version": "2.21",
+  "version": "2.25",
   "children": [
     {
       "type": "frame",
@@ -36904,7 +36904,7 @@
                           "id": "dql38",
                           "name": "Tagline",
                           "fill": "#62685F",
-                          "content": "Comprenez le code.\nPuis faites-le fonctionner.",
+                          "content": "Une connaissance suffisante. Un rappel suffisant.",
                           "lineHeight": 1.35,
                           "fontFamily": "Inter",
                           "fontSize": 18,
@@ -37268,7 +37268,7 @@
                           "id": "MXTkK",
                           "name": "Tagline",
                           "fill": "#62685F",
-                          "content": "Comprenez le code. Puis faites-le fonctionner.",
+                          "content": "Une connaissance suffisante. Un rappel suffisant.",
                           "fontFamily": "Inter",
                           "fontSize": 13,
                           "fontWeight": "normal"
@@ -40910,7 +40910,7 @@
               "type": "text",
               "id": "TrwI1",
               "fill": "#22201B",
-              "content": "Comprenez le code.",
+              "content": "Une connaissance suffisante. Un rappel suffisant.",
               "fontFamily": "Fraunces",
               "fontSize": 40,
               "fontWeight": "600",
@@ -43178,6 +43178,69 @@
               "gap": 24,
               "alignItems": "center",
               "children": [
+                {
+                  "type": "frame",
+                  "id": "TN3XR",
+                  "name": "Search",
+                  "height": 36,
+                  "cornerRadius": 10,
+                  "stroke": "$s-border",
+                  "strokeWidth": 1,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    10,
+                    0,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "tfg0l",
+                      "name": "Icon",
+                      "width": 15,
+                      "height": 15,
+                      "icon": "search",
+                      "library": "lucide",
+                      "fill": "$s-text-muted"
+                    },
+                    {
+                      "type": "text",
+                      "id": "e9aRh",
+                      "name": "Label",
+                      "fill": "$s-text",
+                      "content": "Rechercher",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "hSvRe",
+                      "name": "Kbd",
+                      "cornerRadius": 4,
+                      "stroke": "$s-border",
+                      "strokeWidth": 1,
+                      "padding": [
+                        1,
+                        5
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "vSKdt",
+                          "name": "Keys",
+                          "fill": "$s-text-muted",
+                          "content": "Ctrl K",
+                          "fontFamily": "$s-font-code",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
                 {
                   "type": "text",
                   "id": "lwy0e",
@@ -47428,7 +47491,7 @@
                       "fill": "$s-text",
                       "content": "Reprenez où vous en étiez.",
                       "fontFamily": "$s-font-title",
-                      "fontSize": 44,
+                      "fontSize": 42,
                       "fontWeight": "600",
                       "letterSpacing": -0.9
                     }
@@ -48448,7 +48511,7 @@
                       "type": "text",
                       "id": "MzlAY",
                       "fill": "$s-primary",
-                      "content": "Pour les étudiants en informatique",
+                      "content": "Pour reprendre un langage, ou l’apprendre",
                       "fontFamily": "$s-font-text",
                       "fontSize": 15,
                       "fontWeight": "600"
@@ -48459,7 +48522,7 @@
                       "fill": "$s-text",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
-                      "content": "Comprenez le code. Puis faites-le fonctionner.",
+                      "content": "Une connaissance suffisante. Un rappel suffisant.",
                       "lineHeight": 1.05,
                       "fontFamily": "$s-font-title",
                       "fontSize": 54,
@@ -55439,7 +55502,7 @@
               "type": "text",
               "id": "x3DoIH",
               "fill": "$s-primary",
-              "content": "Pour les étudiants en informatique",
+              "content": "Pour reprendre un langage, ou l’apprendre",
               "fontFamily": "$s-font-text",
               "fontSize": 14,
               "fontWeight": "600"
@@ -55450,7 +55513,7 @@
               "fill": "$s-text",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Comprenez le code. Puis faites-le fonctionner.",
+              "content": "Une connaissance suffisante. Un rappel suffisant.",
               "lineHeight": 1.08,
               "fontFamily": "$s-font-title",
               "fontSize": 36,
