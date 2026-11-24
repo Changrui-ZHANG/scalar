@@ -28,7 +28,7 @@ const { caseCount, next, overviewPath } = defineProps<Props>()
       </div>
     </div>
 
-    <div>
+    <div class="shrink-0">
       <UiButton v-if="next" dense :to="next.path" icon-right="lucide:arrow-right">
         Suivant : {{ next.title }}
       </UiButton>

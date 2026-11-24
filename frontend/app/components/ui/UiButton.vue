@@ -34,14 +34,14 @@ const isDisabled = computed(() => disabled || loading)
 // Classes communes, puis taille, puis couleurs.
 const classes = computed(() => {
   const list = [
-    'inline-flex items-center justify-center gap-2 font-semibold whitespace-nowrap transition-colors duration-150',
+    'inline-flex items-center justify-center gap-2 font-semibold transition-colors duration-150',
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
   ]
 
   if (dense) {
-    list.push('h-10 px-4 text-sm rounded-row')
+    list.push('min-h-10 px-4 py-2 text-sm rounded-row')
   } else {
-    list.push('h-12 px-5.5 text-base rounded-control')
+    list.push('min-h-12 px-5.5 py-2.5 text-base rounded-control')
   }
 
   if (variant === 'primary') {

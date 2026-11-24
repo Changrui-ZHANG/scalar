@@ -33,6 +33,25 @@ const tabs = computed(() => {
   return list
 })
 
+// Clavier (specs-site.md § 12) : ← et → passent à l'onglet voisin et y placent le focus.
+function onTabKeydown(event: KeyboardEvent) {
+  if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
+  event.preventDefault()
+
+  let index = 0
+  for (let i = 0; i < tabs.value.length; i++) {
+    if (tabs.value[i]?.id === tab.value) index = i
+  }
+  if (event.key === 'ArrowRight') index = (index + 1) % tabs.value.length
+  if (event.key === 'ArrowLeft') index = (index - 1 + tabs.value.length) % tabs.value.length
+
+  const next = tabs.value[index]
+  if (next) {
+    tab.value = next.id
+    document.getElementById(`exercise-tab-${next.id}`)?.focus()
+  }
+}
+
 // Bandeau bas : seulement hors de l'onglet Consigne, après une vérification.
 const summary = computed(() => {
   if (tab.value === 'instructions' || !verification) return null
@@ -52,6 +71,7 @@ const summary = computed(() => {
         role="tab"
         :aria-selected="tab === item.id"
         :aria-controls="`exercise-panel-${item.id}`"
+        :tabindex="tab === item.id ? 0 : -1"
         class="text-ui -mb-px flex cursor-pointer items-center gap-1.5 border-b-2 pt-2 pb-2.5"
         :class="
           tab === item.id
@@ -59,6 +79,7 @@ const summary = computed(() => {
             : 'text-text-muted hover:text-text border-transparent font-medium'
         "
         @click="tab = item.id"
+        @keydown="onTabKeydown"
       >
         <Icon :name="item.icon" class="size-3.5" :class="tab === item.id ? 'text-primary' : ''" />
         {{ item.label }}
@@ -66,13 +87,28 @@ const summary = computed(() => {
     </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto">
-      <div v-show="tab === 'instructions'" id="exercise-panel-instructions" role="tabpanel">
+      <div
+        v-show="tab === 'instructions'"
+        id="exercise-panel-instructions"
+        role="tabpanel"
+        aria-labelledby="exercise-tab-instructions"
+      >
         <slot name="instructions" />
       </div>
-      <div v-show="tab === 'lesson'" id="exercise-panel-lesson" role="tabpanel">
+      <div
+        v-show="tab === 'lesson'"
+        id="exercise-panel-lesson"
+        role="tabpanel"
+        aria-labelledby="exercise-tab-lesson"
+      >
         <slot name="lesson" />
       </div>
-      <div v-show="tab === 'hints'" id="exercise-panel-hints" role="tabpanel">
+      <div
+        v-show="tab === 'hints'"
+        id="exercise-panel-hints"
+        role="tabpanel"
+        aria-labelledby="exercise-tab-hints"
+      >
         <slot name="hints" />
       </div>
     </div>
