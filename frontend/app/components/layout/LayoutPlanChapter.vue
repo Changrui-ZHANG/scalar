@@ -1,81 +1,78 @@
 <script setup lang="ts">
+// Chapitre du plan (specs-site.md § 3.2) : pastille (numéro ou ✓) et titre ;
+// ouvert, il liste ses épisodes.
 import type { TrackViewChapter } from '@scalar/shared/api'
 import type { Episode } from '~/types/episode'
 
+// Ouvert ou fermé ; un chapitre absent de l'état du plan est fermé.
 const open = defineModel<boolean>({ default: false })
 
 interface Props {
   chapter: TrackViewChapter
-  episodes: readonly Episode[]
+  episodes: readonly Episode[] // épisodes de ce chapitre
   completed: ReadonlySet<string>
   displayedKey: string | null
 }
 
-const props = defineProps<Props>()
+const { chapter, episodes, completed, displayedKey } = defineProps<Props>()
 
 const emit = defineEmits<{
   navigate: []
 }>()
 
-const isChapterComplete = computed(() => {
-  if (props.episodes.length === 0) return false
-  return props.episodes.every((e) => props.completed.has(e.key))
+// Chapitre terminé : il a des épisodes et ils sont tous terminés.
+const isCompleted = computed(() => {
+  if (episodes.length === 0) return false
+  for (const episode of episodes) {
+    if (!completed.has(episode.key)) return false
+  }
+  return true
 })
 
-const hasCurrentEpisode = computed(() => {
-  if (!props.displayedKey) return false
-  return props.episodes.some((e) => e.key === props.displayedKey)
+// Chapitre de l'épisode affiché : mis en valeur.
+const isCurrent = computed(() => {
+  for (const episode of episodes) {
+    if (episode.key === displayedKey) return true
+  }
+  return false
 })
-
-function toggle() {
-  open.value = !open.value
-}
 </script>
 
 <template>
-  <div class="flex flex-col">
-    <!-- En-tête de chapitre cliquable -->
+  <div class="flex flex-col gap-1">
     <button
       type="button"
       :aria-expanded="open"
-      class="flex w-full items-center gap-2.5 rounded-[10px] px-2 py-2 text-left text-sm transition-colors cursor-pointer"
-      :class="[
-        hasCurrentEpisode ? 'bg-surface-muted font-semibold text-text' : 'text-text hover:bg-surface-muted/60',
-      ]"
-      @click="toggle"
+      class="rounded-row hover:bg-surface-muted flex w-full cursor-pointer items-center gap-2.5 px-2 py-1.75 text-left text-sm"
+      :class="{
+        'bg-surface-muted text-text font-semibold': isCurrent,
+        'text-text font-medium': !isCurrent && isCompleted,
+        'text-text-muted font-medium': !isCurrent && !isCompleted,
+      }"
+      @click="open = !open"
     >
-      <!-- Pastille numéro ou check -->
       <span
-        class="flex size-[22px] shrink-0 items-center justify-center rounded-full text-xs font-semibold"
-        :class="[
-          isChapterComplete
-            ? 'bg-success-soft text-success'
-            : 'bg-surface-muted text-text-muted',
-        ]"
+        v-if="isCompleted"
+        class="bg-success-soft flex size-5.5 shrink-0 items-center justify-center rounded-full"
       >
-        <Icon v-if="isChapterComplete" name="lucide:check" class="size-3.5" />
-        <span v-else>{{ chapter.number }}</span>
+        <Icon name="lucide:check" class="text-success size-3" />
       </span>
-
-      <!-- Titre du chapitre -->
-      <span class="flex-1 truncate text-sm">{{ chapter.title }}</span>
-
-      <!-- Chevron -->
-      <Icon
-        name="lucide:chevron-down"
-        class="size-4 shrink-0 text-text-muted transition-transform duration-200"
-        :class="{ 'rotate-180': open }"
-      />
+      <span
+        v-else
+        class="bg-surface-muted text-text-muted flex size-5.5 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+      >
+        {{ chapter.number }}
+      </span>
+      <span class="truncate">{{ chapter.title }}</span>
     </button>
 
-    <!-- Liste des épisodes si ouvert -->
-    <div v-show="open" class="flex flex-col gap-0.5 py-1">
+    <div v-show="open" class="flex flex-col gap-1">
       <LayoutPlanEpisode
-        v-for="ep in episodes"
-        :key="ep.key"
-        :episode="ep"
-        :completed="completed.has(ep.key)"
-        :current="ep.key === displayedKey"
+        v-for="episode in episodes"
+        :key="episode.key"
+        :episode="episode"
+        :completed="completed.has(episode.key)"
+        :current="episode.key === displayedKey"
         @navigate="emit('navigate')"
       />
     </div>

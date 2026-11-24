@@ -22,8 +22,13 @@ const emit = defineEmits<{
   navigate: []
 }>()
 
-// État ouvert/fermé de chaque niveau
-const openLevels = ref<Record<string, boolean>>({})
+// État ouvert/fermé de chaque niveau ; au départ tous fermés (initActiveState ouvre le bon).
+const openLevels = ref<Record<ChapterLevel, boolean>>({
+  beginner: false,
+  intermediate: false,
+  advanced: false,
+  ecosystem: false,
+})
 // État ouvert/fermé de chaque chapitre
 const openChapters = ref<Record<string, boolean>>({})
 
@@ -68,75 +73,69 @@ function getEpisodesForChapter(chapterSlug: string): Episode[] {
 </script>
 
 <template>
-  <!-- Rail replié sur desktop (48px) -->
+  <!-- Plan replié (desktop) : un rail de 48 px avec le bouton qui le rouvre -->
   <aside
     v-if="collapsed"
-    class="hidden xl:flex h-full w-12 flex-col items-center border-r border-border bg-surface py-3"
+    class="border-border bg-surface hidden h-full w-12 flex-col items-center border-r py-3 xl:flex"
   >
-    <button
-      type="button"
-      aria-label="Déplier le plan du parcours"
-      class="inline-flex size-9 items-center justify-center rounded-[10px] text-text hover:bg-surface-muted cursor-pointer"
+    <UiIconButton
+      icon="lucide:panel-left"
+      label="Déplier le plan du parcours"
       @click="emit('expand')"
-    >
-      <Icon name="lucide:panel-left" class="size-5" />
-    </button>
+    />
   </aside>
 
-  <!-- Plan complet 280px -->
-  <aside
-    v-else
-    class="flex h-full w-70 flex-col bg-surface p-[18px_16px] text-text"
-  >
-    <!-- En-tête : Titre du parcours + Bouton replier -->
-    <div class="mb-3 flex items-start justify-between gap-2">
-      <NuxtLink
-        :to="`/parcours/${track.track.slug}`"
-        class="font-display text-lg font-bold text-text hover:text-primary transition-colors leading-tight truncate"
-      >
-        {{ track.track.name }}
-      </NuxtLink>
-      <button
-        type="button"
-        aria-label="Replier le plan"
-        class="hidden xl:inline-flex size-7 shrink-0 items-center justify-center rounded-lg text-text-muted hover:bg-surface-muted hover:text-text cursor-pointer"
-        @click="emit('collapse')"
-      >
-        <Icon name="lucide:panel-left-close" class="size-4" />
-      </button>
-    </div>
-
-    <!-- Barre de progression -->
-    <div class="mb-4 flex flex-col gap-1.5">
+  <aside v-else class="bg-surface text-text flex h-full w-70 flex-col gap-3 px-4 py-4.5">
+    <div class="flex flex-col gap-2">
+      <div class="flex items-center justify-between gap-2 pr-8 xl:pr-0">
+        <NuxtLink
+          :to="`/parcours/${track.track.slug}`"
+          class="font-display text-text hover:text-primary truncate text-lg font-semibold"
+        >
+          {{ track.track.name }}
+        </NuxtLink>
+        <button
+          type="button"
+          aria-label="Replier le plan"
+          class="text-text-muted hover:bg-surface-muted hidden size-7 shrink-0 cursor-pointer items-center justify-center rounded-lg xl:inline-flex"
+          @click="emit('collapse')"
+        >
+          <Icon name="lucide:panel-left-close" class="size-4.5" />
+        </button>
+      </div>
       <UiProgressBar
         :value="progress.percent"
         :label="`Progression du parcours ${track.track.name}`"
       />
-      <span class="text-[13px] text-text-muted">
-        {{ progress.done }} épisodes sur {{ progress.total }} · {{ progress.percent }} %
-      </span>
+      <p class="text-tag text-text-muted">
+        {{ countLabel(progress.done, 'épisode', 'épisodes') }} sur {{ progress.total }} ·
+        {{ progress.percent }} %
+      </p>
     </div>
 
-    <!-- Niveaux et chapitres avec défilement interne -->
-    <div class="flex-1 overflow-y-auto pr-1">
-      <template v-for="lvl in CHAPTER_LEVELS" :key="lvl">
+    <!-- Défilement interne quand le plan dépasse la hauteur de l'écran -->
+    <nav
+      aria-label="Plan du parcours"
+      class="-mx-1 flex flex-1 flex-col gap-1 overflow-y-auto px-1"
+    >
+      <template v-for="level in CHAPTER_LEVELS" :key="level">
         <LayoutPlanLevel
-          v-if="getChaptersForLevel(lvl).length > 0"
-          v-model="openLevels[lvl]"
-          :level="lvl"
+          v-if="getChaptersForLevel(level).length > 0"
+          v-model="openLevels[level]"
+          :level="level"
         >
           <LayoutPlanChapter
-            v-for="ch in getChaptersForLevel(lvl)"
-            :key="ch.slug"
-            v-model="openChapters[ch.slug]"
-            :chapter="ch"
-            :episodes="getEpisodesForChapter(ch.slug)"
+            v-for="chapter in getChaptersForLevel(level)"
+            :key="chapter.slug"
+            v-model="openChapters[chapter.slug]"
+            :chapter="chapter"
+            :episodes="getEpisodesForChapter(chapter.slug)"
             :completed="completed"
             :displayed-key="displayedKey"
             @navigate="emit('navigate')"
           />
         </LayoutPlanLevel>
       </template>
-    </div>
+    </nav>
   </aside>
 </template>

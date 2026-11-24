@@ -1,45 +1,31 @@
 <script setup lang="ts">
+// Niveau repliable du plan (specs-site.md § 3.2) : « DÉBUTANT », « INTERMÉDIAIRE »…
 import type { ChapterLevel } from '@scalar/shared/enums'
+import { CHAPTER_LEVEL_LABELS } from '@scalar/shared/labels'
 
-const open = defineModel<boolean>({ default: false })
+const open = defineModel<boolean>({ required: true })
 
 interface Props {
   level: ChapterLevel
 }
 
-const props = defineProps<Props>()
-
-const LEVEL_LABELS: Record<ChapterLevel, string> = {
-  beginner: 'DÉBUTANT',
-  intermediate: 'INTERMÉDIAIRE',
-  advanced: 'AVANCÉ',
-  ecosystem: 'ÉCOSYSTÈME',
-}
-
-const label = computed(() => LEVEL_LABELS[props.level] ?? props.level)
-
-function toggle() {
-  open.value = !open.value
-}
+const { level } = defineProps<Props>()
 </script>
 
 <template>
-  <div class="flex flex-col border-b border-border/50 pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0">
+  <div class="flex flex-col gap-1">
     <button
       type="button"
       :aria-expanded="open"
-      class="flex w-full items-center justify-between py-2 text-left text-xs font-bold uppercase tracking-wider text-text-muted hover:text-text cursor-pointer"
-      @click="toggle"
+      class="text-text-muted hover:text-text flex w-full cursor-pointer items-center justify-between px-1 pt-2 pb-0.5 text-left text-xs font-bold tracking-wide uppercase"
+      @click="open = !open"
     >
-      <span>{{ label }}</span>
-      <Icon
-        name="lucide:chevron-down"
-        class="size-3.5 transition-transform duration-200"
-        :class="{ 'rotate-180': open }"
-      />
+      {{ CHAPTER_LEVEL_LABELS[level] }}
+      <Icon v-if="open" name="lucide:chevron-down" class="size-3.5" />
+      <Icon v-else name="lucide:chevron-right" class="size-3.5" />
     </button>
 
-    <div v-show="open" class="flex flex-col gap-1 pt-1">
+    <div v-show="open" class="flex flex-col gap-1">
       <slot />
     </div>
   </div>

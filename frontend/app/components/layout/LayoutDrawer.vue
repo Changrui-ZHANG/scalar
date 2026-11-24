@@ -32,50 +32,39 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div>
-    <!-- Desktop inline column (>= xl) if inlineFrom === 'xl' -->
+  <div class="flex shrink-0">
+    <!-- Desktop (≥ 1 280 px) : le plan est une colonne fixe, toute hauteur -->
     <div
       v-if="inlineFrom === 'xl'"
-      class="hidden xl:block shrink-0 border-r border-border bg-surface"
+      class="border-border bg-surface hidden h-full border-r xl:block"
     >
       <slot />
     </div>
 
-    <!-- Mobile / Tablet Drawer (< xl) -->
+    <!-- Mobile et tablette : tiroir de 320 px par-dessus la page, avec un voile -->
     <Teleport to="body">
       <div
         v-if="open"
-        :class="['fixed inset-0 z-50 flex', inlineFrom === 'xl' ? 'xl:hidden' : '']"
+        class="fixed inset-0 z-50 flex"
+        :class="inlineFrom === 'xl' ? 'xl:hidden' : ''"
       >
-        <!-- Voile sombre -->
-        <div
-          class="fixed inset-0 bg-[#0F1115]/50 transition-opacity"
-          aria-hidden="true"
-          @click="close"
-        />
+        <div class="bg-scrim fixed inset-0" aria-hidden="true" @click="close" />
 
-        <!-- Tiroir 320px -->
         <div
           role="dialog"
           aria-modal="true"
           :aria-label="label"
-          class="relative flex h-full w-80 max-w-[85vw] flex-col bg-surface shadow-2xl border-r border-border z-10"
+          class="bg-surface relative z-10 h-full w-80 max-w-[85vw] overflow-y-auto"
         >
-          <div class="flex items-center justify-between border-b border-border p-3">
-            <span class="text-sm font-semibold text-text truncate">{{ label }}</span>
-            <button
-              type="button"
-              aria-label="Fermer"
-              class="inline-flex size-9 items-center justify-center rounded-[10px] text-text-muted hover:bg-surface-muted hover:text-text cursor-pointer"
-              @click="close"
-            >
-              <Icon name="lucide:x" class="size-5" />
-            </button>
-          </div>
-
-          <div class="flex-1 overflow-y-auto">
-            <slot />
-          </div>
+          <slot />
+          <button
+            type="button"
+            aria-label="Fermer le plan"
+            class="rounded-row text-text-muted hover:bg-surface-muted absolute top-3.5 right-3 inline-flex size-11 cursor-pointer items-center justify-center"
+            @click="close"
+          >
+            <Icon name="lucide:x" class="size-5" />
+          </button>
         </div>
       </div>
     </Teleport>

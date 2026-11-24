@@ -104,7 +104,7 @@ describe('Composants de mise en page', () => {
 
     expect(wrapper.text()).toContain('JavaScript')
     expect(wrapper.text()).toContain('0 épisodes sur 2 · 0 %')
-    expect(wrapper.text()).toContain('DÉBUTANT')
+    expect(wrapper.text()).toContain('Débutant') // affiché en majuscules par le CSS
     expect(wrapper.text()).toContain('Variables')
     expect(wrapper.text()).toContain('let et const')
   })

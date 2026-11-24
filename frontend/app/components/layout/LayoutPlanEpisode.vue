@@ -1,4 +1,6 @@
 <script setup lang="ts">
+// Épisode du plan (specs-site.md § 3.2) : icône d'état et titre ; l'épisode affiché
+// est surligné et porte aria-current="page".
 import type { Episode } from '~/types/episode'
 
 interface Props {
@@ -7,36 +9,30 @@ interface Props {
   current: boolean
 }
 
-const props = defineProps<Props>()
+const { episode, completed, current } = defineProps<Props>()
 
 const emit = defineEmits<{
   navigate: []
 }>()
-
-const iconName = computed(() => {
-  if (props.completed) return 'lucide:circle-check'
-  return props.episode.kind === 'lesson' ? 'lucide:book-open' : 'lucide:code-xml'
-})
-
-const iconClass = computed(() => {
-  if (props.completed) return 'text-success'
-  return props.episode.kind === 'lesson' ? 'text-primary' : 'text-exercise'
-})
 </script>
 
 <template>
   <NuxtLink
     :to="episode.path"
     :aria-current="current ? 'page' : undefined"
-    class="flex items-center gap-2.5 py-1.5 pl-10 pr-3 rounded-[8px] text-[13px] transition-colors"
-    :class="[
-      current
-        ? 'bg-primary-soft text-primary font-semibold'
-        : 'text-text hover:bg-surface-muted hover:text-text',
-    ]"
+    class="rounded-row text-meta flex items-center gap-2.25 py-1.5 pr-2 pl-10"
+    :class="
+      current ? 'bg-primary-soft text-primary font-semibold' : 'text-text hover:bg-surface-muted'
+    "
     @click="emit('navigate')"
   >
-    <Icon :name="iconName" class="size-3.5 shrink-0" :class="iconClass" />
+    <Icon v-if="completed" name="lucide:circle-check" class="text-success size-3.5 shrink-0" />
+    <Icon
+      v-else-if="episode.kind === 'lesson'"
+      name="lucide:book-open"
+      class="text-primary size-3.5 shrink-0"
+    />
+    <Icon v-else name="lucide:code-xml" class="text-exercise size-3.5 shrink-0" />
     <span class="truncate">{{ episode.title }}</span>
   </NuxtLink>
 </template>
