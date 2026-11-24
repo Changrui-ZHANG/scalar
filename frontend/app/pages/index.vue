@@ -7,12 +7,15 @@ definePageMeta({ layout: 'default' })
 
 usePageSeo({
   title: [],
-  description: 'Pour reprendre un langage, ou l’apprendre. Des leçons concises et des exercices corrigés automatiquement, sans compte ni détour.',
+  description:
+    'Pour reprendre un langage, ou l’apprendre. Des leçons concises et des exercices corrigés automatiquement, sans compte ni détour.',
   type: 'website',
 })
 
 const { start, resume, cards } = await useTracks()
 
+// Deux accueils (specs-site.md § 4) : « nouveau visiteur » au rendu serveur et au premier
+// passage ; « habitué » le remplace au montage s'il y a une progression locale.
 const isClientMounted = ref(false)
 
 onMounted(() => {
@@ -21,20 +24,17 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="px-4 md:px-6 py-8 md:py-12">
-    <!-- Mode Habitué (si progression locale au montage) avec fondu 150ms -->
-    <div
-      v-if="isClientMounted && resume !== null"
-      class="mx-auto max-w-280 transition-opacity duration-150 ease-out"
-    >
+  <div v-if="isClientMounted && resume !== null" class="px-4 py-12 md:px-6">
+    <div class="mx-auto flex max-w-280 flex-col gap-9">
       <HomeWelcome />
       <HomeResumeCard :target="resume" />
       <HomeTrackGrid :cards="cards" />
       <HomeSandboxPromo />
     </div>
+  </div>
 
-    <!-- Mode Visiteur (SSR et nouvel arrivant) -->
-    <div v-else class="mx-auto max-w-280 flex flex-col gap-12">
+  <div v-else class="px-4 pt-10 pb-10 md:px-6 xl:pt-16">
+    <div class="mx-auto flex max-w-280 flex-col gap-14">
       <HomeHero :start="start" />
       <HomeSteps />
     </div>

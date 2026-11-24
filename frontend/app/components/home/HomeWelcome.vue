@@ -1,14 +1,12 @@
 <script setup lang="ts">
-/** En-tête pour visiteur habitué (§ 4.2) */
+// En-tête de l'accueil habitué (specs-site.md § 4.2).
 </script>
 
 <template>
-  <div class="mb-8 flex flex-col gap-2">
-    <h1 class="font-display text-3xl md:text-h1 font-semibold text-text">
-      Bon retour
-    </h1>
-    <p class="text-base md:text-lede text-text-muted">
+  <div class="flex flex-col gap-1.5">
+    <p class="text-label text-primary font-semibold">Bon retour</p>
+    <h1 class="font-display text-text md:text-h1 text-3xl font-semibold tracking-tight">
       Reprenez où vous en étiez.
-    </p>
+    </h1>
   </div>
 </template>

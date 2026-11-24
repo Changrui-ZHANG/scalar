@@ -1,47 +1,43 @@
 <script setup lang="ts">
-/** Trois cartes explicatives « 1. Lire », « 2. Coder », « 3. Vérifier » (§ 4.1) */
-const STEPS = [
+// Trois cartes « 1. Lire », « 2. Coder », « 3. Vérifier » de l'accueil (specs-site.md § 4.1).
+// Textes et icônes de la maquette.
+const steps = [
   {
-    num: '1',
-    title: 'Lire',
+    title: '1. Lire',
+    text: 'Une leçon courte, avec du code commenté.',
     icon: 'lucide:book-open',
-    text: 'Une notion, ses pièges, des exemples ciblés sans bavardage.',
+    iconColor: 'text-primary',
   },
   {
-    num: '2',
-    title: 'Coder',
+    title: '2. Coder',
+    text: 'L’exercice s’ouvre à côté de la leçon : plus d’allers-retours.',
     icon: 'lucide:code-xml',
-    text: 'Un éditeur réactif avec autocomplétion pour appliquer immédiatement.',
+    iconColor: 'text-exercise',
   },
   {
-    num: '3',
-    title: 'Vérifier',
-    icon: 'lucide:check-check',
-    text: 'Des tests exécutés instantanément dans un bac à sable sécurisé.',
+    title: '3. Vérifier',
+    text: 'De vrais tests, dont certains cachés, jugent votre solution.',
+    icon: 'lucide:circle-check',
+    iconColor: 'text-success',
   },
-] as const
+]
 </script>
 
 <template>
-  <section class="mx-auto w-full max-w-280 py-8 border-t border-border">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <section class="grid w-full grid-cols-1 gap-4.5 md:grid-cols-3">
+    <div
+      v-for="step in steps"
+      :key="step.title"
+      class="rounded-tile border-border bg-surface flex gap-3.5 border p-5"
+    >
       <div
-        v-for="step in STEPS"
-        :key="step.num"
-        class="flex flex-col gap-3 rounded-[14px] border border-border bg-surface p-6"
+        class="rounded-control bg-surface-muted flex size-10 shrink-0 items-center justify-center"
       >
-        <div class="flex items-center gap-3">
-          <span class="flex size-8 items-center justify-center rounded-lg bg-primary-soft text-primary font-bold text-sm">
-            {{ step.num }}
-          </span>
-          <Icon :name="step.icon" class="size-5 text-primary" />
-          <h2 class="font-display text-lg font-semibold text-text">
-            {{ step.title }}
-          </h2>
-        </div>
-        <p class="text-sm text-text-muted leading-relaxed">
-          {{ step.text }}
-        </p>
+        <Icon :name="step.icon" class="size-5" :class="step.iconColor" />
+      </div>
+      <div class="flex flex-col gap-1">
+        <h2 class="font-display text-lede text-text font-semibold">{{ step.title }}</h2>
+        <p class="text-ui text-text-muted leading-snug">{{ step.text }}</p>
       </div>
     </div>
   </section>

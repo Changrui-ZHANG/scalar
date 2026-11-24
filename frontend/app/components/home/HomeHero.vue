@@ -1,57 +1,42 @@
 <script setup lang="ts">
+// Héros de l'accueil « nouveau visiteur » (specs-site.md § 4.1).
+// À gauche le texte et les boutons, à droite la carte de démonstration.
 interface Props {
+  // « Commencer <parcours> » : premier épisode du premier parcours ; null si aucun parcours
   start: { trackName: string; path: string } | null
 }
 
-defineProps<Props>()
+const { start } = defineProps<Props>()
 </script>
 
 <template>
-  <section class="mx-auto flex w-full max-w-280 flex-col items-center gap-12 py-12 md:py-16 xl:flex-row xl:items-center xl:justify-between">
-    <!-- Colonne gauche texte & actions -->
-    <div class="flex max-w-xl flex-col items-start gap-6">
-      <div class="flex items-center gap-2">
-        <span class="font-display font-semibold text-primary text-base">Scalar</span>
-        <span class="text-text-muted" aria-hidden="true">·</span>
-        <span class="text-sm md:text-[15px] font-semibold text-primary">
-          Pour reprendre un langage, ou l'apprendre
-        </span>
-      </div>
+  <section class="flex w-full flex-col gap-10 xl:flex-row xl:items-center xl:gap-14">
+    <div class="flex flex-1 flex-col gap-5">
+      <p class="text-label text-primary font-semibold">Pour reprendre un langage, ou l’apprendre</p>
 
-      <h1 class="font-display text-4xl md:text-5xl xl:text-hero font-semibold leading-[1.05] tracking-tight text-text">
+      <h1
+        class="font-display leading-hero text-text xl:text-hero text-4xl font-semibold tracking-tight"
+      >
         Une connaissance suffisante. Un rappel suffisant.
       </h1>
 
-      <p class="text-base md:text-lede text-text-muted leading-relaxed">
-        Des leçons concises et des exercices corrigés automatiquement pour aller droit à l’essentiel, sans détour.
+      <p class="text-text-muted xl:text-lede text-lg leading-relaxed">
+        Des leçons courtes, des exercices corrigés par de vrais tests, et le cours toujours à côté
+        de votre code.
       </p>
 
-      <div class="flex flex-wrap items-center gap-4">
-        <UiButton
-          v-if="start"
-          :to="start.path"
-          variant="primary"
-          icon="lucide:play"
-        >
+      <div class="flex flex-wrap items-center gap-3">
+        <UiButton v-if="start" :to="start.path" icon-right="lucide:arrow-right">
           Commencer {{ start.trackName }}
         </UiButton>
-
-        <UiButton
-          to="/parcours"
-          variant="secondary"
-        >
-          Voir les parcours
-        </UiButton>
+        <UiButton to="/parcours" variant="secondary">Voir les parcours</UiButton>
       </div>
 
-      <span class="text-xs text-text-muted">
+      <p class="text-small text-text-muted">
         Gratuit · sans compte · votre progression reste dans votre navigateur
-      </span>
+      </p>
     </div>
 
-    <!-- Colonne droite : carte statique -->
-    <div class="w-full xl:w-auto flex justify-center">
-      <HomeDemoCard />
-    </div>
+    <HomeDemoCard />
   </section>
 </template>

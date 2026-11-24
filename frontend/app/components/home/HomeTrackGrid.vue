@@ -1,92 +1,73 @@
 <script setup lang="ts">
-import type { TrackCard } from '~/types/episode'
+// « Vos parcours » de l'accueil habitué (specs-site.md § 4.2) : une carte par parcours.
+import type { TrackCard, TrackStatus } from '~/types/episode'
 
 interface Props {
   cards: readonly TrackCard[]
 }
 
-defineProps<Props>()
+const { cards } = defineProps<Props>()
 
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .map((w) => w[0]?.toUpperCase())
-    .slice(0, 2)
-    .join('')
+// Libellé et couleur de l'étiquette selon l'état du parcours.
+const statusLabels: Record<TrackStatus, string> = {
+  not_started: 'À commencer',
+  in_progress: 'En cours',
+  completed: 'Terminé',
 }
-
-function getTone(status: string): 'primary' | 'muted' | 'success' {
-  if (status === 'completed') return 'success'
-  if (status === 'in_progress') return 'primary'
-  return 'muted'
-}
-
-function getStatusLabel(status: string): string {
-  if (status === 'completed') return 'Terminé'
-  if (status === 'in_progress') return 'En cours'
-  return 'À commencer'
+const statusTones: Record<TrackStatus, 'muted' | 'primary' | 'success'> = {
+  not_started: 'muted',
+  in_progress: 'primary',
+  completed: 'success',
 }
 </script>
 
 <template>
-  <div class="mb-10 flex flex-col gap-6">
-    <div class="flex items-center justify-between">
-      <h2 class="font-display text-2xl font-bold text-text">
-        Vos parcours
-      </h2>
+  <section class="flex flex-col gap-3.5">
+    <div class="flex items-end justify-between gap-4">
+      <h2 class="font-display text-text text-2xl font-semibold">Vos parcours</h2>
       <NuxtLink
         to="/parcours"
-        class="text-sm font-semibold text-primary hover:underline"
+        class="text-ui text-primary flex items-center gap-1 font-semibold hover:underline"
       >
-        Tous les parcours →
+        Tous les parcours
+        <Icon name="lucide:arrow-right" class="size-3.5" />
       </NuxtLink>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 gap-4.5 md:grid-cols-3">
       <NuxtLink
-        v-for="c in cards"
-        :key="c.view.track.slug"
-        :to="`/parcours/${c.view.track.slug}`"
-        class="group flex flex-col justify-between rounded-[14px] border border-border bg-surface p-6 transition-all hover:border-primary/50 hover:shadow-sm"
+        v-for="card in cards"
+        :key="card.view.track.slug"
+        :to="`/parcours/${card.view.track.slug}`"
+        class="rounded-tile border-border bg-surface hover:border-primary flex flex-col gap-3.5 border p-5.5"
       >
-        <div class="flex flex-col gap-4">
-          <div class="flex items-start justify-between gap-3">
-            <!-- Initiales du nom sur primary-soft -->
-            <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft font-display text-base font-bold text-primary">
-              {{ getInitials(c.view.track.name) }}
-            </span>
-
-            <UiTag :tone="getTone(c.progress.status)">
-              {{ getStatusLabel(c.progress.status) }}
-            </UiTag>
-          </div>
-
-          <div class="flex flex-col gap-1">
-            <h3 class="font-display text-xl font-bold text-text group-hover:text-primary transition-colors">
-              {{ c.view.track.name }}
-            </h3>
-            <span class="text-xs text-text-muted">
-              {{ c.view.chapters.length }} chapitres · {{ c.progress.total }} épisodes
-            </span>
-          </div>
-
-          <!-- Prérequis si conseillé -->
-          <div v-if="c.prerequisite" class="text-xs text-text-muted italic">
-            Conseillé après {{ c.prerequisite.name }}
-          </div>
-        </div>
-
-        <div class="mt-6 flex flex-col gap-1.5">
-          <UiProgressBar
-            :value="c.progress.percent"
-            :label="`Progression ${c.view.track.name}`"
-          />
-          <span class="text-xs text-text-muted font-medium">
-            {{ c.progress.percent }} % terminé
+        <div class="flex items-center justify-between">
+          <span
+            class="bg-primary-soft text-label text-primary flex size-10.5 items-center justify-center rounded-xl font-bold"
+          >
+            {{ initials(card.view.track.name) }}
           </span>
+          <UiTag :tone="statusTones[card.progress.status]">{{
+            statusLabels[card.progress.status]
+          }}</UiTag>
         </div>
+
+        <h3 class="font-display text-card text-text font-semibold">{{ card.view.track.name }}</h3>
+
+        <p class="text-text-muted text-sm">
+          {{ countLabel(card.view.chapters.length, 'chapitre', 'chapitres') }} ·
+          {{ countLabel(card.progress.total, 'épisode', 'épisodes') }}
+        </p>
+        <p v-if="card.prerequisite" class="text-text-muted text-sm">
+          Conseillé après {{ card.prerequisite.name }}
+        </p>
+
+        <UiProgressBar
+          :value="card.progress.percent"
+          :label="`Progression du parcours ${card.view.track.name}`"
+        />
+        <p class="text-meta text-text-muted">{{ card.progress.percent }} % terminé</p>
       </NuxtLink>
     </div>
-  </div>
+  </section>
 </template>

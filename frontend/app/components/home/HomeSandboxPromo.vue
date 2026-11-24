@@ -1,29 +1,27 @@
 <script setup lang="ts">
-/** Encart Bac à sable de l'accueil habitué (§ 4.2) */
+// Encart « Bac à sable » de l'accueil habitué (specs-site.md § 4.2).
 </script>
 
 <template>
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-[14px] border border-border bg-surface p-6">
-    <div class="flex items-center gap-4">
-      <div class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-surface-muted text-exercise">
-        <Icon name="lucide:code-xml" class="size-6" />
-      </div>
-      <div class="flex flex-col">
-        <h3 class="font-display text-lg font-bold text-text">
-          Bac à sable
-        </h3>
-        <p class="text-sm text-text-muted">
-          Testez du code JavaScript ou TypeScript librement, sans contrainte de parcours.
+  <div
+    class="rounded-tile border-border flex flex-col gap-4 border px-5.5 py-4.5 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <div class="flex items-center gap-3.5">
+      <Icon name="lucide:square-terminal" class="text-text-muted size-5.5 shrink-0" />
+      <div class="flex flex-col gap-0.5">
+        <h2 class="text-text font-sans text-base font-bold">Bac à sable</h2>
+        <p class="text-text-muted text-sm">
+          Tester une idée en JavaScript ou TypeScript, hors des parcours.
         </p>
       </div>
     </div>
 
-    <UiButton
+    <NuxtLink
       to="/exercices"
-      variant="secondary"
-      icon="lucide:arrow-right"
+      class="rounded-row border-border bg-surface text-ui text-text hover:bg-surface-muted flex items-center gap-1.5 self-start border px-3.5 py-2.25 font-semibold sm:self-auto"
     >
       Ouvrir
-    </UiButton>
+      <Icon name="lucide:arrow-up-right" class="size-4" />
+    </NuxtLink>
   </div>
 </template>
