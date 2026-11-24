@@ -1,15 +1,19 @@
 <script setup lang="ts">
 // Les quatre onglets de l'exercice sur mobile (specs-site.md § 7.4) :
 // Consigne, Leçon, Code, Résultat (avec la pastille « n/m » après une vérification).
+import type { VerificationResult } from '@scalar/shared/api'
 import type { MobileExerciseTab } from '~/types/exercise'
+import { caseCount } from '~/utils/verification'
 
 const tab = defineModel<MobileExerciseTab>({ required: true })
 
 interface Props {
-  badge: { passed: number; total: number } | null
+  verification: VerificationResult | null // dernière vérification : pastille « n/m » de Résultat
 }
 
-const { badge } = defineProps<Props>()
+const props = defineProps<Props>()
+
+const badge = computed(() => (props.verification ? caseCount(props.verification) : null))
 
 const tabs: { id: MobileExerciseTab; label: string }[] = [
   { id: 'instructions', label: 'Consigne' },

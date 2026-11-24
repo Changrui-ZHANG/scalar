@@ -14,6 +14,8 @@ export interface ExercisePage {
   readonly lessons: Ref<readonly LessonDetail[] | null>
   readonly lessonsStatus: Ref<'idle' | 'pending' | 'ready' | 'error'>
   readonly revealedHints: ComputedRef<number>
+  readonly hasLessons: ComputedRef<boolean> // le chapitre a des leçons : onglet Leçon affiché
+  readonly overviewPath: ComputedRef<string> // vue d'ensemble du parcours
   loadLessons(): Promise<void>
   watchLessonTab(isOpen: MaybeRefOrGetter<boolean>): void
   revealHint(): void
@@ -27,9 +29,8 @@ export async function useExercisePage(): Promise<ExercisePage> {
 
   const preferencesStore = usePreferencesStore()
 
-  const { data: trackData } = await useAsyncData<TrackView>(
-    `track:${trackSlug}`,
-    () => fetchTrack(trackSlug),
+  const { data: trackData } = await useAsyncData<TrackView>(`track:${trackSlug}`, () =>
+    fetchTrack(trackSlug),
   )
 
   const { data: exerciseData } = await useAsyncData<PublicExercise>(
@@ -120,6 +121,17 @@ export async function useExercisePage(): Promise<ExercisePage> {
     }
   })
 
+  // Le chapitre de l'exercice a-t-il au moins une leçon ?
+  const hasLessons = computed(() => {
+    for (const chapter of track.value.chapters) {
+      if (chapter.slug === episode.value.chapter.slug && chapter.lessons.length > 0) {
+        return true
+      }
+    }
+    return false
+  })
+  const overviewPath = computed(() => `/parcours/${track.value.track.slug}`)
+
   return {
     exercise,
     track,
@@ -127,6 +139,8 @@ export async function useExercisePage(): Promise<ExercisePage> {
     lessons,
     lessonsStatus,
     revealedHints,
+    hasLessons,
+    overviewPath,
     loadLessons,
     watchLessonTab,
     revealHint,
