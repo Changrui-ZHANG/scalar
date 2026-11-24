@@ -18,7 +18,13 @@ export const usePreferencesStore = defineStore('preferences', () => {
   const hints = ref<StoredHints>({})
   const sandbox = ref<SandboxState | null>(null)
 
-  if (import.meta.client && typeof window !== 'undefined') {
+  // Lecture du stockage du navigateur. Appelée une seule fois, au montage de
+  // l'application (app.vue) : le rendu serveur et l'hydratation se font avec
+  // l'état vide, comme le demande specs-site.md § 9 (pas de saut à l'hydratation).
+  let loaded = false
+  function loadFromStorage(): void {
+    if (loaded) return
+    loaded = true
     try {
       theme.value = parseTheme(localStorage.getItem(THEME_STORAGE_KEY))
       planCollapsed.value = parsePlanCollapsed(localStorage.getItem(PLAN_COLLAPSED_STORAGE_KEY))
@@ -105,6 +111,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
   }
 
   return {
+    loadFromStorage,
     theme,
     planCollapsed,
     hints,

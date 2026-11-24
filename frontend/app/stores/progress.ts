@@ -1,18 +1,19 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { StoredProgress } from '~/types/storage'
-import {
-  EMPTY_PROGRESS,
-  PROGRESS_STORAGE_KEY,
-  mergeProgress,
-  parseProgress,
-} from '~/utils/storage'
+import { EMPTY_PROGRESS, PROGRESS_STORAGE_KEY, mergeProgress, parseProgress } from '~/utils/storage'
 
 export const useProgressStore = defineStore('progress', () => {
   const progress = ref<StoredProgress>(EMPTY_PROGRESS)
 
   // Initialisation côté client
-  if (import.meta.client && typeof window !== 'undefined') {
+  // Lecture du stockage du navigateur. Appelée une seule fois, au montage de
+  // l'application (app.vue) : le rendu serveur et l'hydratation se font avec
+  // l'état vide, comme le demande specs-site.md § 9 (pas de saut à l'hydratation).
+  let loaded = false
+  function loadFromStorage(): void {
+    if (loaded) return
+    loaded = true
     try {
       const stored = localStorage.getItem(PROGRESS_STORAGE_KEY)
       if (stored) {
@@ -110,6 +111,7 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   return {
+    loadFromStorage,
     progress,
     startedByRecency,
     completedFor,

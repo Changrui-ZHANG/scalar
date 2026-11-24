@@ -12,7 +12,13 @@ import {
 export const useDraftsStore = defineStore('drafts', () => {
   const drafts = ref<StoredDrafts>({})
 
-  if (import.meta.client && typeof window !== 'undefined') {
+  // Lecture du stockage du navigateur. Appelée une seule fois, au montage de
+  // l'application (app.vue) : le rendu serveur et l'hydratation se font avec
+  // l'état vide, comme le demande specs-site.md § 9 (pas de saut à l'hydratation).
+  let loaded = false
+  function loadFromStorage(): void {
+    if (loaded) return
+    loaded = true
     try {
       const stored = localStorage.getItem(DRAFTS_STORAGE_KEY)
       if (stored) {
@@ -90,6 +96,7 @@ export const useDraftsStore = defineStore('drafts', () => {
   }
 
   return {
+    loadFromStorage,
     drafts,
     get,
     save,

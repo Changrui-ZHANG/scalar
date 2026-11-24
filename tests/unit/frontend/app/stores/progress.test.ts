@@ -75,4 +75,17 @@ describe('stores/progress', () => {
     expect(store.completedFor('python').has('lesson:py:intro')).toBe(true)
     expect(store.completedFor('javascript').has('lesson:js:intro')).toBe(true)
   })
+
+  it('ne lit le stockage qu’au chargement explicite (montage de l’application)', () => {
+    localStorage.setItem(
+      PROGRESS_STORAGE_KEY,
+      JSON.stringify({ started: ['javascript'], completed: {}, lastVisited: {} }),
+    )
+
+    const store = useProgressStore()
+    expect(store.progress.started).toEqual([])
+
+    store.loadFromStorage()
+    expect(store.progress.started).toEqual(['javascript'])
+  })
 })
