@@ -4,7 +4,7 @@ import { usePageSeo } from '~/composables/usePageSeo'
 definePageMeta({ layout: 'default' })
 
 usePageSeo({
-  title: ['Politique de confidentialité'],
+  title: ['Confidentialité'],
   description: "Politique de confidentialité de Scalar : aucun compte, stockage local uniquement.",
   type: 'website',
 })

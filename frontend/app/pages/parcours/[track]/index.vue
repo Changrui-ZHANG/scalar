@@ -20,6 +20,13 @@ usePageSeo({
   description: card.value.view.track.summary,
   type: 'website',
 })
+useSchemaOrg([
+  defineCourse({
+    name: card.value.view.track.name,
+    description: card.value.view.track.summary,
+    provider: { name: 'Scalar' },
+  }),
+])
 </script>
 
 <template>
