@@ -62,7 +62,7 @@ const isActive = (to: string) => route.path === to || route.path.startsWith(`${t
           <NuxtLink
             to="/parcours"
             :aria-current="isActive('/parcours') ? 'page' : undefined"
-            class="text-[14.5px] transition-colors"
+            class="text-ui transition-colors"
             :class="
               isActive('/parcours')
                 ? 'text-text font-semibold'
@@ -74,7 +74,7 @@ const isActive = (to: string) => route.path === to || route.path.startsWith(`${t
           <NuxtLink
             to="/exercices"
             :aria-current="isActive('/exercices') ? 'page' : undefined"
-            class="text-[14.5px] transition-colors"
+            class="text-ui transition-colors"
             :class="
               isActive('/exercices')
                 ? 'text-text font-semibold'
