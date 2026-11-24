@@ -1,124 +1,101 @@
-import type { PublicTestCase, VerificationCheck, VerificationResult } from '@scalar/shared/api'
+// Lecture de la réponse de « Vérifier » (specs-site.md § 7.2).
+//
+// La réponse `checks` est toujours dans cet ordre :
+//   checks[0] : « Le programme s'exécute »
+//   checks[1] : « La fonction X est définie »
+//   checks[2…] : un élément par cas de test (visibles et cachés), dans l'ordre des cas.
+// Un cas visible porte `caseIndex` (sa place dans testCases) ; un cas caché a caseIndex nul.
+import type {
+  JsonValue,
+  PublicTestCase,
+  VerificationCheck,
+  VerificationResult,
+} from '@scalar/shared/api'
 
-export interface GeneralCheck {
-  readonly label: string
-  readonly passed: boolean
-  readonly detail: string | null
-}
-
-export interface SplitTestCaseCheck {
-  readonly index: number // index dans testCases (0..N-1) ou pour cas cachés
-  readonly label: string
-  readonly passed: boolean
-  readonly isHidden: boolean
-  readonly callDisplay: string
-  readonly expectedDisplay: string
-  readonly actualDisplay: string | null
-  readonly detail: string | null
-}
-
-export interface SplitChecksResult {
-  readonly hasRun: boolean
-  readonly passed: boolean
-  readonly generalChecks: readonly GeneralCheck[]
-  readonly generalFailed: boolean
-  readonly firstGeneralFailure: GeneralCheck | null
-  readonly testCaseChecks: readonly SplitTestCaseCheck[]
-  readonly passedCaseCount: number
-  readonly totalCaseCount: number
-}
-
-function formatJson(val: unknown): string {
-  if (val === undefined) return 'undefined'
-  try {
-    return JSON.stringify(val)
-  } catch {
-    return String(val)
+// Écrit une valeur comme dans la maquette : « [2, 1] », « ["b", "a"] », « { "x": 1 } ».
+export function formatJson(value: JsonValue): string {
+  if (Array.isArray(value)) {
+    const items: string[] = []
+    for (const item of value) {
+      items.push(formatJson(item))
+    }
+    return `[${items.join(', ')}]`
   }
+
+  if (value !== null && typeof value === 'object') {
+    const entries: string[] = []
+    for (const [key, item] of Object.entries(value)) {
+      entries.push(`${JSON.stringify(key)}: ${formatJson(item)}`)
+    }
+    return `{ ${entries.join(', ')} }`
+  }
+
+  return JSON.stringify(value)
 }
 
-export function formatCall(functionName: string, args: readonly unknown[]): string {
-  const formattedArgs = args.map((a) => formatJson(a)).join(', ')
-  return `${functionName}(${formattedArgs})`
+// Écrit l'appel d'un cas de test : « swap(1, 2) ».
+export function formatCall(functionName: string, args: readonly JsonValue[]): string {
+  const parts: string[] = []
+  for (const arg of args) {
+    parts.push(formatJson(arg))
+  }
+  return `${functionName}(${parts.join(', ')})`
 }
 
+// Les deux vérifications générales, les cas visibles avec leur résultat, et le nombre
+// de cas cachés en échec.
 export function splitChecks(
-  verification: VerificationResult | null,
+  result: VerificationResult,
   testCases: readonly PublicTestCase[],
-  functionName: string = 'solution',
-  hiddenCount: number = 0,
-): SplitChecksResult {
-  if (!verification) {
-    // Non joué : cas de test visibles initiaux
-    const initialTestCases: SplitTestCaseCheck[] = testCases.map((tc, idx) => ({
-      index: idx,
-      label: tc.description ?? formatCall(functionName, tc.arguments),
-      passed: false,
-      isHidden: false,
-      callDisplay: formatCall(functionName, tc.arguments),
-      expectedDisplay: formatJson(tc.expectedResult),
-      actualDisplay: null,
-      detail: null,
-    }))
+): {
+  readonly general: readonly VerificationCheck[]
+  readonly visible: readonly {
+    readonly testCase: PublicTestCase
+    readonly check: VerificationCheck
+  }[]
+  readonly hiddenFailed: number
+} {
+  const general = result.checks.slice(0, 2)
+  const visible: { testCase: PublicTestCase; check: VerificationCheck }[] = []
+  let hiddenFailed = 0
 
-    return {
-      hasRun: false,
-      passed: false,
-      generalChecks: [],
-      generalFailed: false,
-      firstGeneralFailure: null,
-      testCaseChecks: initialTestCases,
-      passedCaseCount: 0,
-      totalCaseCount: testCases.length + hiddenCount,
+  for (const check of result.checks.slice(2)) {
+    const index = check.caseIndex
+    const testCase = index === null ? undefined : testCases[index]
+
+    if (testCase) {
+      visible.push({ testCase, check })
+    } else if (!check.passed) {
+      hiddenFailed += 1
     }
   }
 
-  const checks = verification.checks ?? []
-  const g1 = checks[0] ?? { label: "Le programme s'exécute", passed: true, detail: null }
-  const g2 = checks[1] ?? { label: `La fonction ${functionName} est définie`, passed: true, detail: null }
+  return { general, visible, hiddenFailed }
+}
 
-  const generalChecks: GeneralCheck[] = [
-    { label: g1.label, passed: g1.passed, detail: g1.detail },
-    { label: g2.label, passed: g2.passed, detail: g2.detail },
-  ]
+// Première vérification générale en échec (programme qui ne s'exécute pas, fonction absente).
+export function failedGeneralCheck(result: VerificationResult): VerificationCheck | null {
+  for (const check of result.checks.slice(0, 2)) {
+    if (!check.passed) {
+      return check
+    }
+  }
+  return null
+}
 
-  const firstGeneralFailure = generalChecks.find((c) => !c.passed) ?? null
-  const generalFailed = firstGeneralFailure !== null
-
-  const caseChecksRaw: VerificationCheck[] = checks.slice(2)
-  let passedCount = 0
-
-  const testCaseChecks: SplitTestCaseCheck[] = caseChecksRaw.map((check, idx) => {
+// Compteur affiché « n cas sur m réussis » : les cas seulement, jamais passedCount / total
+// de l'API, qui comptent aussi les deux vérifications générales.
+export function caseCount(result: VerificationResult): {
+  readonly passed: number
+  readonly total: number
+} {
+  let passed = 0
+  let total = 0
+  for (const check of result.checks.slice(2)) {
+    total += 1
     if (check.passed) {
-      passedCount++
+      passed += 1
     }
-    const isVisible = check.caseIndex !== null && check.caseIndex !== undefined && check.caseIndex < testCases.length
-    const originalTestCase = isVisible ? testCases[check.caseIndex!] : null
-
-    const callDisplay = originalTestCase ? formatCall(functionName, originalTestCase.arguments) : check.label
-    const expectedDisplay = originalTestCase ? formatJson(originalTestCase.expectedResult) : ''
-    const actualDisplay = check.actual !== null && check.actual !== undefined ? formatJson(check.actual) : null
-
-    return {
-      index: isVisible ? check.caseIndex! : idx,
-      label: originalTestCase?.description ?? check.label,
-      passed: check.passed,
-      isHidden: !isVisible,
-      callDisplay,
-      expectedDisplay,
-      actualDisplay,
-      detail: check.detail,
-    }
-  })
-
-  return {
-    hasRun: true,
-    passed: verification.passed,
-    generalChecks,
-    generalFailed,
-    firstGeneralFailure,
-    testCaseChecks,
-    passedCaseCount: passedCount,
-    totalCaseCount: caseChecksRaw.length,
   }
+  return { passed, total }
 }

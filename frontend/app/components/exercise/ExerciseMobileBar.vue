@@ -1,4 +1,6 @@
 <script setup lang="ts">
+// Barre basse de l'exercice sur mobile (specs-site.md § 7.4) : Exécuter et Vérifier,
+// remplacés par « Suivant : titre » après une réussite.
 import type { Episode } from '~/types/episode'
 import type { RunPending } from '~/types/exercise'
 
@@ -9,35 +11,30 @@ interface Props {
   overviewPath: string
 }
 
-const props = defineProps<Props>()
+const { pending, passed, next, overviewPath } = defineProps<Props>()
 
 const emit = defineEmits<{
   run: []
   verify: []
 }>()
-
-const destination = computed(() => props.next?.path ?? props.overviewPath)
-const nextLabel = computed(() => (props.next ? `Suivant : ${props.next.title}` : 'Parcours terminé'))
 </script>
 
 <template>
-  <div class="md:hidden fixed bottom-0 left-0 right-0 z-30 flex items-center gap-3 border-t border-border bg-surface p-3">
-    <!-- Après réussite : bouton Suivant -->
-    <UiButton
-      v-if="passed"
-      :to="destination"
-      variant="primary"
-      class="flex-1"
-      icon="lucide:arrow-right"
-    >
-      {{ nextLabel }}
-    </UiButton>
-
-    <!-- Avant réussite : Exécuter + Vérifier -->
+  <div
+    class="border-border bg-surface flex shrink-0 gap-2.5 border-t px-3.5 pt-2.5 pb-6.5 md:hidden"
+  >
+    <template v-if="passed">
+      <UiButton v-if="next" class="flex-1" :to="next.path" icon-right="lucide:arrow-right">
+        Suivant : {{ next.title }}
+      </UiButton>
+      <UiButton v-else class="flex-1" :to="overviewPath" icon-right="lucide:arrow-right"
+        >Parcours terminé</UiButton
+      >
+    </template>
     <template v-else>
       <UiButton
+        class="flex-1"
         variant="secondary"
-        dense
         icon="lucide:play"
         :disabled="pending !== null"
         :loading="pending === 'run'"
@@ -46,12 +43,9 @@ const nextLabel = computed(() => (props.next ? `Suivant : ${props.next.title}` :
       >
         Exécuter
       </UiButton>
-
       <UiButton
-        variant="primary"
-        dense
-        icon="lucide:check-check"
         class="flex-1"
+        icon="lucide:check-check"
         :disabled="pending !== null"
         :loading="pending === 'verify'"
         loading-label="Vérification…"

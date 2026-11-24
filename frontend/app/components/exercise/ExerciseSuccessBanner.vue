@@ -1,41 +1,40 @@
 <script setup lang="ts">
+// Bandeau « Exercice réussi » à la place du panneau Résultat (specs-site.md § 7.2).
 import type { Episode } from '~/types/episode'
 
 interface Props {
-  caseCount: number
-  next: Episode | null
-  overviewPath: string
+  caseCount: number // « n cas sur n »
+  next: Episode | null // épisode suivant dans l'ordre du fil ; null : dernier du parcours
+  overviewPath: string // vue d'ensemble, pour « Parcours terminé »
 }
 
-const props = defineProps<Props>()
-
-const destination = computed(() => props.next?.path ?? props.overviewPath)
-const buttonLabel = computed(() => (props.next ? `Suivant : ${props.next.title}` : 'Parcours terminé'))
+const { caseCount, next, overviewPath } = defineProps<Props>()
 </script>
 
 <template>
-  <div class="m-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-[14px] border border-success bg-success-soft p-5 text-success">
-    <div class="flex items-center gap-3.5">
-      <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-success text-on-primary">
-        <Icon name="lucide:check" class="size-5" />
-      </div>
-
-      <div class="flex flex-col">
-        <h3 class="font-display text-lg font-bold text-text">
-          Exercice réussi
-        </h3>
-        <p class="text-xs text-text-muted">
-          {{ caseCount }} cas sur {{ caseCount }}, et le programme s'exécute sans erreur.
+  <div
+    class="rounded-card border-success bg-success-soft flex shrink-0 flex-col gap-3 border px-4.5 py-4 sm:flex-row sm:items-center sm:justify-between"
+    aria-live="polite"
+  >
+    <div class="flex items-center gap-3">
+      <span class="bg-success flex size-9.5 shrink-0 items-center justify-center rounded-full">
+        <Icon name="lucide:check" class="text-on-primary size-5" />
+      </span>
+      <div class="flex flex-col gap-0.5">
+        <p class="font-display text-success text-lg font-semibold">Exercice réussi</p>
+        <p class="text-text-muted text-sm">
+          {{ caseCount }} cas sur {{ caseCount }}, et le programme s’exécute sans erreur.
         </p>
       </div>
     </div>
 
-    <UiButton
-      :to="destination"
-      variant="primary"
-      icon="lucide:arrow-right"
-    >
-      {{ buttonLabel }}
-    </UiButton>
+    <div>
+      <UiButton v-if="next" dense :to="next.path" icon-right="lucide:arrow-right">
+        Suivant : {{ next.title }}
+      </UiButton>
+      <UiButton v-else dense :to="overviewPath" icon-right="lucide:arrow-right"
+        >Parcours terminé</UiButton
+      >
+    </div>
   </div>
 </template>

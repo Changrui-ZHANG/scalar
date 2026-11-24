@@ -1,9 +1,20 @@
-import { computed, ref, shallowRef, toValue } from 'vue'
+import { computed, ref, watch, shallowRef, toValue } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter, Ref, ShallowRef } from 'vue'
-import type { ExecutionResult, PublicExercise, TrackView, VerificationResult } from '@scalar/shared/api'
+import type {
+  ExecutionResult,
+  PublicExercise,
+  TrackView,
+  VerificationResult,
+} from '@scalar/shared/api'
 import { useDraft } from './useDraft'
 import { useCompletion } from './useCompletion'
-import type { DraftStatus, ExerciseTab, MobileExerciseTab, ResultTab, RunPending } from '~/types/exercise'
+import type {
+  DraftStatus,
+  ExerciseTab,
+  MobileExerciseTab,
+  ResultTab,
+  RunPending,
+} from '~/types/exercise'
 import { executeCode } from '~/services/executions'
 import { verifyExercise } from '~/services/tracks'
 import { exerciseKey, listEpisodes } from '~/utils/track'
@@ -37,15 +48,24 @@ export function useExerciseRun(
   const ex = computed(() => toValue(exercise))
   const tr = computed(() => toValue(track))
 
-  const key = computed(() =>
-    exerciseKey(ex.value.chapter.slug, ex.value.slug),
-  )
+  const key = computed(() => exerciseKey(ex.value.chapter.slug, ex.value.slug))
 
-  const draft = useDraft(key, computed(() => ex.value.starterCode))
+  const draft = useDraft(
+    key,
+    computed(() => ex.value.starterCode),
+  )
 
   const tab = ref<ExerciseTab>('instructions')
   const resultTab = ref<ResultTab>('tests')
   const mobileTab = ref<MobileExerciseTab>('instructions')
+
+  // Sur mobile, les onglets Consigne et Leçon affichent la colonne Consigne :
+  // on y ouvre l'onglet correspondant.
+  watch(mobileTab, (value) => {
+    if (value === 'instructions' || value === 'lesson') {
+      tab.value = value
+    }
+  })
   const pending = ref<RunPending>(null)
   const execution = shallowRef<ExecutionResult | null>(null)
   const verification = shallowRef<VerificationResult | null>(null)
