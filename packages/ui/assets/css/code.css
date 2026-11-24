@@ -1,12 +1,12 @@
 :root {
-  --scalar-ui-code-bg: #F6F1E6;
-  --scalar-ui-code-border: #D5CBB8;
-  --scalar-ui-code-text: #22201B;
-  --scalar-ui-code-keyword: #3757F5;
-  --scalar-ui-code-function: #A1491F;
-  --scalar-ui-code-string: #3C7854;
-  --scalar-ui-code-comment: #746D5F;
-  --scalar-ui-code-line: #726D61;
+  --scalar-ui-code-bg: #f6f1e6;
+  --scalar-ui-code-border: #e7dfcc;
+  --scalar-ui-code-text: #22201b;
+  --scalar-ui-code-keyword: #3757f5;
+  --scalar-ui-code-function: #a1491f;
+  --scalar-ui-code-string: #3c7854;
+  --scalar-ui-code-comment: #746d5f;
+  --scalar-ui-code-line: #726d61;
 
   /* Variables Shiki (thème « css-variables ») */
   --shiki-foreground: var(--scalar-ui-code-text);

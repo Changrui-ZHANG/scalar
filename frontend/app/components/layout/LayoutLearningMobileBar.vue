@@ -15,23 +15,27 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="md:hidden sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-border bg-surface px-3">
+  <div
+    class="border-border bg-surface sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b px-3 md:hidden"
+  >
     <!-- Bouton Plan (44x44) -->
     <button
       type="button"
       aria-label="Afficher le plan du parcours"
-      class="inline-flex size-11 items-center justify-center rounded-[10px] text-text hover:bg-surface-muted cursor-pointer"
+      class="text-text hover:bg-surface-muted rounded-row inline-flex size-11 cursor-pointer items-center justify-center"
       @click="emit('togglePlan')"
     >
       <Icon name="lucide:panel-left" class="size-5" />
     </button>
 
-    <!-- Titre et fil au centre -->
-    <div class="flex flex-1 flex-col items-center justify-center px-2 min-w-0">
-      <span class="text-xs text-text-muted truncate max-w-full">
-        {{ trackName }} · {{ episode.chapter.title }} · {{ episode.indexInChapter }}/{{ episode.chapterEpisodeCount }}
+    <!-- Parcours · chapitre · rang, puis titre de l'épisode (aligné à gauche, comme la maquette) -->
+    <div class="flex min-w-0 flex-1 flex-col px-1.5">
+      <span class="text-text-muted max-w-full truncate text-xs">
+        {{ trackName }} · {{ episode.chapter.title }} · {{ episode.indexInChapter }}/{{
+          episode.chapterEpisodeCount
+        }}
       </span>
-      <span class="text-sm font-semibold text-text truncate max-w-full">
+      <span class="text-text max-w-full truncate text-sm font-semibold">
         {{ episode.title }}
       </span>
     </div>
@@ -43,9 +47,9 @@ const emit = defineEmits<{
       <NuxtLink
         to="/"
         aria-label="Accueil Scalar"
-        class="inline-flex size-11 items-center justify-center rounded-[10px] text-text hover:bg-surface-muted"
+        class="text-text hover:bg-surface-muted rounded-row inline-flex size-11 items-center justify-center"
       >
-        <img src="/logo-mobile.svg" alt="" width="22" height="22" class="size-[22px] text-primary">
+        <LayoutLogoMark variant="mobile" class="size-5.5" />
       </NuxtLink>
     </div>
   </div>

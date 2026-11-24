@@ -51,7 +51,7 @@ describe('ContentCodeBlock', () => {
     expect(wrapper.emitted('try')).toHaveLength(1)
   })
 
-  it('copie le code au clic sur Copier', async () => {
+  it('copie le code au clic sur le bouton « Copier le code »', async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText: writeTextMock },
@@ -67,7 +67,9 @@ describe('ContentCodeBlock', () => {
       },
     })
 
-    const copyBtn = wrapper.findAll('button').find((b) => b.text().includes('Copier'))
+    const copyBtn = wrapper
+      .findAll('button')
+      .find((b) => b.attributes('aria-label') === 'Copier le code')
     expect(copyBtn).toBeDefined()
     await copyBtn!.trigger('click')
 
@@ -128,10 +130,7 @@ const isDone: boolean = true
     await tryBtn!.trigger('click')
 
     expect(wrapper.emitted('try')).toBeDefined()
-    expect(wrapper.emitted('try')![0]).toEqual([
-      'const isDone: boolean = true',
-      'typescript',
-    ])
+    expect(wrapper.emitted('try')![0]).toEqual(['const isDone: boolean = true', 'typescript'])
   })
 })
 

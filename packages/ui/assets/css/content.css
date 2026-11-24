@@ -1,13 +1,18 @@
 :root {
-  --scalar-ui-content-text: #191714;
-  --scalar-ui-content-muted: #615A4E;
-  --scalar-ui-content-inline-code-bg: #ECE6D8;
-  --scalar-ui-content-border: #D5CBB8;
+  /* Valeurs claires de charte.md § 2 ; le site les relie à ses jetons (thème sombre compris). */
+  --scalar-ui-content-text: #22201b;
+  --scalar-ui-content-muted: #6b6457;
+  --scalar-ui-content-inline-code-bg: #f6f1e6;
+  --scalar-ui-content-border: #e7dfcc;
 }
 
 .content-prose {
   color: var(--scalar-ui-content-text);
-  font-family: 'Source Sans 3', system-ui, -apple-system, sans-serif;
+  font-family:
+    'Source Sans 3',
+    system-ui,
+    -apple-system,
+    sans-serif;
   line-height: 1.7;
 }
 
@@ -37,11 +42,12 @@
 }
 
 .content-prose code:not(pre code) {
+  /* Code en ligne (charte.md § 3) : texte −1,5 px, fond surface-muted, rayon 5, marge 1 × 6 px */
   background-color: var(--scalar-ui-content-inline-code-bg);
-  padding: 0.15rem 0.35rem;
-  border-radius: 0.25rem;
+  padding: 1px 6px;
+  border-radius: 5px;
   font-family: 'Fira Code', monospace;
-  font-size: 0.9em;
+  font-size: calc(1em - 1.5px);
 }
 
 /* Variante compacte : onglet Leçon de l'exercice */

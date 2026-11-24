@@ -93,7 +93,6 @@ const languageLabel = computed(() => {
             class="size-3.5 shrink-0"
             aria-hidden="true"
           />
-          <span>{{ copied ? 'Copié !' : 'Copier' }}</span>
         </button>
       </div>
     </div>

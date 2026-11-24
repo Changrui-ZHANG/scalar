@@ -9,9 +9,7 @@ const { query, results, groups, status, open, load } = search
 const inputRef = ref<HTMLInputElement | null>(null)
 const activeIndex = ref(0)
 
-const flatResults = computed<readonly SearchResult[]>(() =>
-  groups.value.flatMap((g) => g.results),
-)
+const flatResults = computed<readonly SearchResult[]>(() => groups.value.flatMap((g) => g.results))
 
 const activeOptionId = computed(() =>
   flatResults.value.length > 0 && activeIndex.value >= 0
@@ -99,7 +97,7 @@ function getFlatIndex(result: SearchResult): number {
 </script>
 
 <template>
-  <UiDialog v-model:open="open" title="Recherche rapide" :fullscreen-on-mobile="true">
+  <UiDialog v-model:open="open" title="Recherche rapide" :fullscreen-on-mobile="true" hide-title>
     <div class="border-border flex items-center gap-3 border-b px-4 py-3 sm:px-5">
       <Icon name="lucide:search" class="text-muted-foreground size-5 shrink-0" aria-hidden="true" />
       <input
@@ -138,13 +136,11 @@ function getFlatIndex(result: SearchResult): number {
 
       <div v-else-if="status === 'error'" class="flex flex-col items-center gap-3 p-8 text-center">
         <Icon name="lucide:alert-circle" class="text-danger size-8" aria-hidden="true" />
-        <p class="text-body-sm text-foreground">
-          La recherche est indisponible pour l'instant.
-        </p>
+        <p class="text-body-sm text-foreground">La recherche est indisponible pour l'instant.</p>
         <button
           type="button"
           data-testid="retry-search"
-          class="bg-brand text-brand-foreground hover:bg-brand/90 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors cursor-pointer"
+          class="bg-brand text-brand-foreground hover:bg-brand/90 inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
           @click="load"
         >
           <Icon name="lucide:refresh-cw" class="size-4" aria-hidden="true" />
@@ -159,10 +155,7 @@ function getFlatIndex(result: SearchResult): number {
         Tapez au moins 2 caractères : une syntaxe, une notion, un mot-clé.
       </div>
 
-      <div
-        v-else-if="results.length === 0"
-        class="text-muted-foreground p-8 text-center text-sm"
-      >
+      <div v-else-if="results.length === 0" class="text-muted-foreground p-8 text-center text-sm">
         Aucun résultat pour « {{ query }} ».
       </div>
 

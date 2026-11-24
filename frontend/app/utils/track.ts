@@ -19,13 +19,28 @@ export const chapterKey = (chapter: string): string => `chapter:${chapter}`
 export const draftKey = (track: string, chapter: string, exercise: string): string =>
   `${track}:exercise:${chapter}:${exercise}`
 
+// Initiales d'un parcours, comme sur la maquette : « JavaScript » → « JS »,
+// « TypeScript » → « TS », « Conception » → « Co ».
 export function initials(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  if (parts.length === 0 || !parts[0]) return ''
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  const first = parts[0][0] ?? ''
-  const second = parts[1]?.[0] ?? ''
-  return (first + second).toUpperCase()
+  // 1. Au moins deux majuscules : les deux premières (JavaScript → JS)
+  const capitals: string[] = []
+  for (const letter of name) {
+    if (letter >= 'A' && letter <= 'Z') {
+      capitals.push(letter)
+    }
+  }
+  if (capitals.length >= 2) {
+    return capitals[0]! + capitals[1]!
+  }
+
+  // 2. Plusieurs mots : la première lettre des deux premiers (Bien nommer → BN)
+  const words = name.trim().split(/\s+/)
+  if (words.length >= 2) {
+    return (words[0]!.charAt(0) + words[1]!.charAt(0)).toUpperCase()
+  }
+
+  // 3. Sinon : les deux premières lettres telles qu'écrites (Conception → Co)
+  return name.trim().slice(0, 2)
 }
 
 export function trackPath(track: string, chapter?: string): string {

@@ -3,15 +3,22 @@ import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 const open = defineModel<boolean>('open', { required: true })
 
-withDefaults(
-  defineProps<{
-    title: string
-    fullscreenOnMobile?: boolean
-  }>(),
-  {
-    fullscreenOnMobile: false,
-  }
-)
+// Dialogue natif <dialog> ouvert par showModal() (specs-site.md § 12) : focus piégé,
+// Échap et voile viennent du navigateur.
+// - par défaut : titre visible, contenu et boutons (slot actions) avec des marges ;
+// - hideTitle : titre lu seulement par les lecteurs d'écran, contenu libre (recherche rapide).
+const {
+  title,
+  fullscreenOnMobile = false,
+  hideTitle = false,
+} = defineProps<{
+  title: string
+  fullscreenOnMobile?: boolean
+  hideTitle?: boolean
+}>()
+
+// Identifiant unique du titre, pour aria-labelledby.
+const titleId = useId()
 
 const dialogRef = ref<HTMLDialogElement | null>(null)
 let previousActiveElement: HTMLElement | null = null
@@ -70,8 +77,8 @@ function onBackdropClick(e: MouseEvent) {
 <template>
   <dialog
     ref="dialogRef"
-    aria-labelledby="dialog-title"
-    class="backdrop:bg-black/60 fixed z-50 bg-transparent p-0 text-inherit shadow-2xl backdrop:backdrop-blur-xs"
+    :aria-labelledby="titleId"
+    class="fixed z-50 bg-transparent p-0 text-inherit shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-xs"
     :class="[
       fullscreenOnMobile
         ? 'inset-0 m-0 h-full max-h-none w-full max-w-none rounded-none sm:inset-auto sm:top-16 sm:mx-auto sm:h-auto sm:max-h-[85vh] sm:max-w-2xl sm:rounded-xl'
@@ -84,11 +91,18 @@ function onBackdropClick(e: MouseEvent) {
       class="bg-surface border-border flex h-full w-full flex-col overflow-hidden border"
       :class="[fullscreenOnMobile ? 'rounded-none sm:rounded-xl' : 'rounded-xl']"
     >
-      <h2 id="dialog-title" class="sr-only">
-        {{ title }}
-      </h2>
-      <slot />
-      <slot name="actions" />
+      <template v-if="hideTitle">
+        <h2 :id="titleId" class="sr-only">{{ title }}</h2>
+        <slot />
+        <slot name="actions" />
+      </template>
+      <div v-else class="flex flex-col gap-3 p-6">
+        <h2 :id="titleId" class="font-display text-text text-xl font-semibold">{{ title }}</h2>
+        <slot />
+        <div class="flex justify-end gap-3 pt-3">
+          <slot name="actions" />
+        </div>
+      </div>
     </div>
   </dialog>
 </template>

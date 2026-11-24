@@ -1,25 +1,24 @@
 <script setup lang="ts">
+// Panneau d'état centré (specs-site.md § 11) : icône, titre, texte, boutons (slot actions).
 interface Props {
   icon: string
   title: string
   text: string
 }
 
-defineProps<Props>()
+const { icon, title, text } = defineProps<Props>()
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center p-8 text-center max-w-md mx-auto">
-    <div class="mb-4 flex size-14 items-center justify-center rounded-2xl bg-surface-muted text-text-muted">
-      <Icon :name="icon" class="size-7" />
+  <div class="flex flex-col items-center gap-4.5 text-center">
+    <div class="rounded-state bg-surface-muted flex size-16 items-center justify-center">
+      <Icon :name="icon" class="text-text-muted size-7" />
     </div>
-    <h2 class="mb-2 text-xl font-bold font-display text-text">
+    <h1 class="font-display text-text text-3xl font-semibold tracking-tight md:text-4xl">
       {{ title }}
-    </h2>
-    <p class="mb-6 text-sm text-text-muted leading-relaxed">
-      {{ text }}
-    </p>
-    <div v-if="$slots.actions" class="flex flex-wrap items-center justify-center gap-3">
+    </h1>
+    <p class="text-body text-text-muted max-w-130 leading-snug">{{ text }}</p>
+    <div v-if="$slots.actions" class="flex flex-wrap justify-center gap-3 pt-2">
       <slot name="actions" />
     </div>
   </div>

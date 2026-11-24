@@ -1,34 +1,27 @@
 <script setup lang="ts">
+// Étiquette en pilule (specs-site.md § 3.4) : Leçon, Exercice, En cours, À commencer, Terminé.
 interface Props {
   tone: 'primary' | 'exercise' | 'muted' | 'success'
   icon?: string
 }
 
-const props = defineProps<Props>()
+const { tone, icon = undefined } = defineProps<Props>()
 
-const toneClasses = computed(() => {
-  switch (props.tone) {
-    case 'primary':
-      return 'text-primary bg-primary-soft'
-    case 'exercise':
-      return 'text-exercise bg-exercise-soft'
-    case 'success':
-      return 'text-success bg-success-soft'
-    case 'muted':
-    default:
-      return 'text-text-muted bg-surface-muted'
-  }
-})
+// Couleur du texte et du fond pour chaque ton.
+const toneClasses = {
+  primary: 'bg-primary-soft text-primary',
+  exercise: 'bg-exercise-soft text-exercise',
+  muted: 'bg-surface-muted text-text-muted',
+  success: 'bg-success-soft text-success',
+}
 </script>
 
 <template>
   <span
-    :class="[
-      'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider',
-      toneClasses,
-    ]"
+    class="text-tag inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.75 font-semibold"
+    :class="toneClasses[tone]"
   >
-    <Icon v-if="icon" :name="icon" class="size-3.5 shrink-0" />
+    <Icon v-if="icon" :name="icon" class="size-3 shrink-0" />
     <slot />
   </span>
 </template>

@@ -1,46 +1,33 @@
 <script setup lang="ts">
+// « Remplacer le code du bac à sable ? » (specs-site.md § 8) : demandé quand « Essayer dans
+// le bac à sable » arrive alors que le bac à sable contient déjà un autre code.
 interface Props {
   open: boolean
 }
 
-defineProps<Props>()
+const { open } = defineProps<Props>()
 
 const emit = defineEmits<{
   accept: []
   dismiss: []
 }>()
+
+// Fermer le dialogue (Échap, voile) revient à « Annuler ».
+function onOpenChange(isOpen: boolean) {
+  if (!isOpen) {
+    emit('dismiss')
+  }
+}
 </script>
 
 <template>
-  <UiDialog
-    :open="open"
-    title="Remplacer le code du bac à sable ?"
-    @update:open="(val) => { if (!val) emit('dismiss') }"
-  >
-    <div class="p-6 flex flex-col gap-4">
-      <h3 class="font-display text-lg font-bold text-text">
-        Remplacer le code du bac à sable ?
-      </h3>
-      <p class="text-sm text-text-muted">
-        Le bac à sable contient déjà du code. Voulez-vous le remplacer par l'exemple de la leçon ?
-      </p>
-
-      <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">
-        <UiButton
-          variant="secondary"
-          dense
-          @click="emit('dismiss')"
-        >
-          Annuler
-        </UiButton>
-        <UiButton
-          variant="primary"
-          dense
-          @click="emit('accept')"
-        >
-          Remplacer
-        </UiButton>
-      </div>
-    </div>
+  <UiDialog :open="open" title="Remplacer le code du bac à sable ?" @update:open="onOpenChange">
+    <p class="text-text-muted text-sm">
+      Le bac à sable contient déjà du code. Il sera remplacé par l’exemple choisi.
+    </p>
+    <template #actions>
+      <UiButton dense variant="secondary" @click="emit('dismiss')">Annuler</UiButton>
+      <UiButton dense @click="emit('accept')">Remplacer</UiButton>
+    </template>
   </UiDialog>
 </template>

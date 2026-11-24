@@ -83,6 +83,24 @@
   }
 }
 
+/* Les composants communs (@scalar/ui) lisent leurs propres variables : on les relie aux
+   jetons du site, qui changent avec le thème. Le code et les leçons suivent donc le
+   thème sombre sans rien redéfinir. */
+:root {
+  --scalar-ui-code-bg: var(--code-bg);
+  --scalar-ui-code-border: var(--border);
+  --scalar-ui-code-text: var(--code-text);
+  --scalar-ui-code-keyword: var(--code-keyword);
+  --scalar-ui-code-function: var(--code-function);
+  --scalar-ui-code-string: var(--code-string);
+  --scalar-ui-code-comment: var(--code-comment);
+  --scalar-ui-code-line: var(--code-line);
+  --scalar-ui-content-text: var(--text);
+  --scalar-ui-content-muted: var(--text-muted);
+  --scalar-ui-content-inline-code-bg: var(--surface-muted);
+  --scalar-ui-content-border: var(--border);
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
@@ -122,27 +140,42 @@
   --font-sans: 'Source Sans 3', sans-serif;
   --font-mono: 'Fira Code', monospace;
 
-  --text-hero: 3.375rem;   /* 54 */
-  --text-h1: 2.625rem;    /* 42 */
-  --text-title: 1.875rem;  /* 30 */
-  --text-h2: 1.625rem;    /* 26 */
-  --text-lede: 1.1875rem;  /* 19 */
+  --text-hero: 3.375rem; /* 54 */
+  --text-h1: 2.625rem; /* 42 */
+  --text-title: 1.875rem; /* 30 */
+  --text-h2: 1.625rem; /* 26 */
+  --text-lede: 1.1875rem; /* 19 */
   --text-body: 1.0625rem; /* 17 */
-  --text-ui: 0.90625rem;   /* 14,5 */
+  --text-ui: 0.90625rem; /* 14,5 */
   --text-meta: 0.8125rem; /* 13 */
+  --text-small: 0.84375rem; /* 13,5 */
+  --text-tag: 0.78125rem; /* 12,5 : étiquettes en pilule */
+  --text-label: 0.9375rem; /* 15 */
+  --text-card: 1.3125rem; /* 21 : titre de carte de parcours */
 
+  --leading-hero: 1.05;
+
+  /* Voile derrière le tiroir du plan : #0F1115 à 50 % (specs-site.md § 3.2) */
+  --color-scrim: rgb(15 17 21 / 50%);
+
+  /* Ombre de la seule carte qui en porte une : la démonstration de l'accueil (charte.md § 4) */
+  --shadow-demo: 0 18px 40px rgb(34 32 27 / 8%);
+
+  --radius-state: 20px; /* carré d'icône des pages d'erreur */
+  --radius-panel: 18px; /* grandes cartes : démonstration, Reprendre, cartes de parcours */
+  --radius-tile: 16px; /* cartes moyennes : étapes, Vos parcours, listes de chapitres */
   --radius-card: 14px;
   --radius-control: 12px;
   --radius-row: 10px;
   --radius-inline: 5px;
 
-  --spacing-55: 13.75rem;  /* 220px */
-  --spacing-70: 17.5rem;   /* 280px */
-  --spacing-80: 20rem;     /* 320px */
-  --spacing-90: 22.5rem;   /* 360px */
+  --spacing-55: 13.75rem; /* 220px */
+  --spacing-70: 17.5rem; /* 280px */
+  --spacing-80: 20rem; /* 320px */
+  --spacing-90: 22.5rem; /* 360px */
   --spacing-125: 31.25rem; /* 500px */
-  --spacing-170: 42.5rem;  /* 680px */
-  --spacing-280: 70rem;    /* 1120px */
+  --spacing-170: 42.5rem; /* 680px */
+  --spacing-280: 70rem; /* 1120px */
 }
 
 @layer base {
@@ -157,7 +190,9 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2, h3 {
+  h1,
+  h2,
+  h3 {
     font-family: var(--font-display);
     font-weight: 600;
   }
