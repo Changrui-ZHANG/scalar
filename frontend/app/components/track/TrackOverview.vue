@@ -1,109 +1,112 @@
 <script setup lang="ts">
+// Colonne de présentation de la vue d'ensemble d'un parcours (specs-site.md § 5.2).
 import type { TrackCard } from '~/types/episode'
 
 interface Props {
   card: TrackCard
 }
 
-const props = defineProps<Props>()
+const { card } = defineProps<Props>()
 
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .map((w) => w[0]?.toUpperCase())
-    .slice(0, 2)
-    .join('')
-}
-
-const distinctLevels = computed(() => {
-  const set = new Set(props.card.view.chapters.map((c) => c.level))
-  return set.size
+// Nombre de niveaux différents parmi les chapitres (Débutant, Intermédiaire…).
+const levelCount = computed(() => {
+  const levels: string[] = []
+  for (const chapter of card.view.chapters) {
+    if (!levels.includes(chapter.level)) {
+      levels.push(chapter.level)
+    }
+  }
+  return levels.length
 })
 
-const totalLessons = computed(() => {
-  return props.card.view.chapters.reduce((acc, c) => acc + c.lessons.length, 0)
+const lessonCount = computed(() => {
+  let total = 0
+  for (const chapter of card.view.chapters) {
+    total += chapter.lessons.length
+  }
+  return total
 })
 
-const totalExercises = computed(() => {
-  return props.card.view.chapters.reduce((acc, c) => acc + c.exercises.length, 0)
+const exerciseCount = computed(() => {
+  let total = 0
+  for (const chapter of card.view.chapters) {
+    total += chapter.exercises.length
+  }
+  return total
 })
 
+// « Reprendre : épisode », « Commencer : premier épisode » ou « Revoir le parcours » (§ 5.2, § 9).
 const buttonLabel = computed(() => {
-  if (props.card.progress.status === 'in_progress' && props.card.progress.current) {
-    return `Reprendre : ${props.card.progress.current.title}`
-  }
-  if (props.card.progress.current) {
-    return `Commencer : ${props.card.progress.current.title}`
-  }
-  return 'Commencer'
+  const current = card.progress.current
+  if (!current) return ''
+  if (card.progress.status === 'completed') return 'Revoir le parcours'
+  if (card.progress.status === 'in_progress') return `Reprendre : ${current.title}`
+  return `Commencer : ${current.title}`
 })
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 rounded-[14px] border border-border bg-surface p-6 md:p-8 xl:w-90 xl:sticky xl:top-24">
-    <div class="flex items-center gap-4">
-      <span class="flex size-[52px] shrink-0 items-center justify-center rounded-2xl bg-primary-soft font-display text-2xl font-bold text-primary">
-        {{ getInitials(card.view.track.name) }}
-      </span>
+  <div class="flex flex-col gap-4 xl:sticky xl:top-24 xl:w-90 xl:shrink-0">
+    <span
+      class="rounded-card bg-primary-soft text-lede text-primary flex size-13 items-center justify-center font-bold"
+    >
+      {{ initials(card.view.track.name) }}
+    </span>
 
-      <div class="flex flex-col">
-        <h1 class="font-display text-2xl md:text-3xl font-bold text-text leading-tight">
-          {{ card.view.track.name }}
-        </h1>
-      </div>
-    </div>
+    <h1 class="font-display text-text xl:text-h1 text-4xl font-semibold tracking-tight">
+      {{ card.view.track.name }}
+    </h1>
 
-    <p class="text-sm md:text-base text-text-muted leading-relaxed">
-      {{ card.view.track.summary }}
-    </p>
+    <p class="text-body text-text-muted leading-snug">{{ card.view.track.summary }}</p>
 
-    <!-- Progression -->
     <div class="flex flex-col gap-2">
       <UiProgressBar
+        tall
         :value="card.progress.percent"
-        :label="`Progression ${card.view.track.name}`"
+        :label="`Progression du parcours ${card.view.track.name}`"
       />
-      <span class="text-xs text-text-muted">
-        {{ card.progress.done }} épisodes sur {{ card.progress.total }} · {{ card.progress.percent }} %
-      </span>
+      <p class="text-small text-text-muted">
+        {{ countLabel(card.progress.done, 'épisode', 'épisodes') }} sur {{ card.progress.total }} ·
+        {{ card.progress.percent }} %
+      </p>
     </div>
 
-    <!-- Action principale -->
-    <UiButton
-      v-if="card.progress.current"
-      :to="card.progress.current.path"
-      variant="primary"
-      :icon="card.progress.status === 'in_progress' ? 'lucide:arrow-right' : 'lucide:play'"
-    >
-      {{ buttonLabel }}
-    </UiButton>
-
-    <!-- Faits essentiels -->
-    <div class="border-t border-border pt-6 flex flex-col gap-2.5 text-xs text-text-muted">
-      <div class="flex items-center gap-2">
-        <Icon name="lucide:layers" class="size-4 text-text-muted" />
-        <span>{{ card.view.chapters.length }} chapitres · {{ distinctLevels }} niveaux</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <Icon name="lucide:book-open" class="size-4 text-primary" />
-        <span>{{ totalLessons }} leçons</span>
-      </div>
-      <div v-if="card.view.track.programmingLanguage" class="flex items-center gap-2">
-        <Icon name="lucide:code-xml" class="size-4 text-exercise" />
-        <span>{{ totalExercises }} exercices corrigés automatiquement</span>
-      </div>
-      <div v-else class="flex items-center gap-2 italic">
-        <span>Leçons seulement : pas de langage de programmation, donc pas d'exercice</span>
-      </div>
-
-      <!-- Prérequis conseillé -->
-      <div v-if="card.prerequisite" class="mt-2 border-t border-border/50 pt-2 text-xs">
-        Conseillé après
-        <NuxtLink :to="`/parcours/${card.prerequisite.slug}`" class="font-semibold text-primary hover:underline">
-          {{ card.prerequisite.name }}
-        </NuxtLink>
-      </div>
+    <div v-if="card.progress.current">
+      <UiButton :to="card.progress.current.path" icon-right="lucide:arrow-right">
+        {{ buttonLabel }}
+      </UiButton>
     </div>
+
+    <ul class="text-ui text-text-muted flex flex-col gap-2 pt-2">
+      <li class="flex items-center gap-2">
+        <Icon name="lucide:layers" class="size-4 shrink-0" />
+        {{ countLabel(card.view.chapters.length, 'chapitre', 'chapitres') }} ·
+        {{ countLabel(levelCount, 'niveau', 'niveaux') }}
+      </li>
+      <li class="flex items-center gap-2">
+        <Icon name="lucide:book-open" class="size-4 shrink-0" />
+        {{ countLabel(lessonCount, 'leçon', 'leçons') }}
+      </li>
+      <li v-if="card.view.track.programmingLanguage" class="flex items-center gap-2">
+        <Icon name="lucide:code-xml" class="size-4 shrink-0" />
+        {{ countLabel(exerciseCount, 'exercice corrigé', 'exercices corrigés') }} automatiquement
+      </li>
+      <li v-else class="flex items-start gap-2">
+        <Icon name="lucide:info" class="mt-0.5 size-4 shrink-0" />
+        Leçons seulement : pas de langage de programmation, donc pas d’exercice
+      </li>
+      <li v-if="card.prerequisite" class="flex items-center gap-2">
+        <Icon name="lucide:corner-down-right" class="size-4 shrink-0" />
+        <span>
+          Conseillé après
+          <NuxtLink
+            :to="`/parcours/${card.prerequisite.slug}`"
+            class="text-primary font-semibold hover:underline"
+          >
+            {{ card.prerequisite.name }}
+          </NuxtLink>
+        </span>
+      </li>
+    </ul>
   </div>
 </template>

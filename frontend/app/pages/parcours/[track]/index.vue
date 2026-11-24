@@ -23,13 +23,11 @@ usePageSeo({
 </script>
 
 <template>
-  <div class="mx-auto max-w-280 px-4 md:px-6 py-8 md:py-12">
-    <div class="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-12 items-start">
-      <!-- Colonne présentation latérale collante -->
+  <div class="px-4 py-8 md:px-6 md:py-11">
+    <div class="mx-auto flex max-w-280 flex-col gap-10 xl:flex-row xl:items-start xl:gap-12">
       <TrackOverview :card="card" />
 
-      <!-- Colonne des niveaux et chapitres -->
-      <div class="flex flex-col gap-6">
+      <div class="min-w-0 flex-1">
         <TrackLevelList
           :track="track"
           :episodes="episodes"

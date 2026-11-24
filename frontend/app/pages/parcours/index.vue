@@ -18,27 +18,18 @@ const { filter, visibleCards, showSearch, emptyReason } = useTrackList(cards, se
 </script>
 
 <template>
-  <div class="mx-auto max-w-280 px-4 md:px-6 py-8 md:py-12">
-    <TrackListHeader />
+  <div class="px-4 py-8 md:px-6 md:py-11">
+    <div class="mx-auto flex max-w-280 flex-col gap-6.5">
+      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <TrackListHeader />
+        <TrackListSearch v-model="search.query.value" />
+      </div>
 
-    <TrackListToolbar
-      v-model:query="search.query.value"
-      v-model:filter="filter"
-    />
+      <TrackListFilters v-model="filter" />
 
-    <TrackListEmpty
-      v-if="emptyReason"
-      :reason="emptyReason"
-    />
-
-    <TrackListSearchResults
-      v-else-if="showSearch"
-      :results="search.results.value"
-    />
-
-    <TrackListGrid
-      v-else
-      :cards="visibleCards"
-    />
+      <TrackListEmpty v-if="emptyReason" :reason="emptyReason" />
+      <TrackListSearchResults v-else-if="showSearch" :results="search.results.value" />
+      <TrackListGrid v-else :cards="visibleCards" />
+    </div>
   </div>
 </template>

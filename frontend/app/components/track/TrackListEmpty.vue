@@ -2,7 +2,8 @@
 import type { TrackFilter } from '~/types/episode'
 
 interface Props {
-  reason: { kind: 'filter'; filter: Exclude<TrackFilter, 'all'> } | { kind: 'search'; query: string }
+  reason:
+    { kind: 'filter'; filter: Exclude<TrackFilter, 'all'> } | { kind: 'search'; query: string }
 }
 
 const props = defineProps<Props>()
@@ -25,9 +26,11 @@ const message = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center rounded-[14px] border border-dashed border-border bg-surface p-12 text-center">
-    <Icon name="lucide:search-x" class="mb-3 size-8 text-text-muted" />
-    <p class="text-base font-medium text-text-muted">
+  <div
+    class="rounded-card border-border bg-surface flex flex-col items-center justify-center border border-dashed p-12 text-center"
+  >
+    <Icon name="lucide:search-x" class="text-text-muted mb-3 size-8" />
+    <p class="text-text-muted text-base font-medium">
       {{ message }}
     </p>
   </div>

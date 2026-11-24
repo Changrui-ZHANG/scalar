@@ -1,55 +1,44 @@
 <script setup lang="ts">
+// Un niveau repliable de la vue d'ensemble (specs-site.md § 5.2) : titre, nombre de
+// chapitres, chevron ; les lignes de chapitres arrivent par le slot.
 import type { ChapterLevel } from '@scalar/shared/enums'
+import { CHAPTER_LEVEL_LABELS } from '@scalar/shared/labels'
 
-const open = defineModel<boolean>({ default: false })
+const open = defineModel<boolean>({ required: true })
 
 interface Props {
   level: ChapterLevel
   chapterCount: number
 }
 
-const props = defineProps<Props>()
-
-const LEVEL_LABELS: Record<ChapterLevel, string> = {
-  beginner: 'Débutant',
-  intermediate: 'Intermédiaire',
-  advanced: 'Avancé',
-  ecosystem: 'Écosystème',
-}
-
-const label = computed(() => LEVEL_LABELS[props.level] ?? props.level)
-
-function toggle() {
-  open.value = !open.value
-}
+const { level, chapterCount } = defineProps<Props>()
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
+  <section class="flex flex-col gap-2.5">
     <button
       type="button"
       :aria-expanded="open"
-      class="flex w-full items-center justify-between py-2 text-left transition-colors cursor-pointer"
-      @click="toggle"
+      class="flex w-full cursor-pointer items-center justify-between text-left"
+      @click="open = !open"
     >
-      <div class="flex items-baseline gap-3">
-        <h2 class="font-display text-[21px] font-semibold text-text">
-          {{ label }}
-        </h2>
-        <span class="text-xs text-text-muted">
-          {{ chapterCount }} chapitre{{ chapterCount > 1 ? 's' : '' }}
-        </span>
-      </div>
-
-      <Icon
-        name="lucide:chevron-down"
-        class="size-5 text-text-muted transition-transform duration-200"
-        :class="{ 'rotate-180': open }"
-      />
+      <span class="flex items-baseline gap-2.5">
+        <span class="font-display text-card text-text font-semibold">{{
+          CHAPTER_LEVEL_LABELS[level]
+        }}</span>
+        <span class="text-text-muted text-sm">{{
+          countLabel(chapterCount, 'chapitre', 'chapitres')
+        }}</span>
+      </span>
+      <Icon v-if="open" name="lucide:chevron-up" class="text-text-muted size-4.5" />
+      <Icon v-else name="lucide:chevron-down" class="text-text-muted size-4.5" />
     </button>
 
-    <div v-show="open" class="flex flex-col gap-3">
+    <div
+      v-show="open"
+      class="divide-border rounded-tile border-border bg-surface divide-y overflow-hidden border"
+    >
       <slot />
     </div>
-  </div>
+  </section>
 </template>

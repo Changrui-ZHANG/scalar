@@ -1,13 +1,13 @@
 <script setup lang="ts">
-/** En-tête de la page catalogue /parcours (§ 5.1) */
+// Titre et texte de /parcours (specs-site.md § 5.1).
 </script>
 
 <template>
-  <div class="mb-8 flex flex-col gap-2">
-    <h1 class="font-display text-3xl md:text-h1 font-semibold text-text">
+  <div class="flex flex-col gap-1.5">
+    <h1 class="font-display text-text md:text-h1 text-3xl font-semibold tracking-tight">
       Parcours
     </h1>
-    <p class="text-base md:text-lede text-text-muted">
+    <p class="text-text-muted md:text-body text-base">
       Chaque parcours suit un ordre : leçons, puis exercices corrigés automatiquement.
     </p>
   </div>

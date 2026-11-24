@@ -16,7 +16,13 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const openLevels = ref<Record<string, boolean>>({})
+// Niveau ouvert ou fermé ; au départ, tous fermés (initLevels ouvre le bon).
+const openLevels = ref<Record<ChapterLevel, boolean>>({
+  beginner: false,
+  intermediate: false,
+  advanced: false,
+  ecosystem: false,
+})
 
 function initLevels() {
   const currentLevel = props.progress.current?.chapter.level ?? 'beginner'
@@ -49,7 +55,7 @@ watch(
 onMounted(() => {
   if (props.anchor) {
     nextTick(() => {
-      const el = document.getElementById(`chapter-${props.anchor}`)
+      const el = document.getElementById(props.anchor ?? '')
       if (el) {
         el.scrollIntoView({ behavior: 'smooth' })
       }
@@ -63,7 +69,7 @@ function getChapters(lvl: ChapterLevel): TrackViewChapter[] {
 </script>
 
 <template>
-  <div class="flex flex-col gap-8">
+  <div class="flex flex-col gap-5.5">
     <template v-for="lvl in CHAPTER_LEVELS" :key="lvl">
       <TrackLevelSection
         v-if="getChapters(lvl).length > 0"

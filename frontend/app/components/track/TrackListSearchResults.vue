@@ -10,26 +10,23 @@ defineProps<Props>()
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 rounded-[14px] border border-border bg-surface p-4">
+  <div class="rounded-card border-border bg-surface flex flex-col gap-2 border p-4">
     <NuxtLink
       v-for="r in results"
       :key="r.entry.path"
       :to="r.entry.path"
-      class="flex items-center justify-between gap-4 rounded-[10px] p-3 hover:bg-surface-muted transition-colors text-sm"
+      class="rounded-row hover:bg-surface-muted flex items-center justify-between gap-4 p-3 text-sm transition-colors"
     >
       <div class="flex items-center gap-3 truncate">
-        <Icon
-          :name="SEARCH_KIND_ICONS[r.entry.kind]"
-          class="size-4 shrink-0 text-text-muted"
-        />
-        <span class="font-semibold text-text truncate">
+        <Icon :name="SEARCH_KIND_ICONS[r.entry.kind]" class="text-text-muted size-4 shrink-0" />
+        <span class="text-text truncate font-semibold">
           {{ r.entry.title }}
         </span>
       </div>
 
-      <div class="flex items-center gap-2 text-xs text-text-muted shrink-0">
+      <div class="text-text-muted flex shrink-0 items-center gap-2 text-xs">
         <span>{{ r.entry.trackName }}</span>
-        <span v-if="r.entry.chapterNumber !== null">· ch. {{ r.entry.chapterNumber }}</span>
+        <span v-if="r.entry.chapterNumber !== null">· chapitre {{ r.entry.chapterNumber }}</span>
       </div>
     </NuxtLink>
   </div>
