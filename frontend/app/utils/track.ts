@@ -2,12 +2,11 @@ import { stripMarkdown } from '@scalar/shared/markdown'
 import type { TrackRef, TrackSummary, TrackView, TrackViewChapter } from '@scalar/shared/api'
 import type {
   Episode,
-  EpisodeKind,
   ResumeTarget,
   TrackCard,
-  TrackFilter as TargetTrackFilter,
-  TrackProgress as TargetTrackProgress,
-  TrackStatus as TargetTrackStatus,
+  TrackFilter,
+  TrackProgress,
+  TrackStatus,
 } from '~/types/episode'
 import type { StoredProgress } from '~/types/storage'
 
@@ -102,7 +101,7 @@ export function listEpisodes(view: TrackView): readonly Episode[] {
 export function trackProgress(
   episodes: readonly Episode[],
   completed: ReadonlySet<string>,
-): TargetTrackProgress {
+): TrackProgress {
   const total = episodes.length
   let done = 0
   let current: Episode | null = null
@@ -116,7 +115,7 @@ export function trackProgress(
   }
 
   const percent = total === 0 ? 0 : Math.floor((done * 100) / total)
-  let status: TargetTrackStatus = 'not_started'
+  let status: TrackStatus = 'not_started'
   if (total > 0 && done === total) {
     status = 'completed'
     current = episodes[0] ?? null
@@ -137,7 +136,7 @@ export function chapterStatus(
   chapter: TrackViewChapter,
   episodes: readonly Episode[],
   completed: ReadonlySet<string>,
-): TargetTrackStatus {
+): TrackStatus {
   const chapterEpisodes = episodes.filter((e) => e.chapter.slug === chapter.slug)
   const total = chapterEpisodes.length
   if (total === 0) return 'not_started'
@@ -170,7 +169,7 @@ export function prerequisiteToShow(
   return started.includes(track.prerequisite.slug) ? null : track.prerequisite
 }
 
-export function matchesFilter(status: TargetTrackStatus, filter: TargetTrackFilter): boolean {
+export function matchesFilter(status: TrackStatus, filter: TrackFilter): boolean {
   if (filter === 'all') return true
   return status === filter
 }
@@ -247,173 +246,3 @@ export function pickResume(
 
   return null
 }
-
-// --- Legacy exports for existing tests/pages backwards compatibility -----------
-
-export type EpisodeType = EpisodeKind
-export type EpisodeStatus = 'completed' | 'current' | 'todo'
-export type TrackStatus = 'todo' | 'active' | 'completed'
-
-export interface TrackEpisode {
-  readonly key: string
-  readonly number: number
-  readonly type: EpisodeType
-  readonly slug: string
-  readonly title: string
-  readonly text: string
-  readonly trackSlug: string
-  readonly chapterSlug: string
-  readonly chapterNumber: number
-  readonly chapterTitle: string
-  readonly route: string
-  readonly status: EpisodeStatus
-}
-
-export interface TrackProgress {
-  readonly done: number
-  readonly total: number
-  readonly percent: number
-}
-
-export const EPISODE_TYPE_LABELS: Readonly<Record<EpisodeType, string>> = {
-  lesson: 'Leçon',
-  exercise: 'Exercice',
-}
-
-export const EPISODE_STATUS_LABELS: Readonly<Record<EpisodeStatus, string>> = {
-  completed: 'Terminé',
-  current: 'À suivre',
-  todo: 'À faire',
-}
-
-export const TRACK_STATUS_LABELS: Readonly<Record<TrackStatus, string>> = {
-  todo: 'Non commencé',
-  active: 'En cours',
-  completed: 'Terminé',
-}
-
-export type TrackFilter = 'all' | TrackStatus
-
-export const TRACK_FILTERS: readonly { readonly value: TrackFilter; readonly label: string }[] = [
-  { value: 'all', label: 'Tous' },
-  { value: 'active', label: 'En cours' },
-  { value: 'todo', label: 'Non commencés' },
-  { value: 'completed', label: 'Terminés' },
-]
-
-export const padNumber = (n: number): string => String(n).padStart(2, '0')
-
-export function buildEpisodes(
-  track: {
-    readonly track: { readonly slug: string }
-    readonly chapters: readonly {
-      readonly slug: string
-      readonly title: string
-      readonly number: number
-      readonly lessons: readonly {
-        readonly slug: string
-        readonly title: string
-        readonly summary: string
-      }[]
-      readonly exercises: readonly {
-        readonly slug: string
-        readonly title: string
-        readonly instructions: string
-      }[]
-    }[]
-  },
-  completed: readonly string[],
-): TrackEpisode[] {
-  const trackSlug = track.track.slug
-  const flat = track.chapters.flatMap((chapter) => {
-    const base = {
-      trackSlug,
-      chapterSlug: chapter.slug,
-      chapterNumber: chapter.number,
-      chapterTitle: chapter.title,
-    }
-    return [
-      ...chapter.lessons.map((l) => ({
-        ...base,
-        key: lessonKey(chapter.slug, l.slug),
-        type: 'lesson' as const,
-        slug: l.slug,
-        title: l.title,
-        text: l.summary,
-        route: `/parcours/${trackSlug}/${chapter.slug}/lecon/${l.slug}`,
-      })),
-      ...chapter.exercises.map((e) => ({
-        ...base,
-        key: exerciseKey(chapter.slug, e.slug),
-        type: 'exercise' as const,
-        slug: e.slug,
-        title: e.title,
-        text: e.instructions,
-        route: `/parcours/${trackSlug}/${chapter.slug}/${e.slug}`,
-      })),
-    ]
-  })
-
-  const done = new Set(completed)
-  const current = flat.findIndex((e) => !done.has(e.key))
-  return flat.map((e, i) => ({
-    ...e,
-    number: i + 1,
-    status: done.has(e.key) ? 'completed' : i === current ? 'current' : 'todo',
-  }))
-}
-
-export function progressOf(episodes: readonly TrackEpisode[]): TrackProgress {
-  const done = episodes.filter((e) => e.status === 'completed').length
-  const total = episodes.length
-  return { done, total, percent: total === 0 ? 0 : Math.round((done / total) * 100) }
-}
-
-export function trackStatus(episodes: readonly TrackEpisode[], started: boolean): TrackStatus {
-  const { done, total } = progressOf(episodes)
-  if (total > 0 && done === total) {
-    return 'completed'
-  }
-  return started || done > 0 ? 'active' : 'todo'
-}
-
-export const firstIncomplete = (episodes: readonly TrackEpisode[]): TrackEpisode | null =>
-  episodes.find((e) => e.status !== 'completed') ?? null
-
-export function nextEpisode(episodes: readonly TrackEpisode[], key: string): TrackEpisode | null {
-  const index = episodes.findIndex((e) => e.key === key)
-  return index === -1 ? null : (episodes[index + 1] ?? null)
-}
-
-export function relatedLesson(episodes: readonly TrackEpisode[], key: string): TrackEpisode | null {
-  const index = episodes.findIndex((e) => e.key === key)
-  const exercise = episodes[index]
-  if (!exercise) {
-    return null
-  }
-  return (
-    episodes
-      .slice(0, index)
-      .filter((e) => e.type === 'lesson' && e.chapterSlug === exercise.chapterSlug)
-      .at(-1) ?? null
-  )
-}
-
-export const normalize = (text: string): string =>
-  text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .trim()
-
-const contains = (text: string, query: string): boolean => normalize(text).includes(query)
-
-export function searchEpisodes(episodes: readonly TrackEpisode[], query: string): TrackEpisode[] {
-  if (query === '') {
-    return []
-  }
-  return episodes.filter((e) => [e.title, e.text, e.chapterTitle].some((t) => contains(t, query)))
-}
-
-export const trackMatches = (track: TrackSummary, query: string): boolean =>
-  query !== '' && [track.name, track.summary].some((t) => contains(t, query))
