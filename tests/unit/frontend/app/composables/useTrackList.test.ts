@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { describe, expect, it } from 'vitest'
 import type { TrackCard } from '~/types/episode'
 import type { SearchResult } from '~/types/search'
-import { useTrackList } from './useTrackList'
+import { useTrackList } from '../../../../../frontend/app/composables/useTrackList'
 
 describe('composables/useTrackList', () => {
   const sampleCard = (status: 'not_started' | 'in_progress' | 'completed'): TrackCard => ({

@@ -5,7 +5,7 @@ import type { Episode } from '~/types/episode'
 import * as eventsService from '~/services/events'
 import { useProgressStore } from '~/stores/progress'
 import { exerciseKey, lessonKey } from '~/utils/track'
-import { useCompletion } from './useCompletion'
+import { useCompletion } from '../../../../../frontend/app/composables/useCompletion'
 
 const MOCK_TRACK: TrackView = {
   track: {

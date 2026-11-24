@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDraftsStore } from '~/stores/drafts'
-import { useDraft } from './useDraft'
+import { useDraft } from '../../../../../frontend/app/composables/useDraft'
 
 describe('composables/useDraft', () => {
   beforeEach(() => {

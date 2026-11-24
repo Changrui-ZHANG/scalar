@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { PROGRESS_STORAGE_KEY } from '~/utils/storage'
-import { useProgressStore } from './progress'
+import { useProgressStore } from '../../../../../frontend/app/stores/progress'
 
 describe('stores/progress', () => {
   beforeEach(() => {

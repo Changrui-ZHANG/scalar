@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import MentionsLegales from '../app/pages/mentions-legales.vue'
-import Confidentialite from '../app/pages/confidentialite.vue'
-import LayoutFooter from '../app/components/layout/LayoutFooter.vue'
+import MentionsLegales from '../../../../../frontend/app/pages/mentions-legales.vue'
+import Confidentialite from '../../../../../frontend/app/pages/confidentialite.vue'
+import LayoutFooter from '../../../../../frontend/app/components/layout/LayoutFooter.vue'
 
 describe('pages légales et pied de page', () => {
   it('affiche le pied de page avec les liens légaux', async () => {

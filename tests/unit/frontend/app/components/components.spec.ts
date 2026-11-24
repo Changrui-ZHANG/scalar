@@ -1,12 +1,12 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import UiButton from '../app/components/ui/UiButton.vue'
-import UiIconButton from '../app/components/ui/UiIconButton.vue'
-import UiTag from '../app/components/ui/UiTag.vue'
-import UiProgressBar from '../app/components/ui/UiProgressBar.vue'
-import UiTabs from '../app/components/ui/UiTabs.vue'
-import UiStatePanel from '../app/components/ui/UiStatePanel.vue'
+import UiButton from '../../../../../frontend/app/components/ui/UiButton.vue'
+import UiIconButton from '../../../../../frontend/app/components/ui/UiIconButton.vue'
+import UiTag from '../../../../../frontend/app/components/ui/UiTag.vue'
+import UiProgressBar from '../../../../../frontend/app/components/ui/UiProgressBar.vue'
+import UiTabs from '../../../../../frontend/app/components/ui/UiTabs.vue'
+import UiStatePanel from '../../../../../frontend/app/components/ui/UiStatePanel.vue'
 
 describe('Composants UI fondamentaux', () => {
   beforeEach(() => {

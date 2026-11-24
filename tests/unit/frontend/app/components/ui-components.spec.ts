@@ -1,8 +1,8 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it, vi } from 'vitest'
-import ContentCodeBlock from '../../packages/ui/components/content/ContentCodeBlock.vue'
-import ContentRichText from '../../packages/ui/components/content/ContentRichText.vue'
-import UiCodeEditor from '../../packages/ui/components/ui/UiCodeEditor.vue'
+import ContentCodeBlock from '../../../../../packages/ui/components/content/ContentCodeBlock.vue'
+import ContentRichText from '../../../../../packages/ui/components/content/ContentRichText.vue'
+import UiCodeEditor from '../../../../../packages/ui/components/ui/UiCodeEditor.vue'
 
 describe('ContentCodeBlock', () => {
   it('affiche les numéros de ligne et le libellé du langage', async () => {

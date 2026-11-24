@@ -1,11 +1,11 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import LayoutHeader from '../app/components/layout/LayoutHeader.vue'
-import LayoutLearningMobileBar from '../app/components/layout/LayoutLearningMobileBar.vue'
-import LayoutPlan from '../app/components/layout/LayoutPlan.vue'
+import LayoutHeader from '../../../../../frontend/app/components/layout/LayoutHeader.vue'
+import LayoutLearningMobileBar from '../../../../../frontend/app/components/layout/LayoutLearningMobileBar.vue'
+import LayoutPlan from '../../../../../frontend/app/components/layout/LayoutPlan.vue'
 import type { TrackView } from '@scalar/shared/api'
-import type { Episode } from '../app/types/episode'
+import type { Episode } from '../../../../../frontend/app/types/episode'
 
 describe('Composants de mise en page', () => {
   const sampleTrackView: TrackView = {

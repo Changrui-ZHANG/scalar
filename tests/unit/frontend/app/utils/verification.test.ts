@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PublicTestCase, VerificationResult } from '@scalar/shared/api'
-import { formatCall, splitChecks } from './verification'
+import { formatCall, splitChecks } from '../../../../../frontend/app/utils/verification'
 
 describe('utils/verification', () => {
   const sampleTestCases: readonly PublicTestCase[] = [

@@ -5,7 +5,7 @@ import {
   getCodeByteLength,
   isCodeTooLarge,
   runErrorMessage,
-} from './execution'
+} from '../../../../../frontend/app/utils/execution'
 
 describe('utils/execution', () => {
   it('calcule la taille en octets UTF-8 et détecte les dépassements', () => {

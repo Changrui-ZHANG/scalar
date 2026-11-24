@@ -11,7 +11,7 @@ import {
   parseSandboxSeed,
   parseTheme,
   withDraft,
-} from './storage'
+} from '../../../../../frontend/app/utils/storage'
 
 describe('utils/storage', () => {
   describe('parseProgress', () => {

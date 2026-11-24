@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { sendEvent } from './events'
+import { sendEvent } from '../../../../../frontend/app/services/events'
 
 describe('services/events', () => {
   const originalFetch = globalThis.fetch

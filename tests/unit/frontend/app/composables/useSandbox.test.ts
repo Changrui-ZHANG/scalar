@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import * as executionsService from '~/services/executions'
-import { useSandbox, useTryInSandbox } from './useSandbox'
+import { useSandbox, useTryInSandbox } from '../../../../../frontend/app/composables/useSandbox'
 
 describe('composables/useSandbox', () => {
   beforeEach(() => {

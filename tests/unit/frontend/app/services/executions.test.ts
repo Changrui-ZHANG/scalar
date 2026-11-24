@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import * as api from './api'
-import { executeCode } from './executions'
+import * as api from '../../../../../frontend/app/services/api'
+import { executeCode } from '../../../../../frontend/app/services/executions'
 
 describe('services/executions', () => {
   it('appelle /executions avec POST et timeout 20s', async () => {

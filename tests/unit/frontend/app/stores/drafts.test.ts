@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { DRAFTS_STORAGE_KEY, LEGACY_DRAFTS_STORAGE_KEY } from '~/utils/storage'
-import { useDraftsStore } from './drafts'
+import { useDraftsStore } from '../../../../../frontend/app/stores/drafts'
 
 describe('stores/drafts', () => {
   beforeEach(() => {

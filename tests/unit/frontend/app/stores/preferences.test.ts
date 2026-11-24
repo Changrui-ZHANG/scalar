@@ -6,7 +6,7 @@ import {
   SANDBOX_STORAGE_KEY,
   THEME_STORAGE_KEY,
 } from '~/utils/storage'
-import { usePreferencesStore } from './preferences'
+import { usePreferencesStore } from '../../../../../frontend/app/stores/preferences'
 
 describe('stores/preferences', () => {
   beforeEach(() => {

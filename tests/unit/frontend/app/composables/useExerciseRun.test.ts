@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import type { PublicExercise, TrackView } from '@scalar/shared/api'
 import * as executionsService from '~/services/executions'
 import * as tracksService from '~/services/tracks'
-import { useExerciseRun } from './useExerciseRun'
+import { useExerciseRun } from '../../../../../frontend/app/composables/useExerciseRun'
 
 describe('composables/useExerciseRun', () => {
   const sampleExercise: PublicExercise = {

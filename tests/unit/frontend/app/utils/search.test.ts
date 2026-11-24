@@ -8,7 +8,7 @@ import {
   SEARCH_KIND_ICONS,
   SEARCH_MIN_LENGTH,
   searchEntries,
-} from './search'
+} from '../../../../../frontend/app/utils/search'
 
 const MOCK_VIEWS: readonly TrackView[] = [
   {

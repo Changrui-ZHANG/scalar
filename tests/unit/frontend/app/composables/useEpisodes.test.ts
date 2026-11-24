@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { TrackView } from '@scalar/shared/api'
 import { useProgressStore } from '~/stores/progress'
 import { lessonKey } from '~/utils/track'
-import { useEpisodes } from './useEpisodes'
+import { useEpisodes } from '../../../../../frontend/app/composables/useEpisodes'
 
 const MOCK_TRACK: TrackView = {
   track: {
