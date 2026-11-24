@@ -60,6 +60,14 @@ describe('ExerciseService.getExercise', () => {
     ])
   })
 
+  it('compte les cas cachés sans les révéler', async () => {
+    const withHidden = await service.getExercise('alpha', 'boucles', 'un')
+    const withoutHidden = await service.getExercise('alpha', 'boucles', 'deux')
+
+    expect(withHidden?.hiddenTestCaseCount).toBe(1)
+    expect(withoutHidden?.hiddenTestCaseCount).toBe(0)
+  })
+
   it('situe l’exercice dans son chapitre et son parcours', async () => {
     const detail = await service.getExercise('alpha', 'boucles', 'deux')
 
