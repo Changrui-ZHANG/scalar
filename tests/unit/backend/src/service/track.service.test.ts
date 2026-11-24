@@ -64,7 +64,9 @@ describe('TrackService.getTrack', () => {
     expect(view?.track).toEqual({
       slug: 'javascript',
       name: 'JavaScript',
+      summary: 'Le point de départ : variables, conditions, boucles, fonctions.',
       programmingLanguage: 'javascript',
+      prerequisite: null,
     })
     expect(view?.chapters.map((c) => [c.number, c.level, c.slug])).toEqual([
       [1, 'beginner', 'syntaxe-et-nommage'],
@@ -81,6 +83,25 @@ describe('TrackService.getTrack', () => {
       [12, 'ecosystem', 'dotenv'],
       [13, 'ecosystem', 'express'],
     ])
+  })
+
+  it('donne le résumé du chapitre et les intertitres ## de chaque leçon, avec leur ancre', async () => {
+    const view = await service.getTrack('javascript')
+    const variables = view?.chapters.find((c) => c.slug === 'variables')
+
+    expect(variables?.summary).not.toBe('')
+    const headings = variables?.lessons[0]?.headings ?? []
+    expect(headings.length).toBeGreaterThan(0)
+    for (const heading of headings) {
+      expect(heading.id).toMatch(/^[a-z0-9-]+$/)
+      expect(heading.text).not.toBe('')
+    }
+  })
+
+  it('cite le prérequis publié du parcours', async () => {
+    const view = await service.getTrack('typescript')
+
+    expect(view?.track.prerequisite).toEqual({ slug: 'javascript', name: 'JavaScript' })
   })
 
   it('donne à chaque chapitre ses leçons puis ses exercices, dans l’ordre', async () => {

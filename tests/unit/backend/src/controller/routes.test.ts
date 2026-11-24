@@ -100,7 +100,9 @@ describe('API du contenu (données fictives)', () => {
     expect(body.data.track).toEqual({
       slug: 'typescript',
       name: 'TypeScript',
+      summary: 'JavaScript avec des types vérifiés. Suppose les bases de JavaScript.',
       programmingLanguage: 'typescript',
+      prerequisite: { slug: 'javascript', name: 'JavaScript' },
     })
     expect(
       body.data.chapters.map((c: { number: number; slug: string; level: string }) => [
