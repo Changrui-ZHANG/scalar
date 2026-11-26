@@ -29,6 +29,8 @@ export interface PublicExercise {
   readonly starterCode: string
   readonly hints: readonly string[]
   readonly testCases: readonly TestCaseView[]
+  /** Nombre de cas caches : le site affiche « + n cas caches », sans jamais les reveler. */
+  readonly hiddenTestCaseCount: number
   readonly track: TrackLink & { readonly programmingLanguage: ProgrammingLanguage }
   readonly chapter: { readonly slug: string; readonly title: string; readonly number: number }
   readonly next: { readonly chapterSlug: string; readonly slug: string } | null
@@ -80,6 +82,13 @@ export class ExerciseService {
     const siblings = await this.exercises.listExercises(chapter.id)
     const testCases = await this.exercises.listTestCases(exercise.id)
 
+    let hiddenTestCaseCount = 0
+    for (const testCase of testCases) {
+      if (testCase.isHidden) {
+        hiddenTestCaseCount += 1
+      }
+    }
+
     return {
       slug: exercise.slug,
       title: exercise.title,
@@ -95,6 +104,7 @@ export class ExerciseService {
           expectedResult: t.expectedResult,
           description: t.description,
         })),
+      hiddenTestCaseCount,
       track: { ...toTrackLink(track), programmingLanguage },
       chapter: { slug: chapter.slug, title: chapter.title, number: rank(chapters, chapter) },
       next: await this.findNext(exercise, siblings, chapter, chapters),

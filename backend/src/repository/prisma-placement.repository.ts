@@ -37,4 +37,11 @@ export class PrismaPlacementRepository implements PlacementRepository {
     })
     return row && toPlacement(row)
   }
+
+  async reassignUser(fromUserId: string, intoUserId: string): Promise<void> {
+    await this.prisma.placement.updateMany({
+      where: { userId: fromUserId },
+      data: { userId: intoUserId },
+    })
+  }
 }

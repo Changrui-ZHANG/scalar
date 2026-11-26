@@ -108,6 +108,7 @@ export function buildServer(deps: AppDependencies): ScalarServer {
     progress,
     tracks,
     exercises,
+    lessons,
     placements,
     certificates,
     new LearningPathService(tracks, exercises, premium),
@@ -160,6 +161,7 @@ export function buildServer(deps: AppDependencies): ScalarServer {
   app.post(
     [
       '/api/v1/tracks/:track/chapters/:chapter/exercises/:exercise/verifications',
+      '/api/v1/tracks/:track/chapters/:chapter/lessons/:lesson/completions',
       '/api/v1/questionnaire/results',
     ],
     learnerAccess(session, learners, 'header'),
@@ -206,7 +208,7 @@ export function buildServer(deps: AppDependencies): ScalarServer {
   )
   app.use(
     '/api/v1',
-    new AuthController(session, {
+    new AuthController(session, learners, {
       pair: deps.authAttemptsLimit,
       ip: deps.authIpAttemptsLimit,
       account: deps.authAccountAttemptsLimit,
@@ -218,7 +220,7 @@ export function buildServer(deps: AppDependencies): ScalarServer {
     '/api/v1',
     new TrackController(new TrackService(tracks, lessons, exercises), premium).buildRouter(),
   )
-  app.use('/api/v1', new LessonController(new LessonService(tracks, lessons)).buildRouter())
+  app.use('/api/v1', new LessonController(new LessonService(tracks, lessons), learners).buildRouter())
   app.use('/api/v1', new ExerciseController(exerciseService, learners).buildRouter())
   app.use('/api/v1', new LearnerController(learners).buildRouter())
   app.use('/api/v1', new CertificateController(certificates, premium, tracks).buildRouter())

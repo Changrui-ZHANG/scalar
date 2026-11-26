@@ -1,0 +1,22 @@
+:root {
+  --scalar-ui-code-bg: #f6f1e6;
+  --scalar-ui-code-border: #e7dfcc;
+  --scalar-ui-code-text: #22201b;
+  --scalar-ui-code-keyword: #3757f5;
+  --scalar-ui-code-function: #a1491f;
+  --scalar-ui-code-string: #3c7854;
+  --scalar-ui-code-comment: #746d5f;
+  --scalar-ui-code-line: #726d61;
+
+  /* Variables Shiki (thème « css-variables ») */
+  --shiki-foreground: var(--scalar-ui-code-text);
+  --shiki-token-parameter: var(--scalar-ui-code-text);
+  --shiki-token-punctuation: var(--scalar-ui-code-text);
+  --shiki-token-link: var(--scalar-ui-code-text);
+  --shiki-token-keyword: var(--scalar-ui-code-keyword);
+  --shiki-token-constant: var(--scalar-ui-code-keyword);
+  --shiki-token-function: var(--scalar-ui-code-function);
+  --shiki-token-string: var(--scalar-ui-code-string);
+  --shiki-token-string-expression: var(--scalar-ui-code-string);
+  --shiki-token-comment: var(--scalar-ui-code-comment);
+}

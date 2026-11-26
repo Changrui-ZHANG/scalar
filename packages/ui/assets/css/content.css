@@ -1,0 +1,65 @@
+:root {
+  /* Valeurs claires de charte.md § 2 ; le site les relie à ses jetons (thème sombre compris). */
+  --scalar-ui-content-text: #22201b;
+  --scalar-ui-content-muted: #6b6457;
+  --scalar-ui-content-inline-code-bg: #f6f1e6;
+  --scalar-ui-content-border: #e7dfcc;
+}
+
+.content-prose {
+  color: var(--scalar-ui-content-text);
+  font-family:
+    'Source Sans 3',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  line-height: 1.7;
+}
+
+.content-prose h2 {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 1.5rem;
+  line-height: 1.3;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  scroll-margin-top: 5rem;
+  color: var(--scalar-ui-content-text);
+}
+
+.content-prose p {
+  margin-bottom: 1.25rem;
+}
+
+.content-prose ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.content-prose li {
+  margin-bottom: 0.5rem;
+}
+
+.content-prose code:not(pre code) {
+  /* Code en ligne (charte.md § 3) : texte −1,5 px, fond surface-muted, rayon 5, marge 1 × 6 px */
+  background-color: var(--scalar-ui-content-inline-code-bg);
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-family: 'Fira Code', monospace;
+  font-size: calc(1em - 1.5px);
+}
+
+/* Variante compacte : onglet Leçon de l'exercice */
+.content-prose-compact h2 {
+  font-size: 1.0625rem; /* Fraunces 17px */
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.content-prose-compact p,
+.content-prose-compact ul {
+  font-size: 0.96875rem; /* 15.5px */
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}

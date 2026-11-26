@@ -5,11 +5,16 @@
   "private": true,
   "exports": {
     "./enums": "./src/enums.ts",
+    "./labels": "./src/labels.ts",
     "./limits": "./src/limits.ts",
     "./slug": "./src/slug.ts",
     "./hash": "./src/hash.ts",
+    "./markdown": "./src/markdown.ts",
     "./api": "./src/api/index.ts",
     "./api/*": "./src/api/*.ts"
+  },
+  "dependencies": {
+    "marked": "^17.0.6"
   },
   "scripts": {
     "test": "vitest run",

@@ -100,7 +100,9 @@ describe('API du contenu (données fictives)', () => {
     expect(body.data.track).toEqual({
       slug: 'typescript',
       name: 'TypeScript',
+      summary: 'JavaScript avec des types vérifiés. Suppose les bases de JavaScript.',
       programmingLanguage: 'typescript',
+      prerequisite: { slug: 'javascript', name: 'JavaScript' },
     })
     expect(
       body.data.chapters.map((c: { number: number; slug: string; level: string }) => [
@@ -427,6 +429,7 @@ describe('progression de l’apprenant anonyme', () => {
       placement: null,
       passedCount: 0,
       exercises: [],
+      lessons: [],
       certificates: [],
       path: null,
       badges: [],
@@ -796,5 +799,66 @@ describe('compte : inscription, connexion, accès protégé', () => {
     const id = (await call('POST', '/learners')).body.data.id as string
 
     expect((await call('GET', `/learners/${id}/progress`)).status).toBe(200)
+  })
+
+  const CONDITIONS_LESSON = '/tracks/javascript/chapters/conditions/lessons/conditions'
+
+  it('enregistre une leçon terminée par un compte connecté, et la renvoie dans la progression', async () => {
+    const { body, cookie } = await register()
+
+    const done = await call('POST', `${CONDITIONS_LESSON}/completions`, { cookie })
+    const progress = await call('GET', `/learners/${body.data.id}/progress`, { cookie })
+
+    expect(done.status).toBe(200)
+    expect(done.body.data.completedAt).toEqual(expect.any(String))
+    expect(progress.body.data.lessons).toEqual([
+      {
+        track: 'javascript',
+        chapter: 'conditions',
+        lesson: 'conditions',
+        title: expect.any(String),
+        completedAt: done.body.data.completedAt,
+      },
+    ])
+  })
+
+  it('refuse une leçon terminée sans apprenant, et une leçon inconnue', async () => {
+    const id = (await call('POST', '/learners')).body.data.id as string
+
+    const anonymous = await call('POST', `${CONDITIONS_LESSON}/completions`)
+    const unknown = await call(
+      'POST',
+      '/tracks/javascript/chapters/conditions/lessons/inconnue/completions',
+      { learnerId: id },
+    )
+
+    expect(anonymous.status).toBe(400)
+    expect(unknown.status).toBe(404)
+  })
+
+  it('fusionne à la connexion la progression anonyme envoyée en X-Learner-Id', async () => {
+    fakePiston(runInNode)
+    const email = freshEmail()
+    await register(email)
+    const anonymousId = (await call('POST', '/learners')).body.data.id as string
+    await call('POST', `${IS_EVEN}/verifications`, {
+      body: { code: RIGHT },
+      learnerId: anonymousId,
+    })
+    await call('POST', `${CONDITIONS_LESSON}/completions`, { learnerId: anonymousId })
+
+    const login = await call('POST', '/auth/login', {
+      body: { email, password: PASSWORD },
+      learnerId: anonymousId,
+    })
+    const progress = await call('GET', `/learners/${login.body.data.id}/progress`, {
+      cookie: login.cookie,
+    })
+
+    expect(login.status).toBe(200)
+    expect(progress.body.data.passedCount).toBe(1)
+    expect(progress.body.data.lessons).toHaveLength(1)
+    // L'anonyme a été supprimé : son identifiant ne mène plus nulle part.
+    expect((await call('GET', `/learners/${anonymousId}/progress`)).status).toBe(404)
   })
 })

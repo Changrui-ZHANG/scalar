@@ -395,3 +395,60 @@ describe.each(BACKENDS)('reprise d’un apprenant anonyme (%s)', (_name, open) =
     expect(await users.findById(registered.id)).toEqual(registered)
   })
 })
+
+describe.each(BACKENDS)('leçons terminées et fusion d’un anonyme (%s)', (_name, open) => {
+  let users: UserRepository
+  let progress: ProgressRepository
+  const [LESSON, OTHER_LESSON] = CONTENT.lessons
+  beforeEach(() => {
+    ;({ users, progress } = open())
+  })
+
+  it('garde la première date d’une leçon terminée deux fois', async () => {
+    const learner = await users.createAnonymous()
+
+    await progress.recordLessonCompletion(learner.id, LESSON!.id, day(1))
+    await progress.recordLessonCompletion(learner.id, LESSON!.id, day(3))
+
+    expect(await progress.listLessonCompletions(learner.id)).toEqual([
+      { userId: learner.id, lessonId: LESSON!.id, completedAt: day(1) },
+    ])
+  })
+
+  it('additionne les tentatives et garde les dates les plus anciennes', async () => {
+    const anonymous = await users.createAnonymous()
+    const user = (await users.create(account))!
+    await progress.recordAttempt(user.id, FIRST!.id, false, day(1))
+    await progress.recordAttempt(anonymous.id, FIRST!.id, true, day(2))
+    await progress.recordAttempt(anonymous.id, SECOND!.id, true, day(3))
+    await progress.recordLessonCompletion(user.id, LESSON!.id, day(4))
+    await progress.recordLessonCompletion(anonymous.id, LESSON!.id, day(2))
+    await progress.recordLessonCompletion(anonymous.id, OTHER_LESSON!.id, day(5))
+
+    await progress.mergeProgress(anonymous.id, user.id)
+
+    expect(await progress.findProgress(user.id, FIRST!.id)).toEqual({
+      userId: user.id,
+      exerciseId: FIRST!.id,
+      attempts: 2,
+      firstPassedAt: day(2),
+      lastAttemptAt: day(2),
+    })
+    expect((await progress.findProgress(user.id, SECOND!.id))?.firstPassedAt).toEqual(day(3))
+    expect(await progress.listLessonCompletions(user.id)).toEqual([
+      { userId: user.id, lessonId: LESSON!.id, completedAt: day(2) },
+      { userId: user.id, lessonId: OTHER_LESSON!.id, completedAt: day(5) },
+    ])
+  })
+
+  it('supprime un anonyme, jamais un compte inscrit', async () => {
+    const anonymous = await users.createAnonymous()
+    const user = (await users.create(account))!
+
+    await users.deleteAnonymous(anonymous.id)
+    await users.deleteAnonymous(user.id)
+
+    expect(await users.findById(anonymous.id)).toBeNull()
+    expect(await users.findById(user.id)).not.toBeNull()
+  })
+})

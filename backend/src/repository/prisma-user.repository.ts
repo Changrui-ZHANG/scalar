@@ -129,4 +129,12 @@ export class PrismaUserRepository implements UserRepository {
       }),
     )
   }
+
+  async deleteAnonymous(id: string): Promise<void> {
+    if (!UUID.test(id)) {
+      return
+    }
+    // email: null dans le filtre : un compte inscrit n'est jamais supprime ici.
+    await this.prisma.user.deleteMany({ where: { id, email: null } })
+  }
 }

@@ -169,6 +169,48 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '500': { $ref: '#/components/responses/ContentUnavailable' }
 
+  /tracks/{track}/chapters/{chapter}/lessons/{lesson}/completions:
+    post:
+      tags: [Contenu]
+      summary: Marquer une leçon comme terminée
+      description: |
+        Pour l'apprenant de `X-Learner-Id`, sinon celui de la session ; l'un des deux est requis.
+        Une leçon déjà terminée garde sa première date : rappeler la route ne change rien.
+      operationId: completeLesson
+      parameters:
+        - $ref: '#/components/parameters/TrackSlug'
+        - $ref: '#/components/parameters/ChapterSlug'
+        - name: lesson
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Slug' }
+        - $ref: '#/components/parameters/LearnerHeader'
+      security:
+        - {}
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Leçon terminée, avec la date de la première fin de lecture.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+                properties:
+                  data:
+                    type: object
+                    required: [completedAt]
+                    properties:
+                      completedAt: { $ref: '#/components/schemas/DateTime' }
+        '400':
+          description: Ni `X-Learner-Id` ni session.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Failure' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/PremiumRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ContentUnavailable' }
+
   /tracks/{track}/chapters/{chapter}/exercises/{exercise}/verifications:
     post:
       tags: [Contenu]
@@ -506,7 +548,13 @@ paths:
     post:
       tags: [Compte]
       summary: Se connecter
+      description: |
+        Avec `X-Learner-Id` d'un apprenant anonyme, sa progression (exercices, leçons,
+        positionnements) est ajoutée à celle du compte, puis l'anonyme est supprimé.
+        Un identifiant inconnu ou déjà inscrit est ignoré : la connexion réussit quand même.
       operationId: login
+      parameters:
+        - $ref: '#/components/parameters/LearnerHeader'
       requestBody:
         required: true
         content:
@@ -1787,7 +1835,7 @@ components:
 
     LearnerProgress:
       type: object
-      required: [placement, passedCount, exercises, certificates, path, badges]
+      required: [placement, passedCount, exercises, lessons, certificates, path, badges]
       properties:
         placement:
           description: Dernier questionnaire passé, null s'il n'y en a aucun.
@@ -1819,6 +1867,18 @@ components:
               passed: { type: boolean }
               firstPassedAt: { $ref: '#/components/schemas/NullableDateTime' }
               lastAttemptAt: { $ref: '#/components/schemas/DateTime' }
+        lessons:
+          description: Leçons terminées, par identifiant croissant.
+          type: array
+          items:
+            type: object
+            required: [track, chapter, lesson, title, completedAt]
+            properties:
+              track: { $ref: '#/components/schemas/Slug' }
+              chapter: { $ref: '#/components/schemas/Slug' }
+              lesson: { $ref: '#/components/schemas/Slug' }
+              title: { type: string }
+              completedAt: { $ref: '#/components/schemas/DateTime' }
         certificates:
           type: array
           items: { $ref: '#/components/schemas/Certificate' }

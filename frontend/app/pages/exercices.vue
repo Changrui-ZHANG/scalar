@@ -1,66 +1,45 @@
 <script setup lang="ts">
-/**
- * Bac a sable : on colle un script Node complet, on l'execute, on lit ce que le
- * programme a produit. Hors des parcours : aucune progression n'est touchee.
- * Le code n'est pas enrobe avant l'envoi -- les numeros de ligne des erreurs
- * correspondent donc exactement a ce qui est saisi ici.
- */
+import { useSandbox } from '~/composables/useSandbox'
+import { usePageSeo } from '~/composables/usePageSeo'
 
-/**
- * Montre un script qui ecrit sur la sortie standard. Une simple declaration de
- * fonction s'executerait sans erreur et ne produirait rien -- c'est la premiere
- * surprise a desamorcer.
- */
-const EXEMPLE = `// Le résultat affiché est ce que le script écrit sur la sortie standard.
-function addition(a, b) {
-  return a + b
-}
+definePageMeta({ layout: 'default' })
 
-console.log(addition(2, 3))`
-
-useSeoMeta({
-  title: 'Bac à sable — Scalar',
-  description: 'Écrire un script Node.js et lire le résultat de son exécution isolée.',
+usePageSeo({
+  title: ['Bac à sable'],
+  description:
+    'Écrivez un script JavaScript ou TypeScript, exécutez-le et observez sa sortie standard.',
+  type: 'website',
 })
 
-const code = ref('')
-const { result, error, running, run } = useExecution()
+const { language, code, pending, result, error, seed, acceptSeed, dismissSeed, run } = useSandbox()
 </script>
 
 <template>
-  <div class="grid gap-8 py-10">
-    <BreadcrumbTrail :items="[{ label: 'Accueil', to: '/' }, { label: 'Bac à sable' }]" />
+  <div class="flex flex-col gap-4.5 px-4 py-6 md:px-8 md:py-7">
+    <SandboxHeader v-model:language="language" />
 
-    <header class="grid gap-2">
-      <p class="eyebrow">Expérimenter</p>
-      <h1 class="text-4xl font-semibold sm:text-5xl">Bac à sable</h1>
-      <p class="text-muted-foreground max-w-prose">
-        Écrivez un script Node.js et exécutez-le. Le résultat affiché est ce que le script écrit sur
-        la sortie standard. Rien ici ne compte dans vos parcours.
-      </p>
-    </header>
-
-    <form class="grid gap-3" @submit.prevent="run(code)">
-      <CodeEditor
-        id="script"
-        v-model="code"
-        label="Votre script"
-        filename="main.js"
-        :placeholder="EXEMPLE"
-        :rows="16"
+    <div class="flex flex-col gap-4.5 md:flex-row">
+      <SandboxEditor
+        v-model:code="code"
+        :language="language"
+        :pending="pending"
+        :error="error"
+        @run="run"
       />
-      <button
-        type="submit"
-        :disabled="running || !code.trim()"
-        class="btn-primary justify-self-start"
+      <!-- Mobile : Exécuter pleine largeur entre l'éditeur et la sortie (specs-site.md § 8) -->
+      <UiButton
+        class="md:hidden"
+        icon="lucide:play"
+        :disabled="pending"
+        :loading="pending"
+        loading-label="Exécution…"
+        @click="run"
       >
-        {{ running ? 'Exécution en cours…' : 'Exécuter' }}
-      </button>
-    </form>
-
-    <div class="grid gap-4" aria-live="polite">
-      <p v-if="error" role="alert" class="alert-error">{{ error }}</p>
-      <ExecutionOutput v-if="result" :result="result" />
+        Exécuter
+      </UiButton>
+      <SandboxOutput :result="result" :pending="pending" />
     </div>
+
+    <SandboxReplaceDialog :open="seed !== null" @accept="acceptSeed" @dismiss="dismissSeed" />
   </div>
 </template>

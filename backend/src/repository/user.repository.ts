@@ -24,6 +24,8 @@ export interface UserRepository {
   findByEmail(email: string): Promise<User | null>
   /** Revoque tous les jetons emis : renvoie la nouvelle version, null si l'utilisateur n'existe pas. */
   incrementTokenVersion(id: string): Promise<number | null>
+  /** Supprime un apprenant anonyme et, par cascade, sa progression ; jamais un compte inscrit. */
+  deleteAnonymous(id: string): Promise<void>
   /** Null si aucun compte n'a cet email : un anonyme ne peut pas devenir admin. */
   promoteToAdmin(email: string): Promise<User | null>
   upsertAdmin(user: NewUser): Promise<User>
@@ -131,5 +133,11 @@ export class InMemoryUserRepository implements UserRepository {
     stored.passwordHash = user.passwordHash
     stored.role = 'admin'
     return { ...stored }
+  }
+
+  async deleteAnonymous(id: string): Promise<void> {
+    if (this.users.get(id)?.email === null) {
+      this.users.delete(id)
+    }
   }
 }
