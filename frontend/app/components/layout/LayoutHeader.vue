@@ -53,7 +53,7 @@ const isActive = (to: string) => route.path === to || route.path.startsWith(`${t
         </NuxtLink>
       </div>
 
-      <!-- Droite : Recherche, Navigation, Thème, Menu mobile -->
+      <!-- Droite : Recherche, Navigation, Compte, Thème, Menu mobile -->
       <div class="flex items-center gap-2 md:gap-4">
         <LayoutSearchButton @open-search="emit('openSearch')" />
 
@@ -84,6 +84,8 @@ const isActive = (to: string) => route.path === to || route.path.startsWith(`${t
             Bac à sable
           </NuxtLink>
         </nav>
+
+        <LayoutAccount />
 
         <LayoutThemeToggle />
 

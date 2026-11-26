@@ -1,8 +1,22 @@
 <script setup lang="ts">
+import { useAuthStore } from '~/stores/auth'
+
 const open = defineModel<boolean>({ default: false })
+
+const auth = useAuthStore()
+const route = useRoute()
+
+// Après connexion ou inscription, on revient sur la page courante.
+const redirect = computed(() => encodeURIComponent(route.fullPath))
 
 function close() {
   open.value = false
+}
+
+async function onLogout() {
+  close()
+  await auth.logout()
+  await refreshNuxtData()
 }
 </script>
 
@@ -52,6 +66,31 @@ function close() {
           <span>Bac à sable</span>
         </NuxtLink>
       </nav>
+
+      <!-- Compte -->
+      <div v-if="auth.loaded" class="border-border mt-auto flex flex-col gap-3 border-t pt-6">
+        <template v-if="auth.account">
+          <span class="text-ui text-text-muted flex items-center gap-2">
+            <Icon name="lucide:circle-user" class="size-4 shrink-0" />
+            <span class="truncate">{{ auth.account.email }}</span>
+          </span>
+          <UiButton variant="secondary" icon="lucide:log-out" @click="onLogout">
+            Se déconnecter
+          </UiButton>
+        </template>
+        <template v-else>
+          <UiButton :to="`/connexion?redirect=${redirect}`" @click="close">
+            Se connecter
+          </UiButton>
+          <UiButton
+            variant="secondary"
+            :to="`/inscription?redirect=${redirect}`"
+            @click="close"
+          >
+            Créer un compte
+          </UiButton>
+        </template>
+      </div>
     </div>
   </div>
 </template>

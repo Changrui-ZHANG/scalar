@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { THEME_INIT_SCRIPT } from '~/composables/useTheme'
+import { useAuthStore } from '~/stores/auth'
 import { useDraftsStore } from '~/stores/drafts'
 import { usePreferencesStore } from '~/stores/preferences'
 import { useProgressStore } from '~/stores/progress'
@@ -25,11 +26,13 @@ useSchemaOrg([
 const progressStore = useProgressStore()
 const draftsStore = useDraftsStore()
 const preferencesStore = usePreferencesStore()
+const authStore = useAuthStore()
 
 onMounted(() => {
   progressStore.loadFromStorage()
   draftsStore.loadFromStorage()
   preferencesStore.loadFromStorage()
+  authStore.loadSession()
 })
 </script>
 

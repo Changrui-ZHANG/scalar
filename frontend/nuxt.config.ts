@@ -38,6 +38,9 @@ export default defineNuxtConfig({
   routeRules: {
     // Bac à sable : rien à indexer.
     '/exercices': { robots: false },
+    // Pages de compte : rien à indexer, et hors du sitemap.
+    '/connexion': { robots: false },
+    '/inscription': { robots: false },
   },
   sitemap: {
     sources: ['/api/__sitemap__/urls'],

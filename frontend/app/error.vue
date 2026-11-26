@@ -4,6 +4,7 @@
 // - 403 : chapitre Premium ;
 // - autre (API injoignable, 5xx) : contenu momentanément indisponible.
 import type { NuxtError } from '#app'
+import { useAuthStore } from '~/stores/auth'
 
 interface Props {
   error: NuxtError
@@ -14,6 +15,17 @@ const { error } = defineProps<Props>()
 const isNotFound = computed(() => error.statusCode === 404)
 // 403 : le seul refus du contenu public est un chapitre Premium.
 const isPremium = computed(() => error.statusCode === 403)
+
+const auth = useAuthStore()
+const route = useRoute()
+
+// En cas d'erreur, Nuxt affiche cette page à la place d'app.vue :
+// on lit donc ici aussi la session, pour l'en-tête et le bouton « Se connecter ».
+onMounted(() => {
+  if (!auth.loaded) {
+    auth.loadSession()
+  }
+})
 
 function goTo(path: string) {
   clearError({ redirect: path })
@@ -48,8 +60,16 @@ function retry() {
         text="Les premiers chapitres de chaque parcours sont gratuits. La suite est réservée aux abonnés Premium."
       >
         <template #actions>
-          <UiButton @click="goTo('/parcours')">Voir les parcours</UiButton>
-          <UiButton variant="secondary" @click="goTo('/')">Accueil</UiButton>
+          <!-- Un abonné non connecté retrouve son accès en se connectant. -->
+          <UiButton
+            v-if="!auth.account"
+            @click="goTo(`/connexion?redirect=${encodeURIComponent(route.fullPath)}`)"
+          >
+            Se connecter
+          </UiButton>
+          <UiButton :variant="auth.account ? 'primary' : 'secondary'" @click="goTo('/parcours')">
+            Voir les parcours
+          </UiButton>
         </template>
       </UiStatePanel>
 
