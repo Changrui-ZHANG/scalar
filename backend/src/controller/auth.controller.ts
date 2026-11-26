@@ -9,15 +9,23 @@ import { contentUnavailable } from '../http/errors.ts'
 import type { SessionSettings } from '../http/require-auth.ts'
 import { currentUser, requireAuth } from '../http/require-auth.ts'
 import { clearSessionCookie, readSessionToken, setSessionCookie } from '../http/session-cookie.ts'
+import { logger } from '../logger.ts'
 import type { Session } from '../service/auth.service.ts'
 import { parseCredentials, parseLoginCredentials } from '../service/auth.service.ts'
+import type { LearnerService } from '../service/learner.service.ts'
 
 export class AuthController {
   private readonly settings: SessionSettings
+  private readonly learners: LearnerService
   private readonly attemptsLimits: AuthAttemptsLimits
 
-  constructor(settings: SessionSettings, attemptsLimits: AuthAttemptsLimits) {
+  constructor(
+    settings: SessionSettings,
+    learners: LearnerService,
+    attemptsLimits: AuthAttemptsLimits,
+  ) {
     this.settings = settings
+    this.learners = learners
     this.attemptsLimits = attemptsLimits
   }
 
@@ -61,10 +69,24 @@ export class AuthController {
         fail(res, 401, MESSAGES.invalidCredentials)
         return
       }
+      await this.mergeAnonymous(req.get(LEARNER_HEADER), session.user.id)
       this.open(res, session)
       ok(res, session.user)
     } catch (error: unknown) {
       contentUnavailable(res, error)
+    }
+  }
+
+  /** Avec X-Learner-Id, la progression anonyme de ce navigateur passe au compte. */
+  private async mergeAnonymous(learnerId: string | undefined, userId: string): Promise<void> {
+    if (learnerId === undefined) {
+      return
+    }
+    try {
+      await this.learners.mergeAnonymous(learnerId, userId)
+    } catch (error: unknown) {
+      // La connexion compte plus que la fusion : elle reussit quand meme.
+      logger.error({ err: error }, 'Fusion de la progression anonyme impossible')
     }
   }
 

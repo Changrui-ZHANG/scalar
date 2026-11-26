@@ -5,6 +5,7 @@ import type {
   ExerciseProgress as ExerciseProgressRow,
   ExerciseTestCase as ExerciseTestCaseRow,
   Lesson as LessonRow,
+  LessonProgress as LessonProgressRow,
   Placement as PlacementRow,
   QuestionnaireOption as QuestionnaireOptionRow,
   QuestionnaireQuestion as QuestionnaireQuestionRow,
@@ -21,6 +22,7 @@ import type { Exercise } from '../entity/exercise.entity.ts'
 import type { ExerciseProgress } from '../entity/exercise-progress.entity.ts'
 import type { ExerciseTestCase } from '../entity/exercise-test-case.entity.ts'
 import type { Lesson } from '../entity/lesson.entity.ts'
+import type { LessonProgress } from '../entity/lesson-progress.entity.ts'
 import type { Placement, PlacementLevel } from '../entity/placement.entity.ts'
 import type { QuestionnaireOption } from '../entity/questionnaire-option.entity.ts'
 import type { QuestionnaireQuestion } from '../entity/questionnaire-question.entity.ts'
@@ -140,6 +142,14 @@ export function toExerciseProgress(row: ExerciseProgressRow): ExerciseProgress {
     attempts: row.attempts,
     firstPassedAt: row.firstPassedAt,
     lastAttemptAt: row.lastAttemptAt,
+  }
+}
+
+export function toLessonProgress(row: LessonProgressRow): LessonProgress {
+  return {
+    userId: row.userId,
+    lessonId: row.lessonId,
+    completedAt: row.completedAt,
   }
 }
 

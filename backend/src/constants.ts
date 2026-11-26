@@ -113,6 +113,7 @@ export const MESSAGES = {
   exerciseNotFound: 'Exercice introuvable.',
   questionNotFound: 'Question introuvable.',
   learnerNotFound: 'Apprenant introuvable.',
+  learnerRequired: 'Apprenant requis : en-tête X-Learner-Id ou session.',
   certificateNotFound: 'Certificat introuvable.',
   trackNotCompleted: 'Parcours pas encore terminé : tous ses exercices doivent être réussis.',
   invalidEmail: 'Adresse email invalide.',

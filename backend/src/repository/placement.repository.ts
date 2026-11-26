@@ -10,6 +10,8 @@ export interface PlacementRepository {
   assignToUser(id: number, userId: string): Promise<Placement | null>
   /** Le plus recent : un apprenant peut repasser le questionnaire. */
   findLatestByUser(userId: string): Promise<Placement | null>
+  /** Rattache a `intoUserId` tous les resultats de `fromUserId` (fusion a la connexion). */
+  reassignUser(fromUserId: string, intoUserId: string): Promise<void>
 }
 
 export class InMemoryPlacementRepository implements PlacementRepository {
@@ -38,5 +40,13 @@ export class InMemoryPlacementRepository implements PlacementRepository {
   async findLatestByUser(userId: string): Promise<Placement | null> {
     const latest = this.placements.findLast((p) => p.userId === userId)
     return latest ? { ...latest } : null
+  }
+
+  async reassignUser(fromUserId: string, intoUserId: string): Promise<void> {
+    for (const placement of this.placements) {
+      if (placement.userId === fromUserId) {
+        placement.userId = intoUserId
+      }
+    }
   }
 }
