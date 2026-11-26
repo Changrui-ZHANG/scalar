@@ -25,11 +25,14 @@ export async function useTrack(slug?: MaybeRefOrGetter<string>): Promise<TrackSt
 
   const progressStore = useProgressStore()
 
-  const { data: trackData, refresh } = await useAsyncData<TrackView>(
+  const { data: trackData, error, refresh } = await useAsyncData<TrackView>(
     () => `track:${trackSlug.value}`,
     () => fetchTrack(trackSlug.value),
     { watch: [trackSlug] },
   )
+
+  // Erreur de l'API (403 Premium, 5xx…) : la page d'erreur reçoit son vrai statut.
+  if (error.value) throw toPageError(error.value)
 
   const track = computed<TrackView>(() => {
     if (!trackData.value) {

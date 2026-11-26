@@ -29,14 +29,18 @@ export async function useExercisePage(): Promise<ExercisePage> {
 
   const preferencesStore = usePreferencesStore()
 
-  const { data: trackData } = await useAsyncData<TrackView>(`track:${trackSlug}`, () =>
+  const { data: trackData, error: trackError } = await useAsyncData<TrackView>(`track:${trackSlug}`, () =>
     fetchTrack(trackSlug),
   )
 
-  const { data: exerciseData } = await useAsyncData<PublicExercise>(
+  const { data: exerciseData, error: exerciseError } = await useAsyncData<PublicExercise>(
     `exercise:${trackSlug}:${chapterSlug}:${exerciseSlug}`,
     () => fetchExercise(trackSlug, chapterSlug, exerciseSlug),
   )
+
+  // Erreur de l'API (403 Premium, 5xx…) : la page d'erreur reçoit son vrai statut.
+  const fetchError = trackError.value ?? exerciseError.value
+  if (fetchError) throw toPageError(fetchError)
 
   const track = computed<TrackView>(() => {
     if (!trackData.value) {
