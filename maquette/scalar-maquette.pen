@@ -43681,6 +43681,16 @@
                   "fontFamily": "$s-font-text",
                   "fontSize": 14,
                   "fontWeight": "500"
+                },
+                {
+                  "type": "icon",
+                  "id": "ypg16",
+                  "name": "Cadenas",
+                  "width": 12,
+                  "height": 12,
+                  "icon": "lock",
+                  "library": "lucide",
+                  "fill": "$s-text-muted"
                 }
               ]
             },
@@ -43731,6 +43741,16 @@
                   "fontFamily": "$s-font-text",
                   "fontSize": 14,
                   "fontWeight": "500"
+                },
+                {
+                  "type": "icon",
+                  "id": "bBd2S",
+                  "name": "Cadenas",
+                  "width": 12,
+                  "height": 12,
+                  "icon": "lock",
+                  "library": "lucide",
+                  "fill": "$s-text-muted"
                 }
               ]
             },
@@ -43781,6 +43801,16 @@
                   "fontFamily": "$s-font-text",
                   "fontSize": 14,
                   "fontWeight": "500"
+                },
+                {
+                  "type": "icon",
+                  "id": "At5rW",
+                  "name": "Cadenas",
+                  "width": 12,
+                  "height": 12,
+                  "icon": "lock",
+                  "library": "lucide",
+                  "fill": "$s-text-muted"
                 }
               ]
             },
@@ -43831,6 +43861,16 @@
                   "fontFamily": "$s-font-text",
                   "fontSize": 14,
                   "fontWeight": "500"
+                },
+                {
+                  "type": "icon",
+                  "id": "t8WSlO",
+                  "name": "Cadenas",
+                  "width": 12,
+                  "height": 12,
+                  "icon": "lock",
+                  "library": "lucide",
+                  "fill": "$s-text-muted"
                 }
               ]
             },
@@ -43881,6 +43921,16 @@
                   "fontFamily": "$s-font-text",
                   "fontSize": 14,
                   "fontWeight": "500"
+                },
+                {
+                  "type": "icon",
+                  "id": "I4SqHw",
+                  "name": "Cadenas",
+                  "width": 12,
+                  "height": 12,
+                  "icon": "lock",
+                  "library": "lucide",
+                  "fill": "$s-text-muted"
                 }
               ]
             },
@@ -49882,15 +49932,35 @@
                                   ]
                                 },
                                 {
-                                  "type": "text",
-                                  "id": "ghbOg",
-                                  "fill": "$s-primary",
-                                  "textGrowth": "fixed-width",
+                                  "type": "frame",
+                                  "id": "dFcAE",
+                                  "name": "Statut Premium",
                                   "width": 70,
-                                  "textAlign": "right",
-                                  "fontFamily": "$s-font-text",
-                                  "fontSize": 13,
-                                  "fontWeight": "600"
+                                  "gap": 4,
+                                  "justifyContent": "end",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "icon",
+                                      "id": "Og7h6",
+                                      "name": "Cadenas",
+                                      "width": 12,
+                                      "height": 12,
+                                      "icon": "lock",
+                                      "library": "lucide",
+                                      "fill": "$s-text-muted"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "Zp4nU",
+                                      "name": "Premium",
+                                      "fill": "$s-text-muted",
+                                      "content": "Premium",
+                                      "fontFamily": "$s-font-text",
+                                      "fontSize": 13,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
                                 }
                               ]
                             },
@@ -50007,15 +50077,35 @@
                                   ]
                                 },
                                 {
-                                  "type": "text",
-                                  "id": "m7IiTN",
-                                  "fill": "$s-primary",
-                                  "textGrowth": "fixed-width",
+                                  "type": "frame",
+                                  "id": "TBUzj",
+                                  "name": "Statut Premium",
                                   "width": 70,
-                                  "textAlign": "right",
-                                  "fontFamily": "$s-font-text",
-                                  "fontSize": 13,
-                                  "fontWeight": "600"
+                                  "gap": 4,
+                                  "justifyContent": "end",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "icon",
+                                      "id": "kS2N5",
+                                      "name": "Cadenas",
+                                      "width": 12,
+                                      "height": 12,
+                                      "icon": "lock",
+                                      "library": "lucide",
+                                      "fill": "$s-text-muted"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "t18qxf",
+                                      "name": "Premium",
+                                      "fill": "$s-text-muted",
+                                      "content": "Premium",
+                                      "fontFamily": "$s-font-text",
+                                      "fontSize": 13,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
                                 }
                               ]
                             },
@@ -50132,15 +50222,35 @@
                                   ]
                                 },
                                 {
-                                  "type": "text",
-                                  "id": "lTgGB",
-                                  "fill": "$s-primary",
-                                  "textGrowth": "fixed-width",
+                                  "type": "frame",
+                                  "id": "y6YyLt",
+                                  "name": "Statut Premium",
                                   "width": 70,
-                                  "textAlign": "right",
-                                  "fontFamily": "$s-font-text",
-                                  "fontSize": 13,
-                                  "fontWeight": "600"
+                                  "gap": 4,
+                                  "justifyContent": "end",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "icon",
+                                      "id": "lGE6I",
+                                      "name": "Cadenas",
+                                      "width": 12,
+                                      "height": 12,
+                                      "icon": "lock",
+                                      "library": "lucide",
+                                      "fill": "$s-text-muted"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "xgmSP",
+                                      "name": "Premium",
+                                      "fill": "$s-text-muted",
+                                      "content": "Premium",
+                                      "fontFamily": "$s-font-text",
+                                      "fontSize": 13,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
                                 }
                               ]
                             },
@@ -50257,15 +50367,35 @@
                                   ]
                                 },
                                 {
-                                  "type": "text",
-                                  "id": "jaTwM",
-                                  "fill": "$s-primary",
-                                  "textGrowth": "fixed-width",
+                                  "type": "frame",
+                                  "id": "d1nNQ",
+                                  "name": "Statut Premium",
                                   "width": 70,
-                                  "textAlign": "right",
-                                  "fontFamily": "$s-font-text",
-                                  "fontSize": 13,
-                                  "fontWeight": "600"
+                                  "gap": 4,
+                                  "justifyContent": "end",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "icon",
+                                      "id": "z043H",
+                                      "name": "Cadenas",
+                                      "width": 12,
+                                      "height": 12,
+                                      "icon": "lock",
+                                      "library": "lucide",
+                                      "fill": "$s-text-muted"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "JnjIk",
+                                      "name": "Premium",
+                                      "fill": "$s-text-muted",
+                                      "content": "Premium",
+                                      "fontFamily": "$s-font-text",
+                                      "fontSize": 13,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
                                 }
                               ]
                             },
@@ -50382,15 +50512,35 @@
                                   ]
                                 },
                                 {
-                                  "type": "text",
-                                  "id": "Q3kbSD",
-                                  "fill": "$s-primary",
-                                  "textGrowth": "fixed-width",
+                                  "type": "frame",
+                                  "id": "ZI10C",
+                                  "name": "Statut Premium",
                                   "width": 70,
-                                  "textAlign": "right",
-                                  "fontFamily": "$s-font-text",
-                                  "fontSize": 13,
-                                  "fontWeight": "600"
+                                  "gap": 4,
+                                  "justifyContent": "end",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "icon",
+                                      "id": "n5SUw",
+                                      "name": "Cadenas",
+                                      "width": 12,
+                                      "height": 12,
+                                      "icon": "lock",
+                                      "library": "lucide",
+                                      "fill": "$s-text-muted"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "vQApS",
+                                      "name": "Premium",
+                                      "fill": "$s-text-muted",
+                                      "content": "Premium",
+                                      "fontFamily": "$s-font-text",
+                                      "fontSize": 13,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
                                 }
                               ]
                             }
@@ -57253,6 +57403,35 @@
                           "fontFamily": "$s-font-text",
                           "fontSize": 15,
                           "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "CrUrr",
+                          "name": "Statut Premium",
+                          "gap": 4,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon",
+                              "id": "XznvW",
+                              "name": "Cadenas",
+                              "width": 12,
+                              "height": 12,
+                              "icon": "lock",
+                              "library": "lucide",
+                              "fill": "$s-text-muted"
+                            },
+                            {
+                              "type": "text",
+                              "id": "HjcQr",
+                              "name": "Premium",
+                              "fill": "$s-text-muted",
+                              "content": "Premium",
+                              "fontFamily": "$s-font-text",
+                              "fontSize": 12.5,
+                              "fontWeight": "600"
+                            }
+                          ]
                         }
                       ]
                     },
@@ -57304,6 +57483,35 @@
                           "fontFamily": "$s-font-text",
                           "fontSize": 15,
                           "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "M4AcR",
+                          "name": "Statut Premium",
+                          "gap": 4,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon",
+                              "id": "FszoL",
+                              "name": "Cadenas",
+                              "width": 12,
+                              "height": 12,
+                              "icon": "lock",
+                              "library": "lucide",
+                              "fill": "$s-text-muted"
+                            },
+                            {
+                              "type": "text",
+                              "id": "uQc21",
+                              "name": "Premium",
+                              "fill": "$s-text-muted",
+                              "content": "Premium",
+                              "fontFamily": "$s-font-text",
+                              "fontSize": 12.5,
+                              "fontWeight": "600"
+                            }
+                          ]
                         }
                       ]
                     }
@@ -62815,10 +63023,22 @@
                   "type": "text",
                   "id": "H7RSPj",
                   "fill": "$s-text-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
                   "content": "Conditions",
                   "fontFamily": "$s-font-text",
                   "fontSize": 15,
                   "fontWeight": "500"
+                },
+                {
+                  "type": "icon",
+                  "id": "xroAn",
+                  "name": "Cadenas",
+                  "width": 12,
+                  "height": 12,
+                  "icon": "lock",
+                  "library": "lucide",
+                  "fill": "$s-text-muted"
                 }
               ]
             },
@@ -62861,10 +63081,22 @@
                   "type": "text",
                   "id": "C4kfx1",
                   "fill": "$s-text-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
                   "content": "Boucles",
                   "fontFamily": "$s-font-text",
                   "fontSize": 15,
                   "fontWeight": "500"
+                },
+                {
+                  "type": "icon",
+                  "id": "Jnw1G",
+                  "name": "Cadenas",
+                  "width": 12,
+                  "height": 12,
+                  "icon": "lock",
+                  "library": "lucide",
+                  "fill": "$s-text-muted"
                 }
               ]
             },
@@ -62907,10 +63139,22 @@
                   "type": "text",
                   "id": "WU4nN",
                   "fill": "$s-text-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
                   "content": "Fonctions",
                   "fontFamily": "$s-font-text",
                   "fontSize": 15,
                   "fontWeight": "500"
+                },
+                {
+                  "type": "icon",
+                  "id": "z1yG1",
+                  "name": "Cadenas",
+                  "width": 12,
+                  "height": 12,
+                  "icon": "lock",
+                  "library": "lucide",
+                  "fill": "$s-text-muted"
                 }
               ]
             },
@@ -63237,6 +63481,408 @@
           "fontFamily": "Inter",
           "fontSize": 24,
           "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Ob3TU",
+      "x": 4220,
+      "y": -3617,
+      "name": "Site v2 / Chapitre Premium",
+      "theme": {
+        "site": "clair"
+      },
+      "clip": true,
+      "width": 1440,
+      "height": 700,
+      "fill": "$s-bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "C0DouK",
+          "type": "ref",
+          "ref": "a6e1h9",
+          "name": "Header",
+          "width": "fill_container",
+          "descendants": {
+            "N9Hegw": {
+              "enabled": false
+            },
+            "lwy0e": {
+              "fill": "$s-text-muted",
+              "fontWeight": "500"
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "ZVYec",
+          "name": "Main",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            0,
+            0,
+            60,
+            0
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "mnsyj",
+              "name": "Icon",
+              "width": 64,
+              "height": 64,
+              "fill": "$s-surface-muted",
+              "cornerRadius": 20,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "TQGqb",
+                  "width": 28,
+                  "height": 28,
+                  "icon": "lock",
+                  "library": "lucide",
+                  "fill": "$s-text-muted"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "yVKJT",
+              "fill": "$s-text",
+              "content": "Chapitre réservé aux abonnés Premium",
+              "fontFamily": "$s-font-title",
+              "fontSize": 38,
+              "fontWeight": "600",
+              "letterSpacing": -0.7
+            },
+            {
+              "type": "text",
+              "id": "Yuciv",
+              "fill": "$s-text-muted",
+              "textGrowth": "fixed-width",
+              "width": 520,
+              "content": "Les premiers chapitres de chaque parcours sont gratuits. La suite est réservée aux abonnés Premium.",
+              "lineHeight": 1.45,
+              "textAlign": "center",
+              "fontFamily": "$s-font-text",
+              "fontSize": 17,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "gAopV",
+              "name": "Buttons",
+              "gap": 12,
+              "padding": [
+                8,
+                0,
+                0,
+                0
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "oxrFF",
+                  "name": "Voir les parcours",
+                  "fill": "$s-primary",
+                  "cornerRadius": 12,
+                  "gap": 8,
+                  "padding": [
+                    12,
+                    20
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "IFmeV",
+                      "fill": "$s-on-primary",
+                      "content": "Voir les parcours",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 15.5,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "D96Id",
+                  "name": "Accueil",
+                  "fill": "$s-surface",
+                  "cornerRadius": 12,
+                  "stroke": "$s-border",
+                  "strokeWidth": 1,
+                  "gap": 8,
+                  "padding": [
+                    12,
+                    20
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "yhIbC",
+                      "fill": "$s-text",
+                      "content": "Accueil",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 15.5,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "F83N9E",
+      "x": 5760,
+      "y": -3617,
+      "name": "Site v2 / Mobile — Chapitre Premium",
+      "theme": {
+        "site": "clair"
+      },
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$s-bg",
+      "cornerRadius": 28,
+      "stroke": "$s-border",
+      "strokeWidth": 1,
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "V5Yd45",
+          "name": "Top",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$s-surface",
+          "stroke": "$s-border",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "padding": [
+            0,
+            16
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "n4ejq",
+              "name": "Logo",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "A2ASn",
+                  "name": "Mark",
+                  "width": 22,
+                  "height": 22,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 3.8500000000000005,
+                      "id": "k3sYo",
+                      "x": 3.0250000000000004,
+                      "y": 3.0250000000000004,
+                      "name": "Outer",
+                      "width": 15.950000000000003,
+                      "height": 15.950000000000003,
+                      "stroke": "$s-primary",
+                      "strokeWidth": 2.2
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 1.2375,
+                      "id": "oSYdy",
+                      "x": 5.6375,
+                      "y": 10.037500000000005,
+                      "name": "Inner",
+                      "fill": "$s-primary",
+                      "width": 6.325,
+                      "height": 6.325
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "mGQed",
+                  "fill": "$s-text",
+                  "content": "Scalar",
+                  "fontFamily": "$s-font-title",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "P9GHw",
+              "name": "R",
+              "gap": 14,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "O2kWU",
+                  "width": 19,
+                  "height": 19,
+                  "icon": "sun-moon",
+                  "library": "lucide",
+                  "fill": "$s-text-muted"
+                },
+                {
+                  "type": "icon",
+                  "id": "FHBMZ",
+                  "width": 21,
+                  "height": 21,
+                  "icon": "menu",
+                  "library": "lucide",
+                  "fill": "$s-text"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "jALsE",
+          "name": "Body",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": [
+            0,
+            24,
+            80,
+            24
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "F0cUt",
+              "name": "Icon",
+              "width": 58,
+              "height": 58,
+              "fill": "$s-surface-muted",
+              "cornerRadius": 18,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "nK7Si",
+                  "width": 26,
+                  "height": 26,
+                  "icon": "lock",
+                  "library": "lucide",
+                  "fill": "$s-text-muted"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "YGuss",
+              "fill": "$s-text",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Chapitre réservé aux abonnés Premium",
+              "textAlign": "center",
+              "fontFamily": "$s-font-title",
+              "fontSize": 28,
+              "fontWeight": "600",
+              "letterSpacing": -0.5
+            },
+            {
+              "type": "text",
+              "id": "QyBtJ",
+              "fill": "$s-text-muted",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Les premiers chapitres de chaque parcours sont gratuits. La suite est réservée aux abonnés Premium.",
+              "lineHeight": 1.45,
+              "textAlign": "center",
+              "fontFamily": "$s-font-text",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "cABk3",
+              "name": "Voir les parcours",
+              "width": "fill_container",
+              "height": 46,
+              "fill": "$s-primary",
+              "cornerRadius": 12,
+              "gap": 8,
+              "padding": [
+                0,
+                18
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "QCO8o",
+                  "fill": "$s-on-primary",
+                  "content": "Voir les parcours",
+                  "fontFamily": "$s-font-text",
+                  "fontSize": 15.5,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "L6S71",
+              "name": "Accueil",
+              "width": "fill_container",
+              "height": 46,
+              "fill": "$s-surface",
+              "cornerRadius": 12,
+              "stroke": "$s-border",
+              "strokeWidth": 1,
+              "gap": 8,
+              "padding": [
+                0,
+                18
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "V0Zrbi",
+                  "fill": "$s-text",
+                  "content": "Accueil",
+                  "fontFamily": "$s-font-text",
+                  "fontSize": 15.5,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
         }
       ]
     }
