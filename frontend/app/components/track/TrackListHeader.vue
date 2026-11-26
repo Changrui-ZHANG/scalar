@@ -10,5 +10,11 @@
     <p class="text-text-muted md:text-body text-base">
       Chaque parcours suit un ordre : leçons, puis exercices corrigés automatiquement.
     </p>
+    <p class="text-ui text-text-muted">
+      Pas sûr de votre niveau ?
+      <NuxtLink to="/positionnement" class="text-primary font-semibold hover:underline">
+        Faites le test de positionnement
+      </NuxtLink>
+    </p>
   </div>
 </template>
