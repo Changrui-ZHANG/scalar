@@ -34,13 +34,19 @@ export function fetchExercise(track: string, chapter: string, exercise: string):
   )
 }
 
-export function verifyExercise(exercise: ExerciseRef, body: VerificationRequest): Promise<VerificationResult> {
+// headers : X-Learner-Id d'un apprenant anonyme, pour que le serveur enregistre la tentative.
+export function verifyExercise(
+  exercise: ExerciseRef,
+  body: VerificationRequest,
+  headers: Record<string, string> = {},
+): Promise<VerificationResult> {
   return apiFetch<VerificationResult>(
     `/tracks/${encodeURIComponent(exercise.track)}/chapters/${encodeURIComponent(exercise.chapter)}/exercises/${encodeURIComponent(exercise.slug)}/verifications`,
     {
       method: 'POST',
       body: body as unknown as Record<string, unknown>,
       timeout: 20_000,
+      headers,
     }
   )
 }

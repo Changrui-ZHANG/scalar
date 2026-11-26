@@ -17,6 +17,9 @@ import type {
 } from '~/types/exercise'
 import { executeCode } from '~/services/executions'
 import { verifyExercise } from '~/services/tracks'
+import { forgetLearnerId } from '~/services/learnerId'
+import { useAuthStore } from '~/stores/auth'
+import { apiErrorStatus } from '~/utils/apiError'
 import { exerciseKey, listEpisodes } from '~/utils/track'
 import { isCodeTooLarge, CODE_TOO_LARGE_MESSAGE, runErrorMessage } from '~/utils/execution'
 
@@ -102,6 +105,29 @@ export function useExerciseRun(
     }
   }
 
+  // Vérifie le code en rattachant la tentative à l'apprenant (compte ou anonyme).
+  async function verifyAndRecord(): Promise<VerificationResult> {
+    const exerciseRef = {
+      track: tr.value.track.slug,
+      chapter: ex.value.chapter.slug,
+      slug: ex.value.slug,
+    }
+    const body = { code: draft.code.value }
+    const headers = await useAuthStore().learnerHeaders()
+    try {
+      return await verifyExercise(exerciseRef, body, headers)
+    } catch (err) {
+      // 401 ou 404 avec un identifiant anonyme : il a été repris par un compte
+      // ou n'existe plus. On l'oublie et on vérifie sans suivi plutôt que d'échouer.
+      const status = apiErrorStatus(err)
+      if (headers['X-Learner-Id'] && (status === 401 || status === 404)) {
+        forgetLearnerId()
+        return await verifyExercise(exerciseRef, body)
+      }
+      throw err
+    }
+  }
+
   async function verify(): Promise<void> {
     if (isCodeTooLarge(draft.code.value)) {
       error.value = CODE_TOO_LARGE_MESSAGE
@@ -114,14 +140,7 @@ export function useExerciseRun(
     mobileTab.value = 'result'
 
     try {
-      const res = await verifyExercise(
-        {
-          track: tr.value.track.slug,
-          chapter: ex.value.chapter.slug,
-          slug: ex.value.slug,
-        },
-        { code: draft.code.value },
-      )
+      const res = await verifyAndRecord()
       verification.value = res
       execution.value = res.execution
 

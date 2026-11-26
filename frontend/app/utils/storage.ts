@@ -16,6 +16,8 @@ export const SANDBOX_STORAGE_KEY = 'scalar:sandbox:v1'
 export const THEME_STORAGE_KEY = 'scalar:theme:v1'
 export const PLAN_COLLAPSED_STORAGE_KEY = 'scalar:plan-collapsed:v1'
 export const SANDBOX_SEED_STORAGE_KEY = 'scalar:sandbox-seed:v1'
+// Identifiant de l'apprenant anonyme créé par POST /learners (texte brut, un UUID).
+export const LEARNER_STORAGE_KEY = 'scalar:learner:v1'
 
 export const EMPTY_PROGRESS: StoredProgress = {
   started: [],
@@ -226,4 +228,12 @@ export function parseSandboxSeed(raw: string | null): SandboxSeed | null {
   } catch {
     return null
   }
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Identifiant d'apprenant lu dans le navigateur ; null s'il est absent ou abîmé. */
+export function parseLearnerId(raw: string | null): string | null {
+  if (raw === null) return null
+  return UUID_PATTERN.test(raw) ? raw : null
 }

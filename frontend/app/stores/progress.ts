@@ -110,8 +110,34 @@ export const useProgressStore = defineStore('progress', () => {
     return newKeys
   }
 
+  // Ajoute des épisodes terminés venus du serveur (exercices réussis sur un
+  // autre appareil). Contrairement à complete(), la date de dernière visite
+  // ne bouge pas : l'ordre des parcours sur l'accueil reste celui de l'apprenant.
+  function addCompleted(track: string, keys: readonly string[]): void {
+    const update: StoredProgress = {
+      started: [track],
+      completed: { [track]: keys },
+      lastVisited: {},
+    }
+
+    let merged = mergeProgress(progress.value, update)
+
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const stored = parseProgress(localStorage.getItem(PROGRESS_STORAGE_KEY))
+        merged = mergeProgress(stored, update)
+        localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(merged))
+      } catch {
+        // Stockage plein ou bloqué
+      }
+    }
+
+    progress.value = merged
+  }
+
   return {
     loadFromStorage,
+    addCompleted,
     progress,
     startedByRecency,
     completedFor,

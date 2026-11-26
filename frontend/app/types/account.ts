@@ -9,3 +9,21 @@ export interface Credentials {
   readonly email: string
   readonly password: string
 }
+
+// Un exercice tenté, dans GET /learners/:id/progress.
+export interface LearnerExercise {
+  readonly track: string
+  readonly chapter: string
+  readonly exercise: string
+  readonly title: string
+  readonly attempts: number
+  readonly passed: boolean
+  readonly firstPassedAt: string | null
+  readonly lastAttemptAt: string
+}
+
+// Progression enregistrée par le serveur. Seuls les champs lus par le site sont décrits.
+export interface LearnerProgress {
+  readonly passedCount: number
+  readonly exercises: readonly LearnerExercise[]
+}
