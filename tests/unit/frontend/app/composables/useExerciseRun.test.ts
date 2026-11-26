@@ -30,6 +30,7 @@ describe('composables/useExerciseRun', () => {
         summary: '',
         level: 'beginner',
         number: 1,
+        free: true,
         lessons: [],
         exercises: [{ slug: 'echanger-valeurs', title: 'Échanger deux valeurs', instructions: '' }],
       },

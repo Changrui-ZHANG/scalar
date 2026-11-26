@@ -23,6 +23,7 @@ describe('Composants de mise en page', () => {
         summary: 'Déclaration de variables',
         level: 'beginner',
         number: 1,
+        free: true,
         lessons: [
           {
             slug: 'let-const',
@@ -107,5 +108,22 @@ describe('Composants de mise en page', () => {
     expect(wrapper.text()).toContain('Débutant') // affiché en majuscules par le CSS
     expect(wrapper.text()).toContain('Variables')
     expect(wrapper.text()).toContain('let et const')
+    expect(wrapper.find('[aria-label="Premium"]').exists()).toBe(false)
+  })
+
+  it('LayoutPlan signale un chapitre Premium par un cadenas', async () => {
+    const [chapter] = sampleTrackView.chapters
+    const wrapper = await mountSuspended(LayoutPlan, {
+      props: {
+        track: { ...sampleTrackView, chapters: [{ ...chapter!, free: false }] },
+        episodes: [sampleEpisode],
+        progress: { done: 0, total: 2, percent: 0, status: 'in_progress', current: sampleEpisode },
+        completed: new Set(),
+        displayedKey: null,
+        collapsed: false,
+      },
+    })
+
+    expect(wrapper.find('[aria-label="Premium"]').exists()).toBe(true)
   })
 })

@@ -20,6 +20,7 @@ const MOCK_TRACK: TrackView = {
       summary: 'Les bases',
       level: 'beginner',
       number: 1,
+      free: true,
       lessons: [
         {
           slug: 'l1',

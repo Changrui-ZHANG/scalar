@@ -38,6 +38,8 @@ export interface TrackViewChapter {
   readonly summary: string
   readonly level: ChapterLevel
   readonly number: number
+  /** Faux au-delà des chapitres gratuits : leçons et exercices répondent 403 sans Premium. */
+  readonly free: boolean
   readonly lessons: readonly TrackViewLesson[]
   readonly exercises: readonly TrackViewExercise[]
 }

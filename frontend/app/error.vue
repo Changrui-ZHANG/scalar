@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Page d'erreur (specs-site.md § 11) :
 // - 404 : page introuvable ;
+// - 403 : chapitre Premium ;
 // - autre (API injoignable, 5xx) : contenu momentanément indisponible.
 import type { NuxtError } from '#app'
 
@@ -11,6 +12,8 @@ interface Props {
 const { error } = defineProps<Props>()
 
 const isNotFound = computed(() => error.statusCode === 404)
+// 403 : le seul refus du contenu public est un chapitre Premium.
+const isPremium = computed(() => error.statusCode === 403)
 
 function goTo(path: string) {
   clearError({ redirect: path })
@@ -31,6 +34,18 @@ function retry() {
         icon="lucide:map-pin-off"
         title="Page introuvable"
         text="Cette adresse ne mène à aucune page. Le lien est peut-être ancien, ou le contenu a été retiré."
+      >
+        <template #actions>
+          <UiButton @click="goTo('/parcours')">Voir les parcours</UiButton>
+          <UiButton variant="secondary" @click="goTo('/')">Accueil</UiButton>
+        </template>
+      </UiStatePanel>
+
+      <UiStatePanel
+        v-else-if="isPremium"
+        icon="lucide:lock"
+        title="Chapitre réservé aux abonnés Premium"
+        text="Les premiers chapitres de chaque parcours sont gratuits. La suite est réservée aux abonnés Premium."
       >
         <template #actions>
           <UiButton @click="goTo('/parcours')">Voir les parcours</UiButton>

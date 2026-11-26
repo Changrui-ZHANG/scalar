@@ -26,6 +26,7 @@ const MOCK_VIEWS: readonly TrackView[] = [
         summary: 'Découvrir les variables.',
         level: 'beginner',
         number: 1,
+        free: true,
         lessons: [
           {
             slug: 'declaration',
@@ -62,6 +63,7 @@ const MOCK_VIEWS: readonly TrackView[] = [
         summary: 'Notions de types.',
         level: 'beginner',
         number: 1,
+        free: true,
         lessons: [
           {
             slug: 'typage-statique',

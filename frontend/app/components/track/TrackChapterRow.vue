@@ -59,6 +59,10 @@ const summary = computed(() => stripMarkdown(chapter.summary))
     <span class="text-meta w-17.5 shrink-0 text-right font-semibold">
       <span v-if="status === 'completed'" class="text-success">Terminé</span>
       <span v-else-if="status === 'in_progress'" class="text-primary">En cours</span>
+      <span v-else-if="!chapter.free" class="text-text-muted inline-flex items-center gap-1">
+        <Icon name="lucide:lock" class="size-3" />
+        Premium
+      </span>
     </span>
   </NuxtLink>
 </template>

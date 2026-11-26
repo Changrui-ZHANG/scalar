@@ -64,6 +64,12 @@ const isCurrent = computed(() => {
         {{ chapter.number }}
       </span>
       <span class="truncate">{{ chapter.title }}</span>
+      <Icon
+        v-if="!chapter.free"
+        name="lucide:lock"
+        class="text-text-muted ml-auto size-3 shrink-0"
+        aria-label="Premium"
+      />
     </button>
 
     <div v-show="open" class="flex flex-col gap-1">
