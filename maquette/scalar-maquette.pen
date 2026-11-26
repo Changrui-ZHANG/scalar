@@ -51813,6 +51813,35 @@
                           "fontFamily": "$s-font-text",
                           "fontSize": 17,
                           "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "X0GuN",
+                          "name": "Lien positionnement",
+                          "gap": 5,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "w3UlA",
+                              "name": "Question",
+                              "fill": "$s-text-muted",
+                              "content": "Pas sûr de votre niveau ?",
+                              "fontFamily": "$s-font-text",
+                              "fontSize": 14.5,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "cIqj6",
+                              "name": "Action",
+                              "fill": "$s-primary",
+                              "content": "Faites le test de positionnement",
+                              "fontFamily": "$s-font-text",
+                              "fontSize": 14.5,
+                              "fontWeight": "600"
+                            }
+                          ]
                         }
                       ]
                     },
@@ -56667,6 +56696,35 @@
               "fontSize": 32,
               "fontWeight": "600",
               "letterSpacing": -0.6
+            },
+            {
+              "type": "frame",
+              "id": "JyFuw",
+              "name": "Lien positionnement",
+              "gap": 5,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "N2pUI",
+                  "name": "Question",
+                  "fill": "$s-text-muted",
+                  "content": "Pas sûr de votre niveau ?",
+                  "fontFamily": "$s-font-text",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "o0iijr",
+                  "name": "Action",
+                  "fill": "$s-primary",
+                  "content": "Faites le test de positionnement",
+                  "fontFamily": "$s-font-text",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
             },
             {
               "type": "frame",
@@ -66213,6 +66271,1596 @@
                   "fontFamily": "$s-font-text",
                   "fontSize": 13.5,
                   "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "GxKWD",
+      "x": 13880,
+      "y": -3617,
+      "name": "Site v2 / Positionnement — question",
+      "theme": {
+        "site": "clair"
+      },
+      "clip": true,
+      "width": 1440,
+      "height": 820,
+      "fill": "$s-bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "UPupb",
+          "type": "ref",
+          "ref": "a6e1h9",
+          "name": "Header",
+          "width": "fill_container",
+          "descendants": {
+            "N9Hegw": {
+              "enabled": false
+            },
+            "lwy0e": {
+              "fill": "$s-text-muted",
+              "fontWeight": "500"
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "UPMU4",
+          "name": "Main",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            64,
+            0,
+            60,
+            0
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "eeWgH",
+              "name": "Contenu",
+              "width": 672,
+              "layout": "vertical",
+              "gap": 32,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "TdMlz",
+                  "name": "Avancement",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "GVJQl",
+                      "name": "Compteur",
+                      "fill": "$s-text-muted",
+                      "content": "Test de positionnement · question 1 sur 8",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 13.5,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "u4b6F",
+                      "name": "Bar",
+                      "width": "fill_container",
+                      "height": 6,
+                      "fill": "$s-surface-muted",
+                      "cornerRadius": 3,
+                      "layout": "none",
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "cornerRadius": 3,
+                          "id": "sVs8J",
+                          "x": 0,
+                          "y": 0,
+                          "name": "Fill",
+                          "fill": "$s-primary",
+                          "width": 0,
+                          "height": 6
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "GabJf",
+                  "name": "H1",
+                  "fill": "$s-text",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Où en êtes-vous en programmation ?",
+                  "fontFamily": "$s-font-title",
+                  "fontSize": 30,
+                  "fontWeight": "600",
+                  "letterSpacing": -0.4
+                },
+                {
+                  "type": "frame",
+                  "id": "g2jFCH",
+                  "name": "Options",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "reee0",
+                      "name": "Option",
+                      "width": "fill_container",
+                      "fill": "$s-surface",
+                      "cornerRadius": 12,
+                      "stroke": "$s-border",
+                      "strokeWidth": 1,
+                      "gap": 12,
+                      "padding": [
+                        14,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "XtiEJ",
+                          "name": "Radio",
+                          "width": 16,
+                          "height": 16,
+                          "fill": "$s-surface",
+                          "cornerRadius": 8,
+                          "stroke": "$s-border",
+                          "strokeWidth": 1.5
+                        },
+                        {
+                          "type": "text",
+                          "id": "XC1L3",
+                          "name": "Libellé",
+                          "fill": "$s-text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Je n’ai jamais programmé",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 16,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "djdov",
+                      "name": "Option",
+                      "width": "fill_container",
+                      "fill": "$s-primary-soft",
+                      "cornerRadius": 12,
+                      "stroke": "$s-primary",
+                      "strokeWidth": 1,
+                      "gap": 12,
+                      "padding": [
+                        14,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "uRODx",
+                          "name": "Radio",
+                          "width": 16,
+                          "height": 16,
+                          "fill": "$s-surface",
+                          "cornerRadius": 8,
+                          "stroke": "$s-primary",
+                          "strokeWidth": 5
+                        },
+                        {
+                          "type": "text",
+                          "id": "aHnua",
+                          "name": "Libellé",
+                          "fill": "$s-text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "J’ai suivi quelques tutoriels",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 16,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "s3XyZB",
+                      "name": "Option",
+                      "width": "fill_container",
+                      "fill": "$s-surface",
+                      "cornerRadius": 12,
+                      "stroke": "$s-border",
+                      "strokeWidth": 1,
+                      "gap": 12,
+                      "padding": [
+                        14,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "Tb7xW",
+                          "name": "Radio",
+                          "width": 16,
+                          "height": 16,
+                          "fill": "$s-surface",
+                          "cornerRadius": 8,
+                          "stroke": "$s-border",
+                          "strokeWidth": 1.5
+                        },
+                        {
+                          "type": "text",
+                          "id": "TuTXo",
+                          "name": "Libellé",
+                          "fill": "$s-text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "J’écris de petits programmes seul",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 16,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "s41Jcy",
+                      "name": "Option",
+                      "width": "fill_container",
+                      "fill": "$s-surface",
+                      "cornerRadius": 12,
+                      "stroke": "$s-border",
+                      "strokeWidth": 1,
+                      "gap": 12,
+                      "padding": [
+                        14,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "jDkMn",
+                          "name": "Radio",
+                          "width": 16,
+                          "height": 16,
+                          "fill": "$s-surface",
+                          "cornerRadius": 8,
+                          "stroke": "$s-border",
+                          "strokeWidth": 1.5
+                        },
+                        {
+                          "type": "text",
+                          "id": "GKw5p",
+                          "name": "Libellé",
+                          "fill": "$s-text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Je programme régulièrement, au travail ou en projet",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 16,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "QLT3n",
+                  "name": "Navigation",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "iww8A",
+                      "name": "Vide",
+                      "width": 1,
+                      "height": 1
+                    },
+                    {
+                      "type": "frame",
+                      "id": "aw8A3",
+                      "name": "Suivant",
+                      "height": 48,
+                      "fill": "$s-primary",
+                      "cornerRadius": 12,
+                      "gap": 8,
+                      "padding": [
+                        0,
+                        22
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "FDuWU",
+                          "name": "Libellé",
+                          "fill": "$s-on-primary",
+                          "content": "Suivant",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 15.5,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "bDrSf",
+                          "name": "Flèche",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "arrow-right",
+                          "library": "lucide",
+                          "fill": "$s-on-primary"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "MlPsV",
+      "x": 15420,
+      "y": -3617,
+      "name": "Site v2 / Positionnement — exercice",
+      "theme": {
+        "site": "clair"
+      },
+      "clip": true,
+      "width": 1440,
+      "height": 1080,
+      "fill": "$s-bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "Od9Ju",
+          "type": "ref",
+          "ref": "a6e1h9",
+          "name": "Header",
+          "width": "fill_container",
+          "descendants": {
+            "N9Hegw": {
+              "enabled": false
+            },
+            "lwy0e": {
+              "fill": "$s-text-muted",
+              "fontWeight": "500"
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "T7MOto",
+          "name": "Main",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            64,
+            0,
+            60,
+            0
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "Gh64n",
+              "name": "Contenu",
+              "width": 672,
+              "layout": "vertical",
+              "gap": 32,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Iw0LB",
+                  "name": "Avancement",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Te5cE",
+                      "name": "Compteur",
+                      "fill": "$s-text-muted",
+                      "content": "Test de positionnement · question 6 sur 8",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 13.5,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "WS3Ja",
+                      "name": "Bar",
+                      "width": "fill_container",
+                      "height": 6,
+                      "fill": "$s-surface-muted",
+                      "cornerRadius": 3,
+                      "layout": "none",
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "cornerRadius": 3,
+                          "id": "StXa3",
+                          "x": 0,
+                          "y": 0,
+                          "name": "Fill",
+                          "fill": "$s-primary",
+                          "width": 420,
+                          "height": 6
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "l7im5M",
+                  "name": "H1",
+                  "fill": "$s-text",
+                  "content": "Somme de deux nombres",
+                  "fontFamily": "$s-font-title",
+                  "fontSize": 30,
+                  "fontWeight": "600",
+                  "letterSpacing": -0.4
+                },
+                {
+                  "type": "text",
+                  "id": "BEhsN",
+                  "name": "Consigne",
+                  "fill": "$s-text",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Écrivez une fonction ajouter(a, b) qui renvoie la somme de ses deux paramètres.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "$s-font-text",
+                  "fontSize": 17,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "xE0X4",
+                  "name": "Cas de test",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "BLtqE",
+                      "name": "Titre",
+                      "fill": "$s-text",
+                      "content": "Cas de test",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 14.5,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "fe5XJ",
+                      "name": "Cas",
+                      "width": "fill_container",
+                      "fill": "$s-code-bg",
+                      "cornerRadius": 10,
+                      "padding": [
+                        8,
+                        14
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "m48sl",
+                          "name": "Appel",
+                          "fill": "$s-code-text",
+                          "content": "ajouter(2, 3) → 5",
+                          "fontFamily": "$s-font-code",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "fr1as",
+                      "name": "Cas",
+                      "width": "fill_container",
+                      "fill": "$s-code-bg",
+                      "cornerRadius": 10,
+                      "padding": [
+                        8,
+                        14
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "WoIU8",
+                          "name": "Appel",
+                          "fill": "$s-code-text",
+                          "content": "ajouter(-4, 0) → -4",
+                          "fontFamily": "$s-font-code",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "hJSlW",
+                      "name": "Cas",
+                      "width": "fill_container",
+                      "fill": "$s-code-bg",
+                      "cornerRadius": 10,
+                      "padding": [
+                        8,
+                        14
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "syFjS",
+                          "name": "Appel",
+                          "fill": "$s-code-text",
+                          "content": "ajouter(0.5, 0.25) → 0.75",
+                          "fontFamily": "$s-font-code",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "sDFRf",
+                  "name": "Éditeur",
+                  "width": "fill_container",
+                  "height": 192,
+                  "fill": "$s-code-bg",
+                  "cornerRadius": 12,
+                  "stroke": "$s-border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 6,
+                  "padding": [
+                    16,
+                    18
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "G3YFT",
+                      "name": "Ligne",
+                      "fill": "$s-code-text",
+                      "content": "function ajouter(a, b) {",
+                      "fontFamily": "$s-font-code",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "snn2K",
+                      "name": "Ligne",
+                      "fill": "$s-code-text",
+                      "content": "  return a + b",
+                      "fontFamily": "$s-font-code",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "esESK",
+                      "name": "Ligne",
+                      "fill": "$s-code-text",
+                      "content": "}",
+                      "fontFamily": "$s-font-code",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "amjUG",
+                  "name": "Essai",
+                  "gap": 16,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "eYp2Z",
+                      "name": "Essayer",
+                      "height": 40,
+                      "fill": "$s-surface",
+                      "cornerRadius": 10,
+                      "stroke": "$s-border",
+                      "strokeWidth": 1,
+                      "gap": 8,
+                      "padding": [
+                        0,
+                        16
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "SnuY4",
+                          "name": "Icône",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "play",
+                          "library": "lucide",
+                          "fill": "$s-text"
+                        },
+                        {
+                          "type": "text",
+                          "id": "zZZx5",
+                          "name": "Libellé",
+                          "fill": "$s-text",
+                          "content": "Essayer",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "rHaT8",
+                      "name": "Résultat",
+                      "fill": "$s-success",
+                      "content": "3 cas sur 3 réussis",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 14.5,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "M4etAV",
+                  "name": "Aide",
+                  "fill": "$s-text-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Vous pouvez laisser cet exercice de côté : il comptera simplement comme non réussi.",
+                  "fontFamily": "$s-font-text",
+                  "fontSize": 13.5,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "gKb6Q",
+                  "name": "Navigation",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "E2RFG",
+                      "name": "Précédent",
+                      "height": 48,
+                      "fill": "$s-surface",
+                      "cornerRadius": 12,
+                      "stroke": "$s-border",
+                      "strokeWidth": 1,
+                      "gap": 8,
+                      "padding": [
+                        0,
+                        22
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "zM25o",
+                          "name": "Icône",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "arrow-left",
+                          "library": "lucide",
+                          "fill": "$s-text"
+                        },
+                        {
+                          "type": "text",
+                          "id": "efiZH",
+                          "name": "Libellé",
+                          "fill": "$s-text",
+                          "content": "Précédent",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 15.5,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "uBlH5",
+                      "name": "Suivant",
+                      "height": 48,
+                      "fill": "$s-primary",
+                      "cornerRadius": 12,
+                      "gap": 8,
+                      "padding": [
+                        0,
+                        22
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ASPPo",
+                          "name": "Libellé",
+                          "fill": "$s-on-primary",
+                          "content": "Suivant",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 15.5,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "LbaNm",
+                          "name": "Flèche",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "arrow-right",
+                          "library": "lucide",
+                          "fill": "$s-on-primary"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "bDvnz",
+      "x": 16960,
+      "y": -3617,
+      "name": "Site v2 / Positionnement — résultat",
+      "theme": {
+        "site": "clair"
+      },
+      "clip": true,
+      "width": 1440,
+      "height": 960,
+      "fill": "$s-bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "W1pIf",
+          "type": "ref",
+          "ref": "a6e1h9",
+          "name": "Header",
+          "width": "fill_container",
+          "descendants": {
+            "N9Hegw": {
+              "enabled": false
+            },
+            "lwy0e": {
+              "fill": "$s-text-muted",
+              "fontWeight": "500"
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "VJAt1",
+          "name": "Main",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            64,
+            0,
+            60,
+            0
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "CYAMi",
+              "name": "Contenu",
+              "width": 672,
+              "layout": "vertical",
+              "gap": 32,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "biu7o",
+                  "name": "Titre",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "rpfGu",
+                      "name": "Surtitre",
+                      "fill": "$s-primary",
+                      "content": "Votre résultat",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 13.5,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "LlCSS",
+                      "name": "H1",
+                      "fill": "$s-text",
+                      "content": "Niveau débutant",
+                      "fontFamily": "$s-font-title",
+                      "fontSize": 36,
+                      "fontWeight": "600",
+                      "letterSpacing": -0.6
+                    },
+                    {
+                      "type": "text",
+                      "id": "abpR0",
+                      "name": "Score",
+                      "fill": "$s-text-muted",
+                      "content": "Score : 42 sur 100.",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 19,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "l7xNnl",
+                  "name": "Parcours conseillé",
+                  "width": "fill_container",
+                  "fill": "$s-surface",
+                  "cornerRadius": 14,
+                  "stroke": "$s-border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "G9gOhr",
+                      "name": "H2",
+                      "fill": "$s-text",
+                      "content": "Parcours conseillé : JavaScript",
+                      "fontFamily": "$s-font-title",
+                      "fontSize": 21,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "WuYBu",
+                      "name": "Départ",
+                      "fill": "$s-text-muted",
+                      "content": "Commencez au chapitre « Variables ».",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "NspNU",
+                      "name": "Commencer JavaScript",
+                      "height": 48,
+                      "fill": "$s-primary",
+                      "cornerRadius": 12,
+                      "gap": 8,
+                      "padding": [
+                        0,
+                        22
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "WVgVh",
+                          "name": "Libellé",
+                          "fill": "$s-on-primary",
+                          "content": "Commencer JavaScript",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 15.5,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "XZSDD",
+                          "name": "Flèche",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "arrow-right",
+                          "library": "lucide",
+                          "fill": "$s-on-primary"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Oe3pa",
+                  "name": "Remarques",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "b0L56",
+                      "name": "Remarque",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "D7iY9i",
+                          "name": "Info",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "info",
+                          "library": "lucide",
+                          "fill": "$s-primary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "CD2aX",
+                          "name": "Texte",
+                          "fill": "$s-text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Les bases sont là : les premiers chapitres iront vite, gardez les exercices.",
+                          "lineHeight": 1.4,
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 16,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "U4u302",
+                  "name": "Exercices",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "q54Kr6",
+                      "name": "Titre",
+                      "fill": "$s-text",
+                      "content": "Exercices",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 14.5,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "eekeA",
+                      "name": "Exercice",
+                      "gap": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "Th40F",
+                          "name": "État",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "circle-check",
+                          "library": "lucide",
+                          "fill": "$s-success"
+                        },
+                        {
+                          "type": "text",
+                          "id": "mqfz2",
+                          "name": "Titre",
+                          "fill": "$s-text",
+                          "content": "Somme de deux nombres",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 14.5,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "jhTGJ",
+                          "name": "Cas",
+                          "fill": "$s-text-muted",
+                          "content": "3 cas sur 3",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 14.5,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "F6acEE",
+                      "name": "Exercice",
+                      "gap": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "xN9s4",
+                          "name": "État",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "circle-x",
+                          "library": "lucide",
+                          "fill": "$s-text-muted"
+                        },
+                        {
+                          "type": "text",
+                          "id": "hgg56",
+                          "name": "Titre",
+                          "fill": "$s-text",
+                          "content": "Palindrome",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 14.5,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "eMRlh",
+                          "name": "Cas",
+                          "fill": "$s-text-muted",
+                          "content": "2 cas sur 4",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 14.5,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "VxpmG",
+                      "name": "Exercice",
+                      "gap": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "W069JK",
+                          "name": "État",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "circle-x",
+                          "library": "lucide",
+                          "fill": "$s-text-muted"
+                        },
+                        {
+                          "type": "text",
+                          "id": "qbhto",
+                          "name": "Titre",
+                          "fill": "$s-text",
+                          "content": "Factorielle",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 14.5,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Z0lbRq",
+                          "name": "Cas",
+                          "fill": "$s-text-muted",
+                          "content": "0 cas sur 3",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 14.5,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ke9us",
+                  "name": "Recommencer le test",
+                  "height": 48,
+                  "fill": "$s-surface",
+                  "cornerRadius": 12,
+                  "stroke": "$s-border",
+                  "strokeWidth": 1,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    22
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "cZjO0",
+                      "name": "Icône",
+                      "width": 16,
+                      "height": 16,
+                      "icon": "rotate-ccw",
+                      "library": "lucide",
+                      "fill": "$s-text"
+                    },
+                    {
+                      "type": "text",
+                      "id": "IK8ya",
+                      "name": "Libellé",
+                      "fill": "$s-text",
+                      "content": "Recommencer le test",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 15.5,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "wzcVk",
+      "x": 18500,
+      "y": -3617,
+      "name": "Site v2 / Mobile — Positionnement",
+      "theme": {
+        "site": "clair"
+      },
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$s-bg",
+      "cornerRadius": 28,
+      "stroke": "$s-border",
+      "strokeWidth": 1,
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "P9XAYb",
+          "name": "Top",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$s-surface",
+          "stroke": "$s-border",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "padding": [
+            0,
+            16
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "bH0rO",
+              "name": "Logo",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "i0Jfl",
+                  "name": "Mark",
+                  "width": 22,
+                  "height": 22,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 3.8500000000000005,
+                      "id": "MMIHN",
+                      "x": 3.0250000000000004,
+                      "y": 3.0250000000000004,
+                      "name": "Outer",
+                      "width": 15.950000000000003,
+                      "height": 15.950000000000003,
+                      "stroke": "$s-primary",
+                      "strokeWidth": 2.2
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 1.2375,
+                      "id": "WfLY5",
+                      "x": 5.6375,
+                      "y": 10.037500000000005,
+                      "name": "Inner",
+                      "fill": "$s-primary",
+                      "width": 6.325,
+                      "height": 6.325
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "nzVub",
+                  "fill": "$s-text",
+                  "content": "Scalar",
+                  "fontFamily": "$s-font-title",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "FRemi",
+              "name": "R",
+              "gap": 14,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "NgwtE",
+                  "width": 19,
+                  "height": 19,
+                  "icon": "sun-moon",
+                  "library": "lucide",
+                  "fill": "$s-text-muted"
+                },
+                {
+                  "type": "icon",
+                  "id": "h91XGf",
+                  "width": 21,
+                  "height": 21,
+                  "icon": "menu",
+                  "library": "lucide",
+                  "fill": "$s-text"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "SuJhi",
+          "name": "Body",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": [
+            32,
+            24
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "MCt9A",
+              "name": "Contenu",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "yGEm3",
+                  "name": "Avancement",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "NhUQX",
+                      "name": "Compteur",
+                      "fill": "$s-text-muted",
+                      "content": "Test de positionnement · question 1 sur 8",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 13.5,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "R3E8V7",
+                      "name": "Bar",
+                      "width": "fill_container",
+                      "height": 6,
+                      "fill": "$s-surface-muted",
+                      "cornerRadius": 3,
+                      "layout": "none",
+                      "children": [
+                        {
+                          "type": "rectangle",
+                          "cornerRadius": 3,
+                          "id": "a3G3H",
+                          "x": 0,
+                          "y": 0,
+                          "name": "Fill",
+                          "fill": "$s-primary",
+                          "width": 0,
+                          "height": 6
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "dNDCb",
+                  "name": "H1",
+                  "fill": "$s-text",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Où en êtes-vous en programmation ?",
+                  "fontFamily": "$s-font-title",
+                  "fontSize": 24,
+                  "fontWeight": "600",
+                  "letterSpacing": -0.4
+                },
+                {
+                  "type": "frame",
+                  "id": "RV5xM",
+                  "name": "Options",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "TAaGL",
+                      "name": "Option",
+                      "width": "fill_container",
+                      "fill": "$s-surface",
+                      "cornerRadius": 12,
+                      "stroke": "$s-border",
+                      "strokeWidth": 1,
+                      "gap": 12,
+                      "padding": [
+                        14,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "QJxNi",
+                          "name": "Radio",
+                          "width": 16,
+                          "height": 16,
+                          "fill": "$s-surface",
+                          "cornerRadius": 8,
+                          "stroke": "$s-border",
+                          "strokeWidth": 1.5
+                        },
+                        {
+                          "type": "text",
+                          "id": "e9pjB",
+                          "name": "Libellé",
+                          "fill": "$s-text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Je n’ai jamais programmé",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "NO7qJ",
+                      "name": "Option",
+                      "width": "fill_container",
+                      "fill": "$s-primary-soft",
+                      "cornerRadius": 12,
+                      "stroke": "$s-primary",
+                      "strokeWidth": 1,
+                      "gap": 12,
+                      "padding": [
+                        14,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "Skzl9",
+                          "name": "Radio",
+                          "width": 16,
+                          "height": 16,
+                          "fill": "$s-surface",
+                          "cornerRadius": 8,
+                          "stroke": "$s-primary",
+                          "strokeWidth": 5
+                        },
+                        {
+                          "type": "text",
+                          "id": "Eb45s",
+                          "name": "Libellé",
+                          "fill": "$s-text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "J’ai suivi quelques tutoriels",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "NQFBt",
+                      "name": "Option",
+                      "width": "fill_container",
+                      "fill": "$s-surface",
+                      "cornerRadius": 12,
+                      "stroke": "$s-border",
+                      "strokeWidth": 1,
+                      "gap": 12,
+                      "padding": [
+                        14,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "Rt77F",
+                          "name": "Radio",
+                          "width": 16,
+                          "height": 16,
+                          "fill": "$s-surface",
+                          "cornerRadius": 8,
+                          "stroke": "$s-border",
+                          "strokeWidth": 1.5
+                        },
+                        {
+                          "type": "text",
+                          "id": "CWV8X",
+                          "name": "Libellé",
+                          "fill": "$s-text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "J’écris de petits programmes seul",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "GCjKk",
+                      "name": "Option",
+                      "width": "fill_container",
+                      "fill": "$s-surface",
+                      "cornerRadius": 12,
+                      "stroke": "$s-border",
+                      "strokeWidth": 1,
+                      "gap": 12,
+                      "padding": [
+                        14,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "PJwYT",
+                          "name": "Radio",
+                          "width": 16,
+                          "height": 16,
+                          "fill": "$s-surface",
+                          "cornerRadius": 8,
+                          "stroke": "$s-border",
+                          "strokeWidth": 1.5
+                        },
+                        {
+                          "type": "text",
+                          "id": "lDbax",
+                          "name": "Libellé",
+                          "fill": "$s-text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Je programme régulièrement, au travail ou en projet",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "JN8H1",
+                  "name": "Navigation",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Ut4gl",
+                      "name": "Vide",
+                      "width": 1,
+                      "height": 1
+                    },
+                    {
+                      "type": "frame",
+                      "id": "kN2XG",
+                      "name": "Suivant",
+                      "height": 48,
+                      "fill": "$s-primary",
+                      "cornerRadius": 12,
+                      "gap": 8,
+                      "padding": [
+                        0,
+                        22
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "r4xfC",
+                          "name": "Libellé",
+                          "fill": "$s-on-primary",
+                          "content": "Suivant",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 15.5,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "dCOu5",
+                          "name": "Flèche",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "arrow-right",
+                          "library": "lucide",
+                          "fill": "$s-on-primary"
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
