@@ -43270,6 +43270,16 @@
                     },
                     {
                       "type": "text",
+                      "id": "TXCPj",
+                      "name": "Nav Premium",
+                      "fill": "$s-text-muted",
+                      "content": "Premium",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 14.5,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
                       "id": "YvUke",
                       "name": "Nav Compte",
                       "fill": "$s-text-muted",
@@ -63662,7 +63672,7 @@
                 {
                   "type": "frame",
                   "id": "oxrFF",
-                  "name": "Voir les parcours",
+                  "name": "Voir l’offre Premium",
                   "fill": "$s-primary",
                   "cornerRadius": 12,
                   "gap": 8,
@@ -63676,7 +63686,7 @@
                       "type": "text",
                       "id": "IFmeV",
                       "fill": "$s-on-primary",
-                      "content": "Voir les parcours",
+                      "content": "Voir l’offre Premium",
                       "fontFamily": "$s-font-text",
                       "fontSize": 15.5,
                       "fontWeight": "600"
@@ -63686,7 +63696,7 @@
                 {
                   "type": "frame",
                   "id": "D96Id",
-                  "name": "Accueil",
+                  "name": "Se connecter",
                   "fill": "$s-surface",
                   "cornerRadius": 12,
                   "stroke": "$s-border",
@@ -63702,7 +63712,7 @@
                       "type": "text",
                       "id": "yhIbC",
                       "fill": "$s-text",
-                      "content": "Accueil",
+                      "content": "Se connecter",
                       "fontFamily": "$s-font-text",
                       "fontSize": 15.5,
                       "fontWeight": "600"
@@ -63899,7 +63909,7 @@
             {
               "type": "frame",
               "id": "cABk3",
-              "name": "Voir les parcours",
+              "name": "Voir l’offre Premium",
               "width": "fill_container",
               "height": 46,
               "fill": "$s-primary",
@@ -63916,7 +63926,7 @@
                   "type": "text",
                   "id": "QCO8o",
                   "fill": "$s-on-primary",
-                  "content": "Voir les parcours",
+                  "content": "Voir l’offre Premium",
                   "fontFamily": "$s-font-text",
                   "fontSize": 15.5,
                   "fontWeight": "600"
@@ -63926,7 +63936,7 @@
             {
               "type": "frame",
               "id": "L6S71",
-              "name": "Accueil",
+              "name": "Se connecter",
               "width": "fill_container",
               "height": 46,
               "fill": "$s-surface",
@@ -63945,7 +63955,7 @@
                   "type": "text",
                   "id": "V0Zrbi",
                   "fill": "$s-text",
-                  "content": "Accueil",
+                  "content": "Se connecter",
                   "fontFamily": "$s-font-text",
                   "fontSize": 15.5,
                   "fontWeight": "600"
@@ -65151,6 +65161,1058 @@
                       "fontWeight": "600"
                     }
                   ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "TeOrX",
+      "x": 10310,
+      "y": -3617,
+      "name": "Site v2 / Premium",
+      "theme": {
+        "site": "clair"
+      },
+      "clip": true,
+      "width": 1440,
+      "height": 860,
+      "fill": "$s-bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "a8asvK",
+          "type": "ref",
+          "ref": "a6e1h9",
+          "name": "Header",
+          "width": "fill_container",
+          "descendants": {
+            "N9Hegw": {
+              "enabled": false
+            },
+            "lwy0e": {
+              "fill": "$s-text-muted",
+              "fontWeight": "500"
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "WLGrz",
+          "name": "Main",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            72,
+            0,
+            60,
+            0
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "Za0ly",
+              "name": "Contenu",
+              "width": 768,
+              "layout": "vertical",
+              "gap": 36,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "FjhcC",
+                  "name": "Titre",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "L81rE2",
+                      "name": "Surtitre",
+                      "fill": "$s-primary",
+                      "content": "Scalar Premium",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 13.5,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "h9ez8",
+                      "name": "H1",
+                      "fill": "$s-text",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Tous les chapitres, jusqu’au bout du parcours",
+                      "lineHeight": 1.15,
+                      "fontFamily": "$s-font-title",
+                      "fontSize": 36,
+                      "fontWeight": "600",
+                      "letterSpacing": -0.6
+                    },
+                    {
+                      "type": "text",
+                      "id": "T0UPQ",
+                      "name": "Chapeau",
+                      "fill": "$s-text-muted",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Les premiers chapitres de chaque parcours restent gratuits. Premium ouvre la suite.",
+                      "lineHeight": 1.45,
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 19,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "CTyDH",
+                  "name": "Avantages",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Xl8i4",
+                      "name": "Avantage",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "YNTjR",
+                          "name": "Coche",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "check",
+                          "library": "lucide",
+                          "fill": "$s-success"
+                        },
+                        {
+                          "type": "text",
+                          "id": "F6hZW",
+                          "name": "Texte",
+                          "fill": "$s-text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Tous les chapitres de chaque parcours, du niveau débutant à l’écosystème.",
+                          "lineHeight": 1.4,
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 17,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "YXkst",
+                      "name": "Avantage",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "cBP14",
+                          "name": "Coche",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "check",
+                          "library": "lucide",
+                          "fill": "$s-success"
+                        },
+                        {
+                          "type": "text",
+                          "id": "lzb43",
+                          "name": "Texte",
+                          "fill": "$s-text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Les certificats de fin de parcours, vérifiables en ligne.",
+                          "lineHeight": 1.4,
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 17,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "vxvNn",
+                  "name": "Formules",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "sPy8I",
+                      "name": "Mensuel",
+                      "width": "fill_container",
+                      "fill": "$s-surface",
+                      "cornerRadius": 14,
+                      "stroke": "$s-border",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 16,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Lx00J",
+                          "name": "H2",
+                          "fill": "$s-text",
+                          "content": "Mensuel",
+                          "fontFamily": "$s-font-title",
+                          "fontSize": 21,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "l1RAz1",
+                          "name": "Facturation",
+                          "fill": "$s-text-muted",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Facturé chaque mois, sans engagement.",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 14.5,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "xelyd",
+                          "name": "Choisir la formule mensuel",
+                          "width": "fill_container",
+                          "height": 48,
+                          "fill": "$s-surface",
+                          "cornerRadius": 12,
+                          "stroke": "$s-border",
+                          "strokeWidth": 1,
+                          "padding": [
+                            0,
+                            22
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "IaW4i",
+                              "name": "Libellé",
+                              "fill": "$s-text",
+                              "content": "Choisir la formule mensuel",
+                              "fontFamily": "$s-font-text",
+                              "fontSize": 15.5,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "VqZXJ",
+                      "name": "Annuel",
+                      "width": "fill_container",
+                      "fill": "$s-surface",
+                      "cornerRadius": 14,
+                      "stroke": "$s-border",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 16,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "DtmyY",
+                          "name": "H2",
+                          "fill": "$s-text",
+                          "content": "Annuel",
+                          "fontFamily": "$s-font-title",
+                          "fontSize": 21,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "cVHzW",
+                          "name": "Facturation",
+                          "fill": "$s-text-muted",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Facturé une fois par an.",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 14.5,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "k6mFk",
+                          "name": "Choisir la formule annuel",
+                          "width": "fill_container",
+                          "height": 48,
+                          "fill": "$s-primary",
+                          "cornerRadius": 12,
+                          "padding": [
+                            0,
+                            22
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "QlU7u",
+                              "name": "Libellé",
+                              "fill": "$s-on-primary",
+                              "content": "Choisir la formule annuel",
+                              "fontFamily": "$s-font-text",
+                              "fontSize": 15.5,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "M4Zfsp",
+                  "name": "Mention",
+                  "fill": "$s-text-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Le prix s’affiche sur la page de paiement sécurisée de Stripe, avant toute validation. Résiliable à tout moment depuis cette page.",
+                  "lineHeight": 1.45,
+                  "fontFamily": "$s-font-text",
+                  "fontSize": 13.5,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Ty5AW",
+      "x": 11850,
+      "y": -3617,
+      "name": "Site v2 / Premium — abonné",
+      "theme": {
+        "site": "clair"
+      },
+      "clip": true,
+      "width": 1440,
+      "height": 760,
+      "fill": "$s-bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "yfr0i",
+          "type": "ref",
+          "ref": "a6e1h9",
+          "name": "Header",
+          "width": "fill_container",
+          "descendants": {
+            "N9Hegw": {
+              "enabled": false
+            },
+            "lwy0e": {
+              "fill": "$s-text-muted",
+              "fontWeight": "500"
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "R56V8O",
+          "name": "Main",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            72,
+            0,
+            60,
+            0
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "YQXEF",
+              "name": "Contenu",
+              "width": 768,
+              "layout": "vertical",
+              "gap": 36,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "wZ9wE",
+                  "name": "Titre",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "bbN09",
+                      "name": "Surtitre",
+                      "fill": "$s-primary",
+                      "content": "Scalar Premium",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 13.5,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "C8WtYP",
+                      "name": "H1",
+                      "fill": "$s-text",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Tous les chapitres, jusqu’au bout du parcours",
+                      "lineHeight": 1.15,
+                      "fontFamily": "$s-font-title",
+                      "fontSize": 36,
+                      "fontWeight": "600",
+                      "letterSpacing": -0.6
+                    },
+                    {
+                      "type": "text",
+                      "id": "gyVVz",
+                      "name": "Chapeau",
+                      "fill": "$s-text-muted",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Les premiers chapitres de chaque parcours restent gratuits. Premium ouvre la suite.",
+                      "lineHeight": 1.45,
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 19,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "JEyh5",
+                  "name": "Avantages",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "BwreP",
+                      "name": "Avantage",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "dgvHK",
+                          "name": "Coche",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "check",
+                          "library": "lucide",
+                          "fill": "$s-success"
+                        },
+                        {
+                          "type": "text",
+                          "id": "pFfOp",
+                          "name": "Texte",
+                          "fill": "$s-text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Tous les chapitres de chaque parcours, du niveau débutant à l’écosystème.",
+                          "lineHeight": 1.4,
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 17,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ExQo6",
+                      "name": "Avantage",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "N5bwy",
+                          "name": "Coche",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "check",
+                          "library": "lucide",
+                          "fill": "$s-success"
+                        },
+                        {
+                          "type": "text",
+                          "id": "L1lRSs",
+                          "name": "Texte",
+                          "fill": "$s-text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Les certificats de fin de parcours, vérifiables en ligne.",
+                          "lineHeight": 1.4,
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 17,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "VNL0e",
+                  "name": "Abonné",
+                  "width": "fill_container",
+                  "fill": "$s-surface",
+                  "cornerRadius": 14,
+                  "stroke": "$s-border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "gMhiH",
+                      "name": "Titre carte",
+                      "gap": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "z8lyQ",
+                          "name": "Badge",
+                          "width": 24,
+                          "height": 24,
+                          "icon": "badge-check",
+                          "library": "lucide",
+                          "fill": "$s-success"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Fb7AY",
+                          "name": "H2",
+                          "fill": "$s-text",
+                          "content": "Vous êtes Premium",
+                          "fontFamily": "$s-font-title",
+                          "fontSize": 21,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "dH5UO",
+                      "name": "État",
+                      "fill": "$s-text-muted",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Abonnement annuel, renouvelé le 26 novembre 2027.",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "h0ZmOB",
+                      "name": "Boutons",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "rLC1X",
+                          "name": "Voir les parcours",
+                          "height": 48,
+                          "fill": "$s-primary",
+                          "cornerRadius": 12,
+                          "padding": [
+                            0,
+                            22
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "GoIBI",
+                              "name": "Libellé",
+                              "fill": "$s-on-primary",
+                              "content": "Voir les parcours",
+                              "fontFamily": "$s-font-text",
+                              "fontSize": 15.5,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "vidQz",
+                          "name": "Gérer mon abonnement",
+                          "height": 48,
+                          "fill": "$s-surface",
+                          "cornerRadius": 12,
+                          "stroke": "$s-border",
+                          "strokeWidth": 1,
+                          "padding": [
+                            0,
+                            22
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "k8gePN",
+                              "name": "Libellé",
+                              "fill": "$s-text",
+                              "content": "Gérer mon abonnement",
+                              "fontFamily": "$s-font-text",
+                              "fontSize": 15.5,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "p3CKJq",
+      "x": 13390,
+      "y": -3617,
+      "name": "Site v2 / Mobile — Premium",
+      "theme": {
+        "site": "clair"
+      },
+      "clip": true,
+      "width": 390,
+      "height": 1000,
+      "fill": "$s-bg",
+      "cornerRadius": 28,
+      "stroke": "$s-border",
+      "strokeWidth": 1,
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "kpLXg",
+          "name": "Top",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$s-surface",
+          "stroke": "$s-border",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "padding": [
+            0,
+            16
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "gc4eJ",
+              "name": "Logo",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "XJ3ZU",
+                  "name": "Mark",
+                  "width": 22,
+                  "height": 22,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 3.8500000000000005,
+                      "id": "TJYsR",
+                      "x": 3.0250000000000004,
+                      "y": 3.0250000000000004,
+                      "name": "Outer",
+                      "width": 15.950000000000003,
+                      "height": 15.950000000000003,
+                      "stroke": "$s-primary",
+                      "strokeWidth": 2.2
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 1.2375,
+                      "id": "y74vzL",
+                      "x": 5.6375,
+                      "y": 10.037500000000005,
+                      "name": "Inner",
+                      "fill": "$s-primary",
+                      "width": 6.325,
+                      "height": 6.325
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "pvnCG",
+                  "fill": "$s-text",
+                  "content": "Scalar",
+                  "fontFamily": "$s-font-title",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "GFUVH",
+              "name": "R",
+              "gap": 14,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "k4iqo",
+                  "width": 19,
+                  "height": 19,
+                  "icon": "sun-moon",
+                  "library": "lucide",
+                  "fill": "$s-text-muted"
+                },
+                {
+                  "type": "icon",
+                  "id": "h0FYP",
+                  "width": 21,
+                  "height": 21,
+                  "icon": "menu",
+                  "library": "lucide",
+                  "fill": "$s-text"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "I9ePP",
+          "name": "Body",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": [
+            40,
+            24
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "T1nR4B",
+              "name": "Contenu",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 28,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "XKL6X",
+                  "name": "Titre",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "euBBj",
+                      "name": "Surtitre",
+                      "fill": "$s-primary",
+                      "content": "Scalar Premium",
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 13.5,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "RiODB",
+                      "name": "H1",
+                      "fill": "$s-text",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Tous les chapitres, jusqu’au bout du parcours",
+                      "lineHeight": 1.15,
+                      "fontFamily": "$s-font-title",
+                      "fontSize": 28,
+                      "fontWeight": "600",
+                      "letterSpacing": -0.6
+                    },
+                    {
+                      "type": "text",
+                      "id": "rBDqp",
+                      "name": "Chapeau",
+                      "fill": "$s-text-muted",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Les premiers chapitres de chaque parcours restent gratuits. Premium ouvre la suite.",
+                      "lineHeight": 1.45,
+                      "fontFamily": "$s-font-text",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Jv8A4",
+                  "name": "Avantages",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "wegh5",
+                      "name": "Avantage",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "yJDyJ",
+                          "name": "Coche",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "check",
+                          "library": "lucide",
+                          "fill": "$s-success"
+                        },
+                        {
+                          "type": "text",
+                          "id": "jKpCy",
+                          "name": "Texte",
+                          "fill": "$s-text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Tous les chapitres de chaque parcours, du niveau débutant à l’écosystème.",
+                          "lineHeight": 1.4,
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 15.5,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "BQiMR",
+                      "name": "Avantage",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "G3sKsS",
+                          "name": "Coche",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "check",
+                          "library": "lucide",
+                          "fill": "$s-success"
+                        },
+                        {
+                          "type": "text",
+                          "id": "M9wPB7",
+                          "name": "Texte",
+                          "fill": "$s-text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Les certificats de fin de parcours, vérifiables en ligne.",
+                          "lineHeight": 1.4,
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 15.5,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bjMmS",
+                  "name": "Formules",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "lv6Tu",
+                      "name": "Mensuel",
+                      "width": "fill_container",
+                      "fill": "$s-surface",
+                      "cornerRadius": 14,
+                      "stroke": "$s-border",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 16,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "W4GT2",
+                          "name": "H2",
+                          "fill": "$s-text",
+                          "content": "Mensuel",
+                          "fontFamily": "$s-font-title",
+                          "fontSize": 21,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "JVQHg",
+                          "name": "Facturation",
+                          "fill": "$s-text-muted",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Facturé chaque mois, sans engagement.",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 14.5,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "pfPCp",
+                          "name": "Choisir la formule mensuel",
+                          "width": "fill_container",
+                          "height": 48,
+                          "fill": "$s-surface",
+                          "cornerRadius": 12,
+                          "stroke": "$s-border",
+                          "strokeWidth": 1,
+                          "padding": [
+                            0,
+                            22
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "FZUxT",
+                              "name": "Libellé",
+                              "fill": "$s-text",
+                              "content": "Choisir la formule mensuel",
+                              "fontFamily": "$s-font-text",
+                              "fontSize": 15.5,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "LV4Yt",
+                      "name": "Annuel",
+                      "width": "fill_container",
+                      "fill": "$s-surface",
+                      "cornerRadius": 14,
+                      "stroke": "$s-border",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 16,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "RWoFV",
+                          "name": "H2",
+                          "fill": "$s-text",
+                          "content": "Annuel",
+                          "fontFamily": "$s-font-title",
+                          "fontSize": 21,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "RduHe",
+                          "name": "Facturation",
+                          "fill": "$s-text-muted",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Facturé une fois par an.",
+                          "fontFamily": "$s-font-text",
+                          "fontSize": 14.5,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "F4rzXy",
+                          "name": "Choisir la formule annuel",
+                          "width": "fill_container",
+                          "height": 48,
+                          "fill": "$s-primary",
+                          "cornerRadius": 12,
+                          "padding": [
+                            0,
+                            22
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "vPJCR",
+                              "name": "Libellé",
+                              "fill": "$s-on-primary",
+                              "content": "Choisir la formule annuel",
+                              "fontFamily": "$s-font-text",
+                              "fontSize": 15.5,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "RwUW3",
+                  "name": "Mention",
+                  "fill": "$s-text-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Le prix s’affiche sur la page de paiement sécurisée de Stripe, avant toute validation. Résiliable à tout moment depuis cette page.",
+                  "lineHeight": 1.45,
+                  "fontFamily": "$s-font-text",
+                  "fontSize": 13.5,
+                  "fontWeight": "normal"
                 }
               ]
             }
