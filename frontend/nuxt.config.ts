@@ -41,6 +41,8 @@ export default defineNuxtConfig({
     // Pages de compte : rien à indexer, et hors du sitemap.
     '/connexion': { robots: false },
     '/inscription': { robots: false },
+    // Un certificat porte le nom d'une personne : jamais indexé.
+    '/certificats/**': { robots: false },
   },
   sitemap: {
     sources: ['/api/__sitemap__/urls'],

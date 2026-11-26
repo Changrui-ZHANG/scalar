@@ -1,3 +1,5 @@
+import type { Certificate } from './certificate'
+
 // Compte connecté, tel que le renvoient /auth/login, /auth/register et /auth/me.
 export interface Account {
   readonly id: string
@@ -36,4 +38,5 @@ export interface LearnerProgress {
   readonly passedCount: number
   readonly exercises: readonly LearnerExercise[]
   readonly lessons: readonly LearnerLesson[]
+  readonly certificates: readonly Certificate[]
 }

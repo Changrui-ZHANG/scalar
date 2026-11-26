@@ -46,7 +46,7 @@ const buttonLabel = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4 xl:sticky xl:top-24 xl:w-90 xl:shrink-0">
+  <div class="flex flex-col gap-4">
     <span
       class="rounded-card bg-primary-soft text-lede text-primary flex size-13 items-center justify-center font-bold"
     >
