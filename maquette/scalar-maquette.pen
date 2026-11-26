@@ -48661,7 +48661,7 @@
                       "type": "text",
                       "id": "GoSRB",
                       "fill": "$s-text-muted",
-                      "content": "Gratuit · sans compte · votre progression reste dans votre navigateur",
+                      "content": "Premiers chapitres gratuits · sans compte · progression gardée dans votre navigateur",
                       "fontFamily": "$s-font-text",
                       "fontSize": 13.5,
                       "fontWeight": "normal"

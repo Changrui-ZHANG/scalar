@@ -33,7 +33,7 @@ const { start } = defineProps<Props>()
       </div>
 
       <p class="text-small text-text-muted">
-        Gratuit · sans compte · votre progression reste dans votre navigateur
+        Premiers chapitres gratuits · sans compte · progression gardée dans votre navigateur
       </p>
     </div>
 
