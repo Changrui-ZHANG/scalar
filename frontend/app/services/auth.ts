@@ -8,20 +8,25 @@ export function fetchMe(): Promise<Account> {
   return apiFetch<Account>('/auth/me')
 }
 
-export function login(credentials: Credentials): Promise<Account> {
-  return apiFetch<Account>('/auth/login', { method: 'POST', body: { ...credentials } })
+// Avec learnerId, la progression de cet apprenant anonyme passe au compte :
+// reprise telle quelle à l'inscription, ajoutée à celle du compte à la connexion.
+function learnerHeader(learnerId: string | null): Record<string, string> {
+  return learnerId === null ? {} : { 'X-Learner-Id': learnerId }
 }
 
-// Avec learnerId, le nouveau compte reprend la progression de cet apprenant anonyme.
+export function login(credentials: Credentials, learnerId: string | null): Promise<Account> {
+  return apiFetch<Account>('/auth/login', {
+    method: 'POST',
+    body: { ...credentials },
+    headers: learnerHeader(learnerId),
+  })
+}
+
 export function register(credentials: Credentials, learnerId: string | null): Promise<Account> {
-  const headers: Record<string, string> = {}
-  if (learnerId !== null) {
-    headers['X-Learner-Id'] = learnerId
-  }
   return apiFetch<Account>('/auth/register', {
     method: 'POST',
     body: { ...credentials },
-    headers,
+    headers: learnerHeader(learnerId),
   })
 }
 

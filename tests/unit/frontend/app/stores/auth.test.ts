@@ -8,7 +8,7 @@ import { LEARNER_STORAGE_KEY } from '../../../../../frontend/app/utils/storage'
 
 const account = { id: 'a1', email: 'ada@example.com', role: 'learner' as const }
 const learnerId = '6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b'
-const noProgress = { passedCount: 0, exercises: [] }
+const noProgress = { passedCount: 0, exercises: [], lessons: [] }
 
 describe('stores/auth', () => {
   beforeEach(() => {
@@ -93,7 +93,7 @@ describe('stores/auth', () => {
     expect(localStorage.getItem(LEARNER_STORAGE_KEY)).toBeNull()
   })
 
-  it('ajoute à la progression les exercices réussis enregistrés pour le compte', async () => {
+  it('ajoute à la progression les exercices réussis et les leçons terminées du compte', async () => {
     vi.spyOn(authService, 'fetchMe').mockResolvedValueOnce(account)
     vi.spyOn(learnersService, 'fetchLearnerProgress').mockResolvedValueOnce({
       passedCount: 1,
@@ -119,6 +119,15 @@ describe('stores/auth', () => {
           lastAttemptAt: '2026-11-20T10:05:00Z',
         },
       ],
+      lessons: [
+        {
+          track: 'javascript',
+          chapter: 'variables',
+          lesson: 'let-const',
+          title: 'let et const',
+          completedAt: '2026-11-19T09:00:00Z',
+        },
+      ],
     })
     const store = useAuthStore()
 
@@ -127,5 +136,21 @@ describe('stores/auth', () => {
     const done = useProgressStore().completedFor('javascript')
     expect(done.has('exercise:variables:swap')).toBe(true)
     expect(done.has('exercise:variables:aire')).toBe(false)
+    expect(done.has('lesson:variables:let-const')).toBe(true)
+  })
+
+  it('envoie l’apprenant anonyme à la connexion pour fusionner sa progression', async () => {
+    localStorage.setItem(LEARNER_STORAGE_KEY, learnerId)
+    const login = vi.spyOn(authService, 'login').mockResolvedValueOnce(account)
+    vi.spyOn(learnersService, 'fetchLearnerProgress').mockResolvedValueOnce(noProgress)
+    const store = useAuthStore()
+
+    await store.login({ email: 'ada@example.com', password: 'motdepasse' })
+
+    expect(login).toHaveBeenCalledWith(
+      { email: 'ada@example.com', password: 'motdepasse' },
+      learnerId,
+    )
+    expect(localStorage.getItem(LEARNER_STORAGE_KEY)).toBeNull()
   })
 })

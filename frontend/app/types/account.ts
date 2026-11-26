@@ -22,8 +22,18 @@ export interface LearnerExercise {
   readonly lastAttemptAt: string
 }
 
+// Une leçon terminée, dans GET /learners/:id/progress.
+export interface LearnerLesson {
+  readonly track: string
+  readonly chapter: string
+  readonly lesson: string
+  readonly title: string
+  readonly completedAt: string
+}
+
 // Progression enregistrée par le serveur. Seuls les champs lus par le site sont décrits.
 export interface LearnerProgress {
   readonly passedCount: number
   readonly exercises: readonly LearnerExercise[]
+  readonly lessons: readonly LearnerLesson[]
 }

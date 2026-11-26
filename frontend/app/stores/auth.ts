@@ -5,7 +5,7 @@ import * as authService from '~/services/auth'
 import { forgetLearnerId, readLearnerId, saveLearnerId } from '~/services/learnerId'
 import { createLearner, fetchLearnerProgress } from '~/services/learners'
 import { useProgressStore } from '~/stores/progress'
-import { exerciseKey } from '~/utils/track'
+import { exerciseKey, lessonKey } from '~/utils/track'
 
 export const useAuthStore = defineStore('auth', () => {
   // null : visiteur sans compte (ou session expirée).
@@ -26,9 +26,9 @@ export const useAuthStore = defineStore('auth', () => {
     await syncServerProgress()
   }
 
+  // La progression anonyme de ce navigateur est ajoutée à celle du compte.
   async function login(credentials: Credentials): Promise<void> {
-    account.value = await authService.login(credentials)
-    // Le compte a sa propre progression : l'apprenant anonyme de ce navigateur ne sert plus.
+    account.value = await authService.login(credentials, readLearnerId())
     forgetLearnerId()
     await syncServerProgress()
   }
@@ -70,7 +70,7 @@ export const useAuthStore = defineStore('auth', () => {
     return { 'X-Learner-Id': learnerId }
   }
 
-  /** Ajoute à la progression du navigateur les exercices réussis enregistrés pour le compte. */
+  /** Ajoute à la progression du navigateur les exercices réussis et les leçons terminées du compte. */
   async function syncServerProgress(): Promise<void> {
     if (!account.value) {
       return
@@ -86,6 +86,11 @@ export const useAuthStore = defineStore('auth', () => {
         const keys = keysByTrack[attempt.track] ?? []
         keys.push(exerciseKey(attempt.chapter, attempt.exercise))
         keysByTrack[attempt.track] = keys
+      }
+      for (const done of serverProgress.lessons) {
+        const keys = keysByTrack[done.track] ?? []
+        keys.push(lessonKey(done.chapter, done.lesson))
+        keysByTrack[done.track] = keys
       }
 
       for (const track of Object.keys(keysByTrack)) {

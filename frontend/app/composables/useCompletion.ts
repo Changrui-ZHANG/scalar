@@ -2,12 +2,31 @@ import { toValue, type MaybeRefOrGetter } from 'vue'
 import type { TrackView } from '@scalar/shared/api'
 import type { Episode } from '~/types/episode'
 import { sendEvent } from '~/services/events'
+import { forgetLearnerId } from '~/services/learnerId'
+import { completeLesson } from '~/services/learners'
+import { useAuthStore } from '~/stores/auth'
 import { useProgressStore } from '~/stores/progress'
+import { apiErrorStatus } from '~/utils/apiError'
 import { chapterKey, exerciseKey, lessonKey } from '~/utils/track'
 
 export interface CompletionActions {
   open(episode: Episode): void
   complete(episode: Episode): void
+}
+
+// Enregistre la leçon terminée sur le serveur, pour le compte ou l'apprenant anonyme.
+// En arrière-plan : un échec ne gêne pas la lecture, la progression du navigateur suffit.
+async function recordLesson(episode: Episode): Promise<void> {
+  const headers = await useAuthStore().learnerHeaders()
+  try {
+    await completeLesson(episode.trackSlug, episode.chapter.slug, episode.slug, headers)
+  } catch (err) {
+    // Identifiant anonyme repris par un compte ou disparu : un nouveau sera créé la prochaine fois.
+    const status = apiErrorStatus(err)
+    if (headers['X-Learner-Id'] && (status === 401 || status === 404)) {
+      forgetLearnerId()
+    }
+  }
 }
 
 export function useCompletion(track: MaybeRefOrGetter<TrackView>): CompletionActions {
@@ -41,6 +60,12 @@ export function useCompletion(track: MaybeRefOrGetter<TrackView>): CompletionAct
     }
 
     const newlyCompleted = progressStore.complete(episode.trackSlug, keysToComplete)
+
+    // Envoyée à chaque fois, même déjà terminée ici : le serveur ne compte qu'une fois,
+    // et une leçon lue avant la connexion finit ainsi elle aussi dans le compte.
+    if (episode.kind === 'lesson') {
+      recordLesson(episode)
+    }
 
     for (const key of newlyCompleted) {
       if (key === episode.key) {
