@@ -83,6 +83,18 @@ const isActive = (to: string) => route.path === to || route.path.startsWith(`${t
           >
             Bac à sable
           </NuxtLink>
+          <NuxtLink
+            to="/premium"
+            :aria-current="isActive('/premium') ? 'page' : undefined"
+            class="text-ui transition-colors"
+            :class="
+              isActive('/premium')
+                ? 'text-text font-semibold'
+                : 'text-text-muted hover:text-text font-medium'
+            "
+          >
+            Premium
+          </NuxtLink>
         </nav>
 
         <LayoutAccount />

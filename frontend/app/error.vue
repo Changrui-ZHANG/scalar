@@ -60,14 +60,16 @@ function retry() {
         text="Les premiers chapitres de chaque parcours sont gratuits. La suite est réservée aux abonnés Premium."
       >
         <template #actions>
+          <UiButton @click="goTo('/premium')">Voir l’offre Premium</UiButton>
           <!-- Un abonné non connecté retrouve son accès en se connectant. -->
           <UiButton
             v-if="!auth.account"
+            variant="secondary"
             @click="goTo(`/connexion?redirect=${encodeURIComponent(route.fullPath)}`)"
           >
             Se connecter
           </UiButton>
-          <UiButton :variant="auth.account ? 'primary' : 'secondary'" @click="goTo('/parcours')">
+          <UiButton v-else variant="secondary" @click="goTo('/parcours')">
             Voir les parcours
           </UiButton>
         </template>

@@ -65,6 +65,14 @@ async function onLogout() {
           <Icon name="lucide:code-xml" class="size-5 text-exercise" />
           <span>Bac à sable</span>
         </NuxtLink>
+        <NuxtLink
+          to="/premium"
+          class="flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-text hover:bg-surface-muted"
+          @click="close"
+        >
+          <Icon name="lucide:sparkles" class="size-5 text-primary" />
+          <span>Premium</span>
+        </NuxtLink>
       </nav>
 
       <!-- Compte -->
